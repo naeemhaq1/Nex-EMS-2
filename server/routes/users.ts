@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { storage } from '../storage';
 import { requireAuth, requireSuperAdmin, requireAdmin } from '../middleware/auth';
 import { insertUserSchema } from '@shared/schema';
 import { z } from 'zod';
@@ -12,7 +11,8 @@ const router = Router();
 // Get all users (Admin and SuperAdmin)
 router.get('/', requireAdmin, async (req, res) => {
   try {
-    const users = await storage.getAllUsers();
+    const { sql } = await import('../db');
+    const users = await sql`SELECT * FROM users ORDER BY createdAt DESC`;
     // Remove password from response
     const safeUsers = users.map(user => ({
       ...user,
@@ -34,9 +34,11 @@ router.post('/admin', requireSuperAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
+    const { sql } = await import('../db');
+    
     // Check if username already exists
-    const existingUser = await storage.getUserByUsername(username);
-    if (existingUser) {
+    const existingUsers = await sql`SELECT id FROM users WHERE username = ${username}`;
+    if (existingUsers.length > 0) {
       return res.status(400).json({ error: 'Username already exists' });
     }
 
@@ -44,13 +46,12 @@ router.post('/admin', requireSuperAdmin, async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create admin user
-    const newUser = await storage.createUser({
-      username,
-      password: hashedPassword,
-      role: 'admin',
-      employeeId: employeeId || null,
-      isActive: true
-    });
+    const newUsers = await sql`
+      INSERT INTO users (username, password, role, employeeId, isActive, createdAt, updatedAt)
+      VALUES (${username}, ${hashedPassword}, 'admin', ${employeeId || null}, true, NOW(), NOW())
+      RETURNING *
+    `;
+    const newUser = newUsers[0];
 
     // Remove password from response
     const safeUser = {
@@ -71,15 +72,43 @@ router.patch('/:id', requireSuperAdmin, async (req, res) => {
     const userId = parseInt(req.params.id);
     const { username, password, role, employeeId, isActive } = req.body;
 
-    const updateData: any = {};
-
-    if (username) updateData.username = username;
-    if (password) updateData.password = await bcrypt.hash(password, 10);
-    if (role) updateData.role = role;
-    if (employeeId !== undefined) updateData.employeeId = employeeId;
-    if (isActive !== undefined) updateData.isActive = isActive;
-
-    const updatedUser = await storage.updateUser(userId, updateData);
+    const { sql } = await import('../db');
+    
+    let updateQuery = 'UPDATE users SET updatedAt = NOW()';
+    const params = [userId];
+    let paramIndex = 2;
+    
+    if (username) {
+      updateQuery += `, username = $${paramIndex}`;
+      params.push(username);
+      paramIndex++;
+    }
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateQuery += `, password = $${paramIndex}`;
+      params.push(hashedPassword);
+      paramIndex++;
+    }
+    if (role) {
+      updateQuery += `, role = $${paramIndex}`;
+      params.push(role);
+      paramIndex++;
+    }
+    if (employeeId !== undefined) {
+      updateQuery += `, employeeId = $${paramIndex}`;
+      params.push(employeeId);
+      paramIndex++;
+    }
+    if (isActive !== undefined) {
+      updateQuery += `, isActive = $${paramIndex}`;
+      params.push(isActive);
+      paramIndex++;
+    }
+    
+    updateQuery += ` WHERE id = $1 RETURNING *`;
+    
+    const updatedUsers = await sql(updateQuery, params);
+    const updatedUser = updatedUsers[0];
 
     if (!updatedUser) {
       return res.status(404).json({ error: 'User not found' });
@@ -113,7 +142,13 @@ router.post('/:id/role', requireAdmin, async (req, res) => {
       return res.status(403).json({ error: 'Only SuperAdmin can assign SuperAdmin role' });
     }
 
-    const updatedUser = await storage.updateUser(userId, { role });
+    const { sql } = await import('../db');
+    const updatedUsers = await sql`
+      UPDATE users SET role = ${role}, updatedAt = NOW() 
+      WHERE id = ${userId} 
+      RETURNING *
+    `;
+    const updatedUser = updatedUsers[0];
 
     if (!updatedUser) {
       return res.status(404).json({ error: 'User not found' });
@@ -137,13 +172,16 @@ router.delete('/:id', requireSuperAdmin, async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
 
+    const { sql } = await import('../db');
+    
     // Prevent deletion of SuperAdmin users
-    const user = await storage.getUserById(userId);
-    if (user && user.role === 'superadmin') {
+    const users = await sql`SELECT role FROM users WHERE id = ${userId}`;
+    if (users.length > 0 && users[0].role === 'superadmin') {
       return res.status(400).json({ error: 'Cannot delete SuperAdmin users' });
     }
 
-    const success = await storage.deleteUser(userId);
+    const deletedUsers = await sql`DELETE FROM users WHERE id = ${userId} RETURNING id`;
+    const success = deletedUsers.length > 0;
 
     if (!success) {
       return res.status(404).json({ error: 'User not found' });
@@ -170,23 +208,45 @@ router.post('/login', async (req, res) => {
       return res.status(500).json({ error: 'Session middleware not configured' });
     }
 
-    // Use storage service to verify user
-    const user = await storage.verifyUser(username, password);
-    if (!user) {
-      console.log('Invalid credentials for username:', username);
+    // Direct database authentication since storage service is not available
+    const { sql } = await import('../db');
+    
+    // Get user from database
+    const users = await sql`
+      SELECT * FROM users 
+      WHERE username = ${username} AND isActive = true
+    `;
+    
+    if (users.length === 0) {
+      console.log('User not found:', username);
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    
+    const user = users[0];
+    
+    // Verify password
+    const bcrypt = await import('bcrypt');
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    
+    if (!isValidPassword) {
+      console.log('Invalid password for username:', username);
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
     console.log('User authenticated:', user.username);
 
-    // Get role permissions
-    const rolePermissions = await storage.getRolePermissionByName(user.role);
-    if (!rolePermissions) {
-      console.log('No role permissions found for role:', user.role);
-      return res.status(403).json({ error: "Role permissions not found" });
-    }
-
-    console.log('Role permissions found:', rolePermissions);
+    // Get role permissions - simplified for now
+    const rolePermissions = {
+      canCreateUsers: user.role === 'superadmin' || user.role === 'admin',
+      canDeleteUsers: user.role === 'superadmin',
+      canDeleteData: user.role === 'superadmin',
+      canAccessFinancialData: user.role === 'superadmin' || user.role === 'admin',
+      canManageSystem: user.role === 'superadmin',
+      canManageTeams: user.role === 'superadmin' || user.role === 'admin',
+      canChangeDesignations: user.role === 'superadmin',
+      accessLevel: user.role === 'superadmin' ? 10 : (user.role === 'admin' ? 5 : 1)
+    };
+    console.log('Role permissions set:', rolePermissions);
 
     // Set session data
     req.session.userId = user.id.toString();
@@ -269,12 +329,17 @@ router.get('/user', requireAuth, async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'No user session' });
     }
 
-    const result = await authService.getUserById(userId);
-    if (result.success) {
-      return res.json(result.user);
-    } else {
-      return res.status(404).json({ error: result.error });
+    const { sql } = await import('../db');
+    const users = await sql`
+      SELECT id, username, role, employeeId, realName, isActive, createdAt, updatedAt 
+      FROM users WHERE id = ${userId}
+    `;
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
     }
+    
+    return res.json(users[0]);
   } catch (error) {
     console.error('Get user error:', error);
     return res.status(500).json({ error: 'Internal server error' });
