@@ -5,6 +5,7 @@ import { insertUserSchema } from '@shared/schema';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
+import { authService } from '../services/auth';
 
 const router = Router();
 
@@ -216,6 +217,23 @@ router.post('/login', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Login error:', error);
     return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Logout endpoint
+router.post('/logout', async (req: Request, res: Response) => {
+  try {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Session destruction error:', err);
+        return res.status(500).json({ success: false, error: 'Logout failed' });
+      }
+      res.clearCookie('connect.sid');
+      return res.json({ success: true, message: 'Logged out successfully' });
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return res.status(500).json({ success: false, error: 'Logout failed' });
   }
 });
 

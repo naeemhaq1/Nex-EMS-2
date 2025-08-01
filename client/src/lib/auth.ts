@@ -20,7 +20,7 @@ export class AuthService {
 
   async login(credentials: LoginCredentials): Promise<AuthResult> {
     try {
-      const response = await apiRequest("POST", "/api/auth/login", credentials);
+      const response = await apiRequest("POST", "/api/users/login", credentials);
       const data = await response.json();
       
       if (data.success) {
@@ -39,7 +39,7 @@ export class AuthService {
 
   async logout(): Promise<void> {
     try {
-      await apiRequest("POST", "/api/auth/logout");
+      await apiRequest("POST", "/api/users/logout");
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
@@ -53,7 +53,7 @@ export class AuthService {
     }
 
     try {
-      const response = await apiRequest("GET", "/api/auth/me");
+      const response = await apiRequest("GET", "/api/users/user");
       const data = await response.json();
       this.currentUser = data.user;
       return data.user;
@@ -65,7 +65,7 @@ export class AuthService {
 
   async refreshToken(): Promise<boolean> {
     try {
-      const response = await apiRequest("POST", "/api/auth/refresh");
+      const response = await apiRequest("POST", "/api/users/refresh");
       const data = await response.json();
       
       if (data.success) {
