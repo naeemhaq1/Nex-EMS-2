@@ -159,7 +159,12 @@ export default function MobileAdminDashboard() {
   }
 
   // Handle authentication errors
-  if (error && (error as any).message?.includes('401')) {
+  if (error && ((error as any).message?.includes('401') || (error as any).status === 401)) {
+    // Force redirect to login immediately to prevent flash
+    setTimeout(() => {
+      window.location.replace('/');
+    }, 100);
+    
     return (
       <div className="min-h-screen bg-[#1A1B3E] flex items-center justify-center">
         <div className="text-center p-6">
@@ -167,13 +172,8 @@ export default function MobileAdminDashboard() {
             <Shield className="w-8 h-8 text-red-400" />
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Authentication Required</h2>
-          <p className="text-gray-400 mb-6">Please log in to access the admin dashboard</p>
-          <button 
-            onClick={() => window.location.href = '/'}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
-          >
-            Go to Login
-          </button>
+          <p className="text-gray-400 mb-6">Redirecting to login...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
         </div>
       </div>
     );
