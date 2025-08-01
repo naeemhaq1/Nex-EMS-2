@@ -34,4 +34,4 @@ export function useIsMobile() {
 
 // Export both named and default exports for compatibility
 export const useMobile = useIsMobile;
-export { useIsMobile as default };
+export default useIsMobile;

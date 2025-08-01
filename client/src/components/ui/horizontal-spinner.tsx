@@ -6,7 +6,7 @@ interface HorizontalSpinnerProps {
   className?: string;
 }
 
-export function HorizontalSpinner({ size = 'md', className = '' }: HorizontalSpinnerProps) {
+function HorizontalSpinner({ size = 'md', className = '' }: HorizontalSpinnerProps) {
   const sizeClasses = {
     sm: 'h-4 w-4',
     md: 'h-6 w-6', 
@@ -20,4 +20,5 @@ export function HorizontalSpinner({ size = 'md', className = '' }: HorizontalSpi
   );
 }
 
+export { HorizontalSpinner };
 export default HorizontalSpinner;
