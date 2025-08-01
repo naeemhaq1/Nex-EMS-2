@@ -660,7 +660,7 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmployeeId(employeeId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.employeeId, employeeId));
     return user || undefined;
-  },
+  }
 
   async getUserByResetToken(token: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.passwordResetToken, token));
