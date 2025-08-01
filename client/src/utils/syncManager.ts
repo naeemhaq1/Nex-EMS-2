@@ -29,7 +29,7 @@ class SyncManager {
   private syncInterval: NodeJS.Timeout | null = null;
   private listeners: Array<(stats: SyncStats) => void> = [];
   private maxRetries = 3;
-  private syncIntervalMs = 30000; // 30 seconds
+  private syncIntervalMs = 300000; // 5 minutes - reduced from 30 seconds
   private batchSize = 10;
 
   constructor() {
@@ -203,15 +203,19 @@ class SyncManager {
     if (!this.db || this.syncInProgress) return;
 
     this.syncInProgress = true;
-    console.log('🔄 Sync Manager: Starting sync operation');
-
+    
     try {
       const pendingItems = await this.getPendingItems();
 
       if (pendingItems.length === 0) {
-        console.log('🔄 Sync Manager: No pending items to sync');
+        // Only log every 10th empty sync to reduce console spam
+        if (Math.random() < 0.1) {
+          console.log('🔄 Sync Manager: No pending items to sync');
+        }
         return;
       }
+
+      console.log(`🔄 Sync Manager: Starting sync operation with ${pendingItems.length} items`);
 
       // Sort by priority and timestamp
       const sortedItems = pendingItems.sort((a, b) => {

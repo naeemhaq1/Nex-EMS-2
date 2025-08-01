@@ -33,15 +33,16 @@ testConnection().catch(console.error);
 export const pool = {
   query: async (text: string, params?: any[]) => {
     try {
-      // Use the template literal syntax for Neon instead of unsafe
+      // Use the sql function directly with proper parameter handling
       let result;
       if (params && params.length > 0) {
-        // For parameterized queries, we need to handle them differently
-        // Since Neon doesn't have unsafe, we'll use the sql template function
-        result = await sql(text, params);
+        // For parameterized queries, construct properly
+        const query = sql(text, ...params);
+        result = await query;
       } else {
-        // For non-parameterized queries, use the sql template directly
-        result = await sql([text] as any);
+        // For non-parameterized queries
+        const query = sql`${sql.raw(text)}`;
+        result = await query;
       }
 
       // Convert Neon result format to pg-compatible format
@@ -62,9 +63,11 @@ export const pool = {
     query: async (text: string, params?: any[]) => {
       let result;
       if (params && params.length > 0) {
-        result = await sql(text, params);
+        const query = sql(text, ...params);
+        result = await query;
       } else {
-        result = await sql([text] as any);
+        const query = sql`${sql.raw(text)}`;
+        result = await query;
       }
       return {
         rows: Array.isArray(result) ? result : [result],

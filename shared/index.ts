@@ -1,18 +1,20 @@
 // Shared module exports - NO React imports to prevent dispatcher errors
+// Each export is isolated to prevent module resolution conflicts
 
-// Export all shared modules with explicit imports to prevent circular dependencies
+// Database schemas
 export * from './schema';
-export * from './versioning';
-export * from './departmentFieldConfig';
-export * from './departmentGroups';
 export * from './geofenceSchema';
-export * from './jobSites';
-export * from './location-schema';
-export * from './version';
+export * from './location-schema';  
 export * from './whatsappSchema';
 
-// Re-export core types to ensure compatibility
+// Configuration modules
+export * from './departmentFieldConfig';
+export * from './departmentGroups';
+export * from './jobSites';
+
+// Version management (isolated to prevent conflicts)
+export { version } from './version';
 export type { ComponentVersion } from './versioning';
 
-// Re-export utilities
+// Utilities (isolated)  
 export * from './utils/phoneUtils';
