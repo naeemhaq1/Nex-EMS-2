@@ -9,8 +9,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '0.0.0.0';
 
-// Serve static files from client build
-app.use(express.static(path.join(__dirname, 'client', 'dist')));
+// Serve static files from build output
+app.use(express.static(path.join(__dirname, 'dist', 'public')));
 
 // Basic health check
 app.get('/health', (req, res) => {
@@ -23,7 +23,7 @@ app.get('/health', (req, res) => {
 
 // Serve the React app for all other routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist', 'public', 'index.html'));
 });
 
 app.listen(PORT, HOST, () => {
