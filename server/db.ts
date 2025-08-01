@@ -29,14 +29,35 @@ async function testConnection() {
 testConnection().catch(console.error);
 
 // For backward compatibility with existing code that expects pool
+// Create a pool-compatible wrapper for the session store
 export const pool = {
   query: async (text: string, params?: any[]) => {
-    return await sql(text, params);
+    try {
+      const result = await sql.unsafe(text, params);
+      // Convert Neon result format to pg-compatible format
+      return {
+        rows: Array.isArray(result) ? result : [result],
+        rowCount: Array.isArray(result) ? result.length : 1,
+        command: text.trim().split(' ')[0].toUpperCase(),
+        fields: [],
+        oid: 0
+      };
+    } catch (error) {
+      console.error('Pool query error:', error);
+      throw error;
+    }
   },
   end: () => Promise.resolve(),
   connect: () => Promise.resolve({ 
     query: async (text: string, params?: any[]) => {
-      return await sql(text, params);
+      const result = await sql.unsafe(text, params);
+      return {
+        rows: Array.isArray(result) ? result : [result],
+        rowCount: Array.isArray(result) ? result.length : 1,
+        command: text.trim().split(' ')[0].toUpperCase(),
+        fields: [],
+        oid: 0
+      };
     },
     release: () => {}
   })

@@ -301,18 +301,8 @@ router.post('/dev/clear-sessions', async (req: Request, res: Response) => {
   }
 
   try {
-    // Assuming 'pool' is accessible here (e.g., imported or defined in this file)
-    // and that it has a 'query' method for executing SQL queries.
-    // If 'pool' is not available, you'll need to establish a database connection.
-    // For example, if using the 'pg' library:
-    // const { Pool } = require('pg');
-    // const pool = new Pool({ ...your database connection configuration... });
-    // Make sure to handle connection errors appropriately.
-    if (!pool || typeof pool.query !== 'function') {
-        console.error('Database pool not properly initialized.');
-        return res.status(500).json({ error: 'Database connection error' });
-    }
-    await pool.query('DELETE FROM session');
+    const { sql } = await import('../db');
+    await sql`DELETE FROM session`;
     res.json({ success: true, message: 'All sessions cleared' });
   } catch (error) {
     console.error('Error clearing sessions:', error);
@@ -320,79 +310,7 @@ router.post('/dev/clear-sessions', async (req: Request, res: Response) => {
   }
 });
 
-// Dev mode auto-login endpoint
-router.post('/dev/auto-login', async (req, res) => {
-  if (process.env.NODE_ENV !== 'development') {
-    return res.status(403).json({ success: false, message: 'Dev auto-login only available in development mode' });
-  }
 
-  try {
-    console.log('Dev auto-login: Attempting to find dev user');
-
-    // Look for dev user (dev/dev)
-    const result = await db.select().from(users).where(eq(users.username, 'dev')).limit(1);
-    const devUser = result[0];
-
-    if (!devUser) {
-      console.log('Dev auto-login: Dev user not found, creating one');
-
-      // Create dev user if it doesn't exist
-      const bcrypt = await import('bcrypt');
-      const hashedPassword = await bcrypt.hash('dev', 10);
-
-      const [newDevUser] = await db.insert(users).values({
-        username: 'dev',
-        password: hashedPassword,
-        role: 'admin',
-        firstName: 'Dev',
-        lastName: 'User',
-        employeeCode: 'DEV001',
-        isActive: true
-      }).returning();
-
-      // Create session for new user
-      req.session.userId = newDevUser.id;
-      req.session.username = newDevUser.username;
-      req.session.role = newDevUser.role;
-      req.session.isLoggedIn = true;
-
-      console.log('Dev auto-login: New dev user created and logged in');
-      return res.json({
-        success: true,
-        user: {
-          id: newDevUser.id,
-          username: newDevUser.username,
-          role: newDevUser.role,
-          firstName: newDevUser.firstName,
-          lastName: newDevUser.lastName,
-          employeeCode: newDevUser.employeeCode
-        }
-      });
-    }
-
-    // Create session for existing user
-    req.session.userId = devUser.id;
-    req.session.username = devUser.username;
-    req.session.role = devUser.role;
-    req.session.isLoggedIn = true;
-
-    console.log('Dev auto-login: Existing dev user logged in');
-    res.json({
-      success: true,
-      user: {
-        id: devUser.id,
-        username: devUser.username,
-        role: devUser.role,
-        firstName: devUser.firstName,
-        lastName: devUser.lastName,
-        employeeCode: devUser.employeeCode
-      }
-    });
-  } catch (error) {
-    console.error('Dev auto-login error:', error);
-    res.status(500).json({ success: false, message: 'Auto-login failed: ' + error.message });
-  }
-});
 
 // DEV ENVIRONMENT: Auto-login as dev/dev
 router.post('/dev', async (req, res) => {
@@ -405,9 +323,9 @@ router.post('/dev', async (req, res) => {
       return res.status(500).json({ error: 'Session middleware not configured' });
     }
 
-    // Create dev session
-    req.session.userId = 'dev';
-    req.session.usernum = 9999;
+    // Create dev session with valid numeric IDs
+    req.session.userId = '1';
+    req.session.usernum = 1;
     req.session.username = 'dev';
     req.session.role = 'superadmin';
     req.session.realName = 'Developer';
@@ -447,6 +365,7 @@ router.post('/dev', async (req, res) => {
     res.json({
       success: true,
       user: {
+        id: req.session.usernum,
         userId: req.session.userId,
         usernum: req.session.usernum,
         username: req.session.username,
