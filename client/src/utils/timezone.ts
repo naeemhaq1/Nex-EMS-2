@@ -101,4 +101,10 @@ export const formatTime12h = (date: Date): string => {
   });
 };
 
+export function getCurrentPKTTime(): Date {
+  const now = new Date();
+  // Return current time adjusted for Pakistan timezone
+  return new Date(now.getTime() + (5 * 60 * 60 * 1000));
+}
+
 export { formatTime12h as default };
