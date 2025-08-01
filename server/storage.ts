@@ -2545,4 +2545,5 @@ export class DatabaseStorage implements IStorage {
     page?: number;
     limit?: number;
     entityType?: string;
+  }) {
 The code has been updated to use proper Drizzle select syntax in getUserByUsername function.
