@@ -1,4 +1,5 @@
 import { pgTable, text, varchar, timestamp, boolean, integer, jsonb, uuid, serial } from 'drizzle-orm/pg-core';
+import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
 // Enhanced WhatsApp Contacts table with 3-tier contact system
@@ -186,32 +187,29 @@ export const whatsappApiStatus = pgTable('whatsapp_api_status', {
   createdAt: timestamp('created_at').defaultNow()
 });
 
-// Manual Zod schemas (replacing createInsertSchema)
-export const insertWhatsappContact = z.object({
-  phoneNumber: z.string().max(20),
-  displayName: z.string().max(255),
-  firstName: z.string().max(100).optional(),
-  lastName: z.string().max(100).optional(),
-  contactType: z.string().max(20).default('employees'),
-  addedBy: z.string().max(50),
+// Insert schemas
+export const insertWhatsappContact = createInsertSchema(whatsappContacts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
 });
 
-export const insertWhatsappGroup = z.object({
-  name: z.string().max(255),
-  groupType: z.string().max(50),
-  createdBy: z.string().max(50),
+export const insertWhatsappGroup = createInsertSchema(whatsappGroups).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
 });
 
-export const insertWhatsappMessage = z.object({
-  conversationId: z.string().max(100),
-  messageType: z.string().max(20),
-  content: z.string(),
-  direction: z.string().max(10),
+export const insertWhatsappMessage = createInsertSchema(whatsappMessages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
 });
 
-export const insertWhatsappMessageQueue = z.object({
-  messageId: z.string().uuid(),
-  priority: z.number().default(1),
+export const insertWhatsappMessageQueue = createInsertSchema(whatsappMessageQueue).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
 });
 
 // Types
@@ -308,34 +306,31 @@ export const whatsappChatbotConversations = pgTable('whatsapp_chatbot_conversati
   updatedAt: timestamp('updated_at').defaultNow()
 });
 
-// Manual Zod schemas for additional tables (replacing createInsertSchema)
-export const insertWhatsappApiKey = z.object({
-  keyName: z.string().max(255),
-  hashedKey: z.string().max(255),
-  createdBy: z.string().max(50),
+// Additional insert schemas for new tables
+export const insertWhatsappApiKey = createInsertSchema(whatsappApiKeys).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
 });
 
-export const insertWhatsappGatewayLog = z.object({
-  apiKeyId: z.string().uuid(),
-  endpoint: z.string().max(255),
-  method: z.string().max(10),
+export const insertWhatsappGatewayLog = createInsertSchema(whatsappGatewayLogs).omit({
+  id: true
 });
 
-export const insertWhatsappDiagnostic = z.object({
-  testName: z.string().max(255),
-  status: z.string().max(20),
-  message: z.string(),
+export const insertWhatsappDiagnostic = createInsertSchema(whatsappDiagnostics).omit({
+  id: true
 });
 
-export const insertWhatsappChatbotConfig = z.object({
-  botName: z.string().max(255),
-  createdBy: z.string().max(50),
+export const insertWhatsappChatbotConfig = createInsertSchema(whatsappChatbotConfig).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
 });
 
-export const insertWhatsappChatbotConversation = z.object({
-  sessionId: z.string().max(100),
-  phoneNumber: z.string().max(20),
-  botConfigId: z.string().uuid(),
+export const insertWhatsappChatbotConversation = createInsertSchema(whatsappChatbotConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
 });
 
 // Additional types for new tables

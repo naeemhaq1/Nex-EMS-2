@@ -1,5 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, decimal, varchar } from "drizzle-orm/pg-core";
-// import { createInsertSchema } from "drizzle-zod"; // Removed to fix colBuilder.setName errors
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Geofence clusters learned from employee location patterns
@@ -56,50 +56,10 @@ export const geofenceViolations = pgTable("geofence_violations", {
   attendanceRecordId: integer("attendance_record_id")
 });
 
-// Manual Zod schemas to replace createInsertSchema calls
-export const insertGeofenceClusterSchema = z.object({
-  clusterId: z.string(),
-  employeeCode: z.string(),
-  locationType: z.string(),
-  centerLatitude: z.string(),
-  centerLongitude: z.string(),
-  radiusMeters: z.number().default(100),
-  punchCount: z.number().default(0),
-  firstSeenAt: z.date(),
-  lastSeenAt: z.date(),
-  confidence: z.number().default(0),
-  isActive: z.boolean().default(true),
-  autoLearned: z.boolean().default(false),
-});
-
-export const insertMobilePunchValidationSchema = z.object({
-  employeeCode: z.string(),
-  latitude: z.string(),
-  longitude: z.string(),
-  punchType: z.string(),
-  isValid: z.boolean(),
-  locationType: z.string().optional(),
-  distance: z.string().optional(),
-  clusterId: z.string().optional(),
-  confidence: z.number().optional(),
-  validationReason: z.string().optional(),
-  attendanceRecordId: z.number().optional(),
-});
-
-export const insertGeofenceViolationSchema = z.object({
-  employeeCode: z.string(),
-  latitude: z.string(),
-  longitude: z.string(),
-  punchType: z.string(),
-  violationType: z.string(),
-  distance: z.string().optional(),
-  severity: z.string().default('medium'),
-  resolved: z.boolean().default(false),
-  resolvedBy: z.string().optional(),
-  resolvedAt: z.date().optional(),
-  notes: z.string().optional(),
-  attendanceRecordId: z.number().optional(),
-});
+// Schema exports
+export const insertGeofenceClusterSchema = createInsertSchema(geofenceClusters);
+export const insertMobilePunchValidationSchema = createInsertSchema(mobilePunchValidation);
+export const insertGeofenceViolationSchema = createInsertSchema(geofenceViolations);
 
 export type GeofenceCluster = typeof geofenceClusters.$inferSelect;
 export type InsertGeofenceCluster = z.infer<typeof insertGeofenceClusterSchema>;

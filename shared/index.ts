@@ -1,5 +1,7 @@
 
-// Export all shared modules
+// Shared module exports - NO React imports to prevent dispatcher errors
+
+// Export all shared modules with proper error handling
 export * from './schema';
 export * from './versioning';
 export * from './departmentFieldConfig';
@@ -8,5 +10,7 @@ export * from './geofenceSchema';
 export * from './jobSites';
 export * from './location-schema';
 export * from './version';
-// DISABLED: WhatsApp schema causing colBuilder.setName errors
-// export * from './whatsappSchema';
+export * from './whatsappSchema';
+
+// Re-export utilities
+export * from './utils/phoneUtils';
