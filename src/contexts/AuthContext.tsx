@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Fast session check with reduced timeout for quick dashboard loading
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 800); // Reduced from 1500ms to 800ms
+      const timeoutId = setTimeout(() => controller.abort(), 1200); // Increased timeout for mobile
       
       const response = await fetch('/api/auth/user', {
         credentials: 'include',
@@ -57,7 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache',
-          'X-Force-Session-Sync': 'true' // Force session synchronization
+          'X-Force-Session-Sync': 'true', // Force session synchronization
+          'X-Mobile-Auth': 'true' // Add mobile auth header
         }
       });
       
@@ -134,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Ultra-fast auto-login for quick dashboard access
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 600); // Reduced from 1000ms to 600ms
+      const timeoutId = setTimeout(() => controller.abort(), 1000); // Increased timeout for mobile compatibility
       
       const response = await fetch('/api/dev/auto-login', {
         method: 'POST',
@@ -142,7 +143,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'X-Fast-Login': 'true' // Signal for expedited processing
+          'X-Fast-Login': 'true', // Signal for expedited processing
+          'X-Mobile-Compatible': 'true' // Mobile compatibility flag
         },
       });
       

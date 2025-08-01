@@ -1,4 +1,5 @@
 import express from 'express';
+import session from 'express-session';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,6 +14,17 @@ const HOST = process.env.HOST || '0.0.0.0';
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Add session management
+app.use(session({
+  secret: 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: false, // Set to true in production with HTTPS
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
 // Serve static files from build output
 app.use(express.static(path.join(__dirname, 'dist', 'public')));
 
@@ -21,33 +33,96 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Add basic auth routes for testing
-app.post('/api/auth/login', (req, res) => {
-  const { username, password } = req.body;
+// Development auto-login endpoint
+app.post('/api/dev/auto-login', async (req, res) => {
+  try {
+    console.log('Development auto-login attempted');
 
-  // Temporary test user for development
-  if (username === 'admin' && password === 'admin123') {
+    // Auto-login with admin user for development
+    const user = {
+      id: 1,
+      username: 'admin',
+      role: 'admin',
+      createdAt: new Date().toISOString()
+    };
+
+    // Set session data
+    req.session = req.session || {};
+    req.session.user = user;
+
     res.json({
       success: true,
-      user: {
-        id: 1,
-        username: 'admin',
-        role: 'admin',
-        firstName: 'Test',
-        lastName: 'Admin'
-      }
+      user: user
     });
-  } else {
-    res.status(401).json({
+  } catch (error) {
+    console.error('Auto-login error:', error);
+    res.status(500).json({
       success: false,
-      error: 'Invalid credentials'
+      error: 'Auto-login failed'
     });
   }
 });
 
-app.get('/api/auth/me', (req, res) => {
-  // Return null for now - will be implemented with proper session management
-  res.json({ user: null });
+// Login endpoint
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    console.log('Login attempt:', req.body);
+
+    const { username, password } = req.body;
+
+    // Temporary test user for development
+    if (username === 'admin' && password === 'admin123') {
+      const user = {
+        id: 1,
+        username: 'admin',
+        role: 'admin',
+        createdAt: new Date().toISOString()
+      };
+
+      // Set session data
+      req.session = req.session || {};
+      req.session.user = user;
+
+      res.json({
+        success: true,
+        user: user
+      });
+      return;
+    }
+
+    res.status(401).json({
+      success: false,
+      error: 'Invalid credentials'
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+// User authentication check endpoint
+app.get('/api/auth/user', async (req, res) => {
+  try {
+    console.log('Auth check - session user:', req.session?.user);
+
+    if (req.session && req.session.user) {
+      res.json(req.session.user);
+    } else {
+      res.status(401).json({
+        success: false,
+        error: 'Not authenticated'
+      });
+    }
+  } catch (error) {
+    console.error('Auth check error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
 });
 
 app.post('/api/auth/logout', (req, res) => {
