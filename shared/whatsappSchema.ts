@@ -1,5 +1,4 @@
 import { pgTable, text, varchar, timestamp, boolean, integer, jsonb, uuid, serial } from 'drizzle-orm/pg-core';
-import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
 // Enhanced WhatsApp Contacts table with 3-tier contact system

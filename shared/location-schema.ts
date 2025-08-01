@@ -1,5 +1,4 @@
 import { pgTable, text, timestamp, decimal, boolean, integer, varchar, jsonb, index } from 'drizzle-orm/pg-core';
-import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
 // Employee location tracking table
