@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { db } from '../db';
 import { configService } from './configService';
+import { eq, and, desc, gte, lte, or, sql } from "drizzle-orm";
 
 interface LocationData {
   employeeId: string;
@@ -299,10 +300,10 @@ export class OptimizedLocationService extends EventEmitter {
    */
   private async loadGeofenceZones(): Promise<void> {
     try {
-      const zones = await db.execute(`
-        SELECT id, name, center_lat, center_lng, radius_meters, location_type 
-        FROM geofences 
-        WHERE active = true
+      const zones = await db.execute(sql`
+        SELECT id, name, latitude, longitude, radius_meters as "radiusMeters"
+        FROM geofence_zones 
+        WHERE is_active = true
       `);
 
       for (const zone of zones || []) {

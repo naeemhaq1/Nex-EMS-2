@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from "drizzle-orm";
 
 export interface SystemConfig {
   mobileLocationPollingInterval: number; // in milliseconds
@@ -62,16 +62,16 @@ class ConfigService {
    */
   private async ensureSettingsTableExists(): Promise<void> {
     try {
-      const sql = `
+      // Create settings table if it doesn't exist
+      await db.execute(sql`
         CREATE TABLE IF NOT EXISTS system_settings (
-          key VARCHAR(255) PRIMARY KEY,
+          id SERIAL PRIMARY KEY,
+          key VARCHAR(255) UNIQUE NOT NULL,
           value TEXT NOT NULL,
-          description TEXT,
-          category VARCHAR(100) DEFAULT 'general',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-      `;
-      await db.execute(sql);
+      `);
     } catch (error) {
       console.error('[ConfigService] Error creating settings table:', error);
     }
