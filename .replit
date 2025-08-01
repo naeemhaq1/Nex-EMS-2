@@ -10,7 +10,7 @@ channel = "stable-25_05"
 
 [deployment]
 run = ["sh", "-c", "npm run build && npm start"]
-deploymentTarget = "autoscale"
+deploymentTarget = "gce"
 ignorePorts = false
 
 [workflows]
