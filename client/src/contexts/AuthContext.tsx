@@ -29,20 +29,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isDevelopment = import.meta.env.DEV;
 
   useEffect(() => {
-    if (isDevelopment) {
-      // Development mode: Fast auto-login with immediate session persistence
-      console.log('DEV MODE: Attempting auto-login...');
-      attemptAutoLogin().then(() => {
-        // Immediate session verification for faster loading
-        setTimeout(() => {
-          console.log('DEV MODE: Verifying session persistence...');
-          checkAuth();
-        }, 100); // Reduced from 500ms to 100ms for sub-5 second dashboard loading
-      });
-    } else {
-      // Production mode: Check existing auth without auto-login
-      checkAuth();
-    }
+    // Add a small delay to ensure React has fully mounted
+    const initAuth = setTimeout(() => {
+      if (isDevelopment) {
+        // Development mode: Fast auto-login with immediate session persistence
+        console.log('DEV MODE: Attempting auto-login...');
+        attemptAutoLogin().then(() => {
+          // Immediate session verification for faster loading
+          setTimeout(() => {
+            console.log('DEV MODE: Verifying session persistence...');
+            checkAuth();
+          }, 100);
+        }).catch((error) => {
+          console.error('Auto-login failed:', error);
+          setLoading(false);
+        });
+      } else {
+        // Production mode: Check existing auth without auto-login
+        checkAuth();
+      }
+    }, 50); // Small delay to ensure React dispatcher is ready
+
+    return () => clearTimeout(initAuth);
   }, []);
 
   const checkAuth = async () => {

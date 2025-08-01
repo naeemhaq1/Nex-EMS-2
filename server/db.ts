@@ -35,24 +35,30 @@ export const pool = {
     try {
       // Use the sql function directly with proper parameter handling
       let result;
-      if (params && params.length > 0) {
-        // For parameterized queries - handle params properly
-        result = await sql(text, params);
-      } else {
-        // For non-parameterized queries - use direct query
-        result = await sql([text] as any);
-      }
+      try {
+        if (params && params.length > 0) {
+          // For parameterized queries - use proper Neon syntax
+          result = await sql.unsafe(text, params);
+        } else {
+          // For non-parameterized queries - use raw query
+          result = await sql.unsafe(text);
+        }
 
-      // Ensure result is always an array and properly formatted
-      const rows = Array.isArray(result) ? result : (result ? [result] : []);
-      
-      // Convert Neon result format to pg-compatible format
-      return {
-        rows: rows,
-        rowCount: rows.length,
-        command: text.trim().split(' ')[0].toUpperCase(),
-        fields: [],
-        oid: 0
+        // Ensure result is always an array and properly formatted
+        const rows = Array.isArray(result) ? result : (result ? [result] : []);
+        
+        // Convert Neon result format to pg-compatible format
+        return {
+          rows: rows,
+          rowCount: rows.length,
+          command: text.trim().split(' ')[0].toUpperCase(),
+          fields: [],
+          oid: 0
+        };
+      } catch (error) {
+        console.error('[DB] Query error:', error);
+        throw error;
+      }
       };
     } catch (error) {
       console.error('Pool query error:', error);
@@ -62,21 +68,27 @@ export const pool = {
   end: () => Promise.resolve(),
   connect: () => Promise.resolve({ 
     query: async (text: string, params?: any[]) => {
-      let result;
-      if (params && params.length > 0) {
-        result = await sql(text, params);
-      } else {
-        result = await sql([text] as any);
+      try {
+        let result;
+        if (params && params.length > 0) {
+          result = await sql.unsafe(text, params);
+        } else {
+          result = await sql.unsafe(text);
+        }
+        
+        const rows = Array.isArray(result) ? result : (result ? [result] : []);
+        
+        return {
+          rows: rows,
+          rowCount: rows.length,
+          command: text.trim().split(' ')[0].toUpperCase(),
+          fields: [],
+          oid: 0
+        };
+      } catch (error) {
+        console.error('[Pool] Query error:', error);
+        throw error;
       }
-      
-      const rows = Array.isArray(result) ? result : (result ? [result] : []);
-      
-      return {
-        rows: rows,
-        rowCount: rows.length,
-        command: text.trim().split(' ')[0].toUpperCase(),
-        fields: [],
-        oid: 0
       };
     },
     release: () => {}

@@ -203,7 +203,7 @@ class SyncManager {
     if (!this.db || this.syncInProgress) return;
 
     this.syncInProgress = true;
-    
+
     try {
       const pendingItems = await this.getPendingItems();
 
@@ -445,7 +445,7 @@ class SyncManager {
   private chunkArray<T>(array: T[], size: number): T[][] {
     const chunks: T[][] = [];
     for (let i = 0; i < array.length; i += size) {
-      chunks.push(array.slice(i, i + size));
+      chunks.push(array.slice(i, i + size);
     }
     return chunks;
   }
@@ -550,7 +550,12 @@ class SyncManager {
 }
 
 // Increase sync interval to prevent excessive logging
-const SYNC_INTERVAL = 30000; // 30 seconds - reduced frequency
+const SYNC_INTERVAL = 120000; // 30 seconds - reduced frequency
+
+// Set up automatic sync interval (every 2 minutes to reduce interference)
+setInterval(() => {
+  syncManager.sync();
+}, 120000);
 
 // Create singleton instance
 export const syncManager = new SyncManager();
