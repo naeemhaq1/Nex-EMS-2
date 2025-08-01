@@ -23,7 +23,8 @@ const serverProcess = spawn('npm', ['run', 'dev'], {
   env: {
     ...process.env,
     NODE_ENV: 'development',
-    PORT: '5000'
+    PORT: '5000',
+    HOST: '0.0.0.0'
   }
 });
 
@@ -59,5 +60,5 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGQUIT', () => gracefulShutdown('SIGQUIT'));
 
 console.log('✅ Nexlinx EMS startup script running');
-console.log('🌐 Application will be available at: http://localhost:5000');
-console.log('📊 Services will be available at: http://localhost:5001 & http://localhost:5002');
+console.log('🌐 Application will be available at: https://your-repl-name.replit.app');
+console.log('📊 Services will be available at: http://0.0.0.0:5001 & http://0.0.0.0:5002');
