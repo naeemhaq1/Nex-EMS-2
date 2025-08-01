@@ -8,4 +8,5 @@ export * from './geofenceSchema';
 export * from './jobSites';
 export * from './location-schema';
 export * from './version';
-export * from './whatsappSchema';
+// DISABLED: WhatsApp schema causing colBuilder.setName errors
+// export * from './whatsappSchema';
