@@ -16,7 +16,7 @@ export const departmentGroups = pgTable("department_groups", {
   createdBy: integer("created_by"),
 });
 
-// Temporarily removing relations to isolate setName error
+// Relations updated for current Drizzle ORM version
 // export const departmentGroupRelations = relations(departmentGroups, ({ one }) => ({
 //   creator: one(departmentGroups, {
 //     fields: [departmentGroups.createdBy],
