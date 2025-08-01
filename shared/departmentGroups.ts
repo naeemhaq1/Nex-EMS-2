@@ -4,7 +4,7 @@ import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 export const departmentGroups = pgTable("department_groups", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
   name: text("name").notNull().unique(),
   description: text("description"),
   departments: jsonb("departments").notNull().default([]), // Array of department names
