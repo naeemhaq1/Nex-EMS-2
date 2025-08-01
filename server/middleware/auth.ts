@@ -28,7 +28,7 @@ declare module "express-session" {
   }
 }
 
-// Simple memory store for sessions (temporary fix)
+// Use memory store for sessions (eliminates database compatibility issues)
 export const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "nexlinx-ems-session-secret-2024",
   resave: false,
@@ -41,6 +41,7 @@ export const sessionMiddleware = session({
   },
   name: 'nexlinx-session',
   rolling: true,
+  // Using default MemoryStore - no database dependency
 });
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {

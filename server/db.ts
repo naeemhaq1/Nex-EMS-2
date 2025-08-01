@@ -27,3 +27,37 @@ async function testConnection() {
 
 // Initialize connection test
 testConnection().catch(console.error);
+
+// Create a PostgreSQL-compatible pool wrapper for session store
+export const pool = {
+  query: async (text: string, params?: any[]) => {
+    try {
+      const result = await sql(text, params || []);
+      // Convert Neon result format to pg-compatible format
+      return {
+        rows: Array.isArray(result) ? result : [result],
+        rowCount: Array.isArray(result) ? result.length : (result ? 1 : 0),
+        command: text.trim().split(' ')[0].toUpperCase(),
+        fields: [],
+        oid: 0
+      };
+    } catch (error) {
+      console.error('Database query error:', error);
+      throw error;
+    }
+  },
+  end: () => Promise.resolve(),
+  connect: () => Promise.resolve({ 
+    query: async (text: string, params?: any[]) => {
+      const result = await sql(text, params || []);
+      return {
+        rows: Array.isArray(result) ? result : [result],
+        rowCount: Array.isArray(result) ? result.length : (result ? 1 : 0),
+        command: text.trim().split(' ')[0].toUpperCase(),
+        fields: [],
+        oid: 0
+      };
+    },
+    release: () => {}
+  })
+};
