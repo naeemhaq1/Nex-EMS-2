@@ -17,6 +17,48 @@ body {
   opacity: 1;
 }
 
+/* Prevent mobile interface flash */
+.mobile-app-container {
+  opacity: 0;
+  animation: fadeInSmooth 0.3s ease-in-out forwards;
+  animation-delay: 0.1s;
+}
+
+@keyframes fadeInSmooth {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Stabilize mobile routing */
+.mobile-route-container {
+  min-height: 100vh;
+  background: #1A1B3E;
+}
+
+/* Prevent flash on mobile dashboard */
+.mobile-dashboard-container {
+  opacity: 0;
+  animation: slideInFromBottom 0.4s ease-out forwards;
+  animation-delay: 0.15s;
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* WebView Performance Optimizations for Mobile APK */
 @media (max-width: 768px) {
   /* Enable hardware acceleration for mobile WebView */

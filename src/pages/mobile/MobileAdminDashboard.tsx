@@ -158,26 +158,19 @@ export default function MobileAdminDashboard() {
     );
   }
 
-  // Handle authentication errors
-  if (error && ((error as any).message?.includes('401') || (error as any).status === 401)) {
-    // Use useEffect to prevent render flash
-    React.useEffect(() => {
-      window.location.replace('/');
-    }, []);
-    
-    // Return loading state instead of null to prevent flash
-    return (
-      <div className="min-h-screen bg-[#1A1B3E] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-white">Redirecting to login...</p>
-        </div>
-      </div>
-    );
-  }
+  // Handle authentication errors with useEffect to prevent flash
+  React.useEffect(() => {
+    if (error && ((error as any).message?.includes('401') || (error as any).status === 401)) {
+      // Small delay to prevent flash, then redirect
+      const timer = setTimeout(() => {
+        window.location.replace('/');
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   return (
-    <div className="min-h-screen bg-[#1A1B3E] text-white">
+    <div className="mobile-dashboard-container min-h-screen bg-[#1A1B3E] text-white">
       {/* Header */}
       <div className="bg-[#2A2B5E] p-4 border-b border-[#3A3B6E]">
         <div className="flex items-center justify-between mb-2">

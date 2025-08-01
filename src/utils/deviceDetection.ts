@@ -59,58 +59,30 @@ export const shouldRedirectToMobile = (): boolean => {
     return false;
   }
   
-  // Never redirect if user explicitly chose desktop (check localStorage)
+  // Never redirect if user explicitly chose desktop
   if (localStorage.getItem('force-desktop') === 'true') {
     return false;
   }
   
-  // Only redirect on initial page load, not on subsequent renders
-  if (sessionStorage.getItem('redirect-checked') === 'true') {
-    return false;
-  }
+  // Simple, reliable mobile detection
+  const userAgent = navigator.userAgent.toLowerCase();
+  const width = window.innerWidth;
   
-  // Mark that we've checked redirect to prevent loops
-  sessionStorage.setItem('redirect-checked', 'true');
-  
-  // Check for device indicators
-  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-  
-  // Definitive mobile patterns (phones/small tablets)
-  const mobilePatternsStrict = [
-    /Android.*Mobile/i,
-    /iPhone/i,
-    /iPod/i,
-    /BlackBerry/i,
-    /Windows Phone/i,
-    /Opera Mini/i,
-    /IEMobile/i
+  // Clear mobile patterns
+  const mobilePatterns = [
+    /android.*mobile/i,
+    /iphone/i,
+    /ipod/i,
+    /blackberry/i,
+    /windows phone/i,
+    /opera mini/i
   ];
   
-  // Desktop patterns (prioritize desktop when detected)
-  const desktopPatterns = [
-    /Windows NT.*(?!.*Mobile)/i,
-    /Macintosh.*(?!.*Mobile)/i,
-    /Linux.*X11.*(?!.*Mobile)/i,
-    /Chrome.*(?!.*Mobile).*Safari/i
-  ];
+  const isMobileUA = mobilePatterns.some(pattern => pattern.test(userAgent));
+  const isSmallScreen = width <= 768;
+  const isTouchDevice = 'ontouchstart' in window;
   
-  // Check for explicit desktop indicators first
-  const isDesktopUA = desktopPatterns.some(pattern => pattern.test(userAgent));
-  const isLargeScreen = window.innerWidth >= 1024;
-  
-  // If clearly desktop (large screen + desktop UA), always use desktop
-  if (isDesktopUA && isLargeScreen) {
-    return false;
-  }
-  
-  // Check for mobile patterns
-  const isMobileUA = mobilePatternsStrict.some(pattern => pattern.test(userAgent));
-  const isSmallScreen = window.innerWidth <= 768;
-  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-  const hasOrientation = typeof window.orientation !== 'undefined';
-  
-  // Only redirect to mobile if we have strong mobile indicators
-  return isMobileUA || (isSmallScreen && (isTouchDevice || hasOrientation));
+  return isMobileUA || (isSmallScreen && isTouchDevice);
 };
 
 export const shouldRedirectToDesktop = (): boolean => {
