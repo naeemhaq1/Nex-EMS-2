@@ -174,9 +174,9 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // FIXED: Force port 5000 to prevent any redirects to port 8000
+  // FIXED: Force port 5000 to prevent any redirects
   const port = 5000; // Explicitly set to 5000 regardless of environment
-  console.log(`🔧 FORCED PORT CONFIGURATION: Server will run on port ${port} (ignoring environment PORT variable)`);
+  console.log(`🔧 FORCED PORT CONFIGURATION: Server will run on port ${port} (no redirects allowed)`);
   
   server.listen({
     port,
