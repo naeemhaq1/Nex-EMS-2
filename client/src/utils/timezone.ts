@@ -1,40 +1,44 @@
-import { format, parseISO, formatInTimeZone } from 'date-fns-tz';
-import { format as formatDate } from 'date-fns';
 
-// Pakistan Standard Time utilities
-export const PAKISTAN_TIMEZONE = 'Asia/Karachi';
+import { format, toZonedTime } from 'date-fns-tz';
 
-export function getCurrentPKTTime(): Date {
-  return new Date();
-}
+const PKT_TIMEZONE = 'Asia/Karachi';
 
-export function formatPKTTime(date: Date | string, formatString: string = 'yyyy-MM-dd HH:mm:ss'): string {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  return formatInTimeZone(dateObj, PAKISTAN_TIMEZONE, formatString);
-}
+export const getCurrentPKTTime = (): Date => {
+  return toZonedTime(new Date(), PKT_TIMEZONE);
+};
 
-export function formatMobileDate(date: Date | string): string {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  return formatInTimeZone(dateObj, PAKISTAN_TIMEZONE, 'MMM dd, yyyy');
-}
+export const formatToPKT = (date: Date, formatString: string = 'yyyy-MM-dd HH:mm:ss'): string => {
+  const zonedDate = toZonedTime(date, PKT_TIMEZONE);
+  return format(zonedDate, formatString, { timeZone: PKT_TIMEZONE });
+};
 
-export function formatMobileTime(date: Date | string): string {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  return formatInTimeZone(dateObj, PAKISTAN_TIMEZONE, 'HH:mm');
-}
+export const formatMobileDate = (date: Date): string => {
+  return formatToPKT(date, 'MMM dd, yyyy');
+};
 
-export function formatMobileDateTime(date: Date | string): string {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  return formatInTimeZone(dateObj, PAKISTAN_TIMEZONE, 'MMM dd, HH:mm');
-}
+export const formatMobileTime = (date: Date): string => {
+  return formatToPKT(date, 'HH:mm');
+};
 
-export function getPKTNow(): string {
-  return formatPKTTime(new Date());
-}
+export const formatMobileDateTime = (date: Date): string => {
+  return formatToPKT(date, 'MMM dd, HH:mm');
+};
 
-export function isPKTBusinessHours(date?: Date): boolean {
-  const checkDate = date || new Date();
-  const pktTime = formatInTimeZone(checkDate, PAKISTAN_TIMEZONE, 'HH:mm');
-  const [hours] = pktTime.split(':').map(Number);
-  return hours >= 9 && hours < 18;
-}
+export const getPKTTimestamp = (): string => {
+  return formatToPKT(new Date(), 'yyyy-MM-dd HH:mm:ss');
+};
+
+export const convertToPKT = (utcDate: Date): Date => {
+  return toZonedTime(utcDate, PKT_TIMEZONE);
+};
+
+// Default export for backward compatibility
+export default {
+  getCurrentPKTTime,
+  formatToPKT,
+  formatMobileDate,
+  formatMobileTime,
+  formatMobileDateTime,
+  getPKTTimestamp,
+  convertToPKT,
+};
