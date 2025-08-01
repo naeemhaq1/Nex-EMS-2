@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2000); // Increased timeout for mobile stability
 
-      const response = await fetch('/api/auth/user', {
+      const response = await fetch('/api/stable-auth/user', {
         credentials: 'include',
         signal: controller.signal,
         headers: {
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 1000); // Increased timeout for mobile compatibility
 
-      const response = await fetch('/api/dev/auto-login', {
+      const response = await fetch('/api/stable-auth/dev/auto-login', {
         method: 'POST',
         credentials: 'include',
         signal: controller.signal,
@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string) => {
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/stable-auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -203,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStorage.clear();
 
       // Call logout endpoint with cache-busting
-      const response = await fetch('/api/auth/logout', {
+      const response = await fetch('/api/stable-auth/logout', {
         method: 'POST',
         credentials: 'include',
         headers: {

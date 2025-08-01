@@ -129,6 +129,16 @@ app.post('/api/auth/logout', (req, res) => {
   res.json({ success: true });
 });
 
+// Import routes
+const authRoutes = require('./routes/auth');
+const stableAuthRoutes = require('./routes/stableAuth');
+const userRoutes = require('./routes/users');
+
+// Auth routes
+app.use('/api/auth', authRoutes);
+app.use('/api/stable-auth', stableAuthRoutes);
+app.use('/api/users', userRoutes);
+
 // Serve the React app for all other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'public', 'index.html'));

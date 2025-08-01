@@ -59,13 +59,15 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
   const sessionId = req.sessionID;
   const userId = req.session.userId;
   const usernum = req.session.usernum;
+  const stableUserId = req.session.stableUserId;
   
   console.log('Auth middleware - sessionID:', sessionId);
   console.log('Auth middleware - userId:', userId);
   console.log('Auth middleware - usernum:', usernum);
+  console.log('Auth middleware - stableUserId:', stableUserId);
   
-  // Check if either userId OR usernum is available (not both required)
-  if (!userId && !usernum) {
+  // Check if either stable or legacy auth is available
+  if (!stableUserId && !userId && !usernum) {
     return res.status(401).json({ error: "Authentication required" });
   }
   
