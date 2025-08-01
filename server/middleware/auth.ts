@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
-import { db, sql } from "../db";
+import { db, sql, pool } from "../db";
 import { storage } from "../storage";
 
 declare module "express-session" {
@@ -31,9 +31,6 @@ declare module "express-session" {
 
 // Initialize PostgreSQL session store
 const PostgreSQLStore = connectPgSimple(session);
-
-// Export pool for use in other modules
-export { pool };
 
 export const sessionMiddleware = session({
   store: new PostgreSQLStore({
