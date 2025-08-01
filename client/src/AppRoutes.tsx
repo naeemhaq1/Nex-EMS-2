@@ -1,6 +1,5 @@
 
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Switch, Route, useLocation } from "wouter";
 import { useAuth } from './contexts/AuthContext';
 import { useMobile } from './hooks/use-mobile';
 
@@ -15,6 +14,7 @@ import MobileSettings from './pages/mobile/MobileSettings';
 export default function AppRoutes() {
   const { user, loading } = useAuth();
   const isMobile = useMobile();
+  const [location, setLocation] = useLocation();
 
   if (loading) {
     return (
@@ -26,10 +26,15 @@ export default function AppRoutes() {
 
   if (!user) {
     return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+      <Switch>
+        <Route path="/login" component={Login} />
+        <Route path="*">
+          {() => {
+            setLocation('/login');
+            return null;
+          }}
+        </Route>
+      </Switch>
     );
   }
 
@@ -37,33 +42,48 @@ export default function AppRoutes() {
   if (isMobile) {
     if (user.role === 'admin' || user.role === 'superadmin') {
       return (
-        <Routes>
-          <Route path="/" element={<MobileAdminDashboard />} />
-          <Route path="/dashboard" element={<MobileAdminDashboard />} />
-          <Route path="/attendance" element={<MobileAttendance />} />
-          <Route path="/settings" element={<MobileSettings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Switch>
+          <Route path="/" component={MobileAdminDashboard} />
+          <Route path="/dashboard" component={MobileAdminDashboard} />
+          <Route path="/attendance" component={MobileAttendance} />
+          <Route path="/settings" component={MobileSettings} />
+          <Route path="*">
+            {() => {
+              setLocation('/');
+              return null;
+            }}
+          </Route>
+        </Switch>
       );
     } else {
       return (
-        <Routes>
-          <Route path="/" element={<MobileEmployeeDashboard />} />
-          <Route path="/dashboard" element={<MobileEmployeeDashboard />} />
-          <Route path="/attendance" element={<MobileAttendance />} />
-          <Route path="/settings" element={<MobileSettings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Switch>
+          <Route path="/" component={MobileEmployeeDashboard} />
+          <Route path="/dashboard" component={MobileEmployeeDashboard} />
+          <Route path="/attendance" component={MobileAttendance} />
+          <Route path="/settings" component={MobileSettings} />
+          <Route path="*">
+            {() => {
+              setLocation('/');
+              return null;
+            }}
+          </Route>
+        </Switch>
       );
     }
   }
 
   // Desktop routes
   return (
-    <Routes>
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Switch>
+      <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="*">
+        {() => {
+          setLocation('/');
+          return null;
+        }}
+      </Route>
+    </Switch>
   );
 }

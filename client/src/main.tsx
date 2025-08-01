@@ -1,6 +1,6 @@
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 
@@ -30,11 +30,7 @@ function AppWithErrorBoundary() {
 }
 
 // Mount the app
-root.render(
-  <BrowserRouter>
-    <AppWithErrorBoundary />
-  </BrowserRouter>
-);
+root.render(<AppWithErrorBoundary />);
 
 // Remove loader after React mounts
 removeLoader();
