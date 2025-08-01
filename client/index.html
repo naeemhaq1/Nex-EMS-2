@@ -299,15 +299,16 @@
           window.bigint = window.BigInt;
         }
         
-        // Define missing globals
-        if (typeof window.__WS_TOKEN__ === 'undefined') {
-          window.__WS_TOKEN__ = 'default-token';
-        }
+        // Define missing globals - MUST be defined early
+        window.__WS_TOKEN__ = window.__WS_TOKEN__ || 'development_token';
+        window.global = window.global || window;
+        window.global.__WS_TOKEN__ = window.__WS_TOKEN__;
+        globalThis.__WS_TOKEN__ = window.__WS_TOKEN__;
         
-        // Define bigint alias
-        if (typeof window.bigint === 'undefined') {
-          window.bigint = window.BigInt;
-        }
+        // Define bigint alias AFTER BigInt polyfill
+        window.bigint = window.BigInt;
+        window.global.bigint = window.BigInt;
+        globalThis.bigint = window.BigInt;
         
         // Prevent Vite WebSocket errors in Replit
         if (window.location.hostname.includes('replit')) {

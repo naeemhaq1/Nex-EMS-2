@@ -4,6 +4,11 @@ import App from "./App";
 import "./index.css";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
+// CRITICAL: Define globals before anything else
+(window as any).__WS_TOKEN__ = (window as any).__WS_TOKEN__ || 'development_token';
+(window as any).global = (window as any).global || window;
+(globalThis as any).__WS_TOKEN__ = (window as any).__WS_TOKEN__;
+
 // Polyfill for BigInt if not available
 if (typeof BigInt === 'undefined') {
   (window as any).BigInt = function(value: any) {
@@ -18,6 +23,11 @@ if (typeof BigInt === 'undefined') {
     return isNaN(parsed) ? 0 : parsed;
   };
 }
+
+// Define bigint alias
+(window as any).bigint = (window as any).BigInt;
+(window as any).global.bigint = (window as any).BigInt;
+(globalThis as any).bigint = (window as any).BigInt;
 
 // Debug React instances
 console.log('React version in main.tsx:', React.version);

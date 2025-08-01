@@ -34,9 +34,10 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
     hmr: {
-      port: 5173,
-      host: "0.0.0.0",
+      port: 443,
+      host: process.env.REPL_SLUG ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : "0.0.0.0",
       clientPort: 443,
+      protocol: 'wss'
     },
     fs: {
       strict: false,
@@ -49,8 +50,11 @@ export default defineConfig({
     'process.env.WS_TOKEN': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
     '__WS_TOKEN__': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
     'import.meta.env.WS_TOKEN': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
+    'window.__WS_TOKEN__': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
+    'globalThis.__WS_TOKEN__': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
     BigInt: 'globalThis.BigInt',
     bigint: 'globalThis.BigInt',
+    'window.bigint': 'globalThis.BigInt',
   },
   optimizeDeps: {
     include: ["react", "react-dom"],
