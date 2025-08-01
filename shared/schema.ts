@@ -2692,6 +2692,260 @@ export const insertGamificationEventSchema = z.object({
   metadata: z.any().optional(),
 });
 
+export const insertAttendanceSchema = z.object({
+  biotimeId: z.string().optional(),
+  employeeId: z.number().optional(),
+  employeeCode: z.string(),
+  date: z.date(),
+  checkIn: z.date().optional(),
+  checkOut: z.date().optional(),
+  breakIn: z.date().optional(),
+  breakOut: z.date().optional(),
+  totalHours: z.number().default(0),
+  regularHours: z.number().default(0),
+  overtimeHours: z.number().default(0),
+  lateMinutes: z.number().default(0),
+  status: z.string(),
+  notes: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  gpsAccuracy: z.number().optional(),
+  locationSource: z.string().default('N'),
+  proximityEmployeeId: z.number().optional(),
+  bluetoothDeviceId: z.string().optional(),
+  deviceInfo: z.string().optional(),
+  jobSiteId: z.number().optional(),
+  punchSource: z.string().default("terminal"),
+});
+
+export const insertDeviceSchema = z.object({
+  deviceId: z.string(),
+  alias: z.string(),
+  ipAddress: z.string(),
+  port: z.number().default(80),
+  terminalName: z.string().optional(),
+  area: z.number().default(0),
+  model: z.string().optional(),
+  sn: z.string().optional(),
+  firmware: z.string().optional(),
+  isActive: z.boolean().default(true),
+  isSelected: z.boolean().default(false),
+  deviceType: z.string().default('time_attendance'),
+  apiEndpoint: z.string().optional(),
+});
+
+export const insertShiftSchema = z.object({
+  projectName: z.string(),
+  shiftName: z.string(),
+  startHour: z.number(),
+  startMinute: z.number().default(0),
+  endHour: z.number(),
+  endMinute: z.number().default(0),
+  daysOfWeek: z.array(z.string()),
+  gracePeriodMinutes: z.number().default(30),
+  isActive: z.boolean().default(true),
+});
+
+export const insertShiftAssignmentSchema = z.object({
+  employeeId: z.number(),
+  shiftId: z.number(),
+  date: z.date(),
+  status: z.string().default("scheduled"),
+  notes: z.string().optional(),
+});
+
+export const insertExclusionSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  type: z.string(),
+  targetValue: z.string(),
+  isActive: z.boolean().default(true),
+  createdBy: z.number().optional(),
+});
+
+export const insertRolePermissionSchema = z.object({
+  roleName: z.string(),
+  displayName: z.string(),
+  description: z.string().optional(),
+  canCreateUsers: z.boolean().default(false),
+  canDeleteUsers: z.boolean().default(false),
+  canDeleteData: z.boolean().default(false),
+  canAccessFinancialData: z.boolean().default(false),
+  canManageSystem: z.boolean().default(false),
+  canManageTeams: z.boolean().default(false),
+  canChangeDesignations: z.boolean().default(false),
+  accessLevel: z.number().default(1),
+  createdRoles: z.array(z.string()).optional(),
+});
+
+export const insertManagerAssignmentSchema = z.object({
+  userId: z.number(),
+  employeeCode: z.string(),
+  departmentGroupId: z.number().optional(),
+  departmentName: z.string(),
+  roleType: z.string().default("manager"),
+  assignedBy: z.number().optional(),
+  isActive: z.boolean().default(true),
+});
+
+export const insertEmployeeAlertSchema = z.object({
+  employeeId: z.number(),
+  employeeCode: z.string(),
+  alertType: z.string(),
+  alertStatus: z.string().default('active'),
+  punchInTime: z.date().optional(),
+  expectedPunchOutTime: z.date().optional(),
+  actualPunchOutTime: z.date().optional(),
+  hoursWorked: z.number().optional(),
+  overtimeHours: z.number().optional(),
+  alertMessage: z.string().optional(),
+  resolvedBy: z.number().optional(),
+});
+
+export const insertMobileLocationDataSchema = z.object({
+  employeeId: z.number(),
+  employeeCode: z.string(),
+  latitude: z.number(),
+  longitude: z.number(),
+  accuracy: z.number().optional(),
+  altitude: z.number().optional(),
+  speed: z.number().optional(),
+  heading: z.number().optional(),
+  locationName: z.string().optional(),
+  address: z.string().optional(),
+  activityType: z.string().optional(),
+  batteryLevel: z.number().optional(),
+  networkType: z.string().optional(),
+  deviceInfo: z.any().optional(),
+  timestamp: z.date().default(() => new Date()),
+});
+
+export const insertAuditLogSchema = z.object({
+  userId: z.number().optional(),
+  username: z.string(),
+  userRole: z.string(),
+  action: z.string(),
+  entityType: z.string().optional(),
+  entityId: z.string().optional(),
+  oldValues: z.any().optional(),
+  newValues: z.any().optional(),
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
+  sessionId: z.string().optional(),
+  details: z.string().optional(),
+});
+
+export const insertSettingSchema = z.object({
+  key: z.string(),
+  value: z.string(),
+  type: z.string().default("string"),
+  category: z.string().default("general"),
+  description: z.string().optional(),
+  updatedBy: z.number().optional(),
+});
+
+export const insertActionRecordSchema = z.object({
+  userId: z.number().optional(),
+  userType: z.string(),
+  userName: z.string().optional(),
+  command: z.string(),
+  targetType: z.string().optional(),
+  targetId: z.string().optional(),
+  targetName: z.string().optional(),
+  parameters: z.any().optional(),
+  result: z.string(),
+  resultMessage: z.string().optional(),
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
+});
+
+export const insertForcedPunchoutSchema = z.object({
+  employeeId: z.number().optional(),
+  employeeCode: z.string(),
+  employeeName: z.string(),
+  department: z.string().optional(),
+  originalCheckIn: z.date(),
+  forcedCheckOut: z.date(),
+  calculatedHours: z.number().default(7.00),
+  actualHoursPresent: z.number().optional(),
+  reason: z.string().default("Administrative override"),
+  triggeredBy: z.string(),
+  adminUserId: z.number().optional(),
+  adminUserName: z.string().optional(),
+  attendanceRecordId: z.number().optional(),
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
+  notes: z.string().optional(),
+  status: z.string().default("completed"),
+});
+
+export const insertTerminateActionSchema = z.object({
+  empCode: z.string(),
+  terminatedBy: z.string(),
+  forcedOut: z.date(),
+  punchInTime: z.date(),
+});
+
+export const insertFormerEmployeeSchema = z.object({
+  employeeCode: z.string(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  email: z.string().optional(),
+  mobile: z.string().optional(),
+  department: z.string().optional(),
+  designation: z.string().optional(),
+  dateOfJoining: z.date().optional(),
+  isActive: z.boolean().default(false),
+  national: z.string().optional(),
+  dateOfLeaving: z.date().optional(),
+  reasonForLeaving: z.string().optional(),
+  movedFromEmployeeId: z.number().optional(),
+});
+
+export const insertAttendanceExternalSchema = z.object({
+  employeeId: z.number(),
+  employeeCode: z.string(),
+  checkType: z.string(),
+  timestamp: z.date(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  accuracy: z.number().optional(),
+  locationName: z.string().optional(),
+  deviceInfo: z.any().optional(),
+  jobSiteId: z.number().optional(),
+  jobSiteName: z.string().optional(),
+  photoUrl: z.string().optional(),
+  status: z.string().default("pending"),
+  approvedBy: z.number().optional(),
+  rejectionReason: z.string().optional(),
+  syncedToAttendance: z.boolean().default(false),
+});
+
+export const insertTeamTemplateSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  designations: z.any(),
+  isActive: z.boolean().default(true),
+  createdBy: z.number().optional(),
+});
+
+export const insertAssembledTeamSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  templateId: z.number().optional(),
+  status: z.string().default("draft"),
+  shiftId: z.number().optional(),
+  createdBy: z.number().optional(),
+});
+
+export const insertTeamMemberSchema = z.object({
+  teamId: z.number(),
+  employeeId: z.number(),
+  designationName: z.string(),
+  designationLevel: z.string(),
+  isActive: z.boolean().default(true),
+});
+
 export const insertEmployeeScoreSchema = z.object({
   employeeId: z.number(),
   employeeCode: z.string(),
