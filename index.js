@@ -136,6 +136,7 @@ import userRoutes from './routes/users.js';
 import userManagementRoutes from './routes/userManagement.js';
 import roleManagementRoutes from './routes/roleManagement.js';
 import sessionManagementRoutes from './routes/sessionManagement.js';
+import dataQualityRoutes from './routes/dataQuality.ts';
 
 // Auth routes
 app.use('/api/auth', authRoutes);
@@ -144,6 +145,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', userManagementRoutes);
 app.use('/api/admin/role-management', roleManagementRoutes);
 app.use('/api/session-management', sessionManagementRoutes);
+app.use('/api/admin', dataQualityRoutes);
 
 // Serve the React app for all other routes
 app.get('*', (req, res) => {
