@@ -4,30 +4,18 @@ import App from "./App";
 import "./index.css";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
-// CRITICAL: Define globals before anything else
-(window as any).__WS_TOKEN__ = (window as any).__WS_TOKEN__ || 'development_token';
-(window as any).global = (window as any).global || window;
-(globalThis as any).__WS_TOKEN__ = (window as any).__WS_TOKEN__;
+// Verify globals are already defined (defined in index.html)
+console.log('Main.tsx - Global check:', {
+  bigint: typeof (window as any).bigint,
+  BigInt: typeof (window as any).BigInt,
+  __WS_TOKEN__: typeof (window as any).__WS_TOKEN__
+});
 
-// Polyfill for BigInt if not available
-if (typeof BigInt === 'undefined') {
-  (window as any).BigInt = function(value: any) {
-    if (value == null || value === '' || value === undefined) {
-      return 0;
-    }
-    const stringValue = String(value).trim();
-    if (stringValue === '') return 0;
-    const cleanValue = stringValue.replace(/[^-0-9]/g, '');
-    if (cleanValue === '' || cleanValue === '-') return 0;
-    const parsed = parseInt(cleanValue, 10);
-    return isNaN(parsed) ? 0 : parsed;
-  };
+// BigInt and bigint should already be defined in index.html
+// Just verify they exist
+if (typeof (window as any).BigInt === 'undefined' || typeof (window as any).bigint === 'undefined') {
+  console.error('CRITICAL: BigInt or bigint not properly initialized in index.html');
 }
-
-// Define bigint alias
-(window as any).bigint = (window as any).BigInt;
-(window as any).global.bigint = (window as any).BigInt;
-(globalThis as any).bigint = (window as any).BigInt;
 
 // Debug React instances
 console.log('React version in main.tsx:', React.version);

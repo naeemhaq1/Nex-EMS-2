@@ -142,7 +142,13 @@
     
     <!-- Disable Vite error overlay and AbortError handling -->
     <script>
-      // CRITICAL BIGINT POLYFILL - Must be first to prevent undefined errors
+      // CRITICAL: Early global variable definitions - MUST BE FIRST
+      window.global = window.global || window;
+      window.__WS_TOKEN__ = window.__WS_TOKEN__ || 'development_token';
+      window.global.__WS_TOKEN__ = window.__WS_TOKEN__;
+      globalThis.__WS_TOKEN__ = window.__WS_TOKEN__;
+      
+      // CRITICAL BIGINT POLYFILL - Must be second to prevent undefined errors
       if (typeof BigInt === 'undefined') {
         const bigIntPolyfill = function(value) {
           // Handle null, undefined, empty string cases
@@ -177,7 +183,6 @@
         
         // Assign to all possible global scopes
         window.BigInt = bigIntPolyfill;
-        window.global = window.global || window;
         window.global.BigInt = bigIntPolyfill;
         globalThis.BigInt = bigIntPolyfill;
         
@@ -186,6 +191,11 @@
           module.exports.BigInt = bigIntPolyfill;
         }
       }
+      
+      // CRITICAL: Define bigint alias AFTER BigInt is guaranteed to exist
+      window.bigint = window.BigInt;
+      window.global.bigint = window.BigInt;
+      globalThis.bigint = window.BigInt;
       
       // Disable runtime error modal overlay - MULTIPLE APPROACHES
       window.__vite_plugin_runtime_error_modal_disabled = true;
@@ -299,16 +309,12 @@
           window.bigint = window.BigInt;
         }
         
-        // Define missing globals - MUST be defined early
-        window.__WS_TOKEN__ = window.__WS_TOKEN__ || 'development_token';
-        window.global = window.global || window;
-        window.global.__WS_TOKEN__ = window.__WS_TOKEN__;
-        globalThis.__WS_TOKEN__ = window.__WS_TOKEN__;
-        
-        // Define bigint alias AFTER BigInt polyfill
-        window.bigint = window.BigInt;
-        window.global.bigint = window.BigInt;
-        globalThis.bigint = window.BigInt;
+        // Globals already defined above - just ensure consistency
+        console.log('Global variables verified:', {
+          bigint: typeof window.bigint,
+          BigInt: typeof window.BigInt,
+          __WS_TOKEN__: typeof window.__WS_TOKEN__
+        });
         
         // Prevent Vite WebSocket errors in Replit
         if (window.location.hostname.includes('replit')) {
