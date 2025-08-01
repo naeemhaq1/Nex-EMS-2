@@ -54,10 +54,23 @@ export const supportsStandalone = (): boolean => {
 };
 
 export const shouldRedirectToMobile = (): boolean => {
-  // Check if we're already on mobile route
+  // Never redirect if already on mobile route
   if (window.location.pathname.startsWith('/mobile')) {
     return false;
   }
+  
+  // Never redirect if user explicitly chose desktop (check localStorage)
+  if (localStorage.getItem('force-desktop') === 'true') {
+    return false;
+  }
+  
+  // Only redirect on initial page load, not on subsequent renders
+  if (sessionStorage.getItem('redirect-checked') === 'true') {
+    return false;
+  }
+  
+  // Mark that we've checked redirect to prevent loops
+  sessionStorage.setItem('redirect-checked', 'true');
   
   // Check for device indicators
   const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;

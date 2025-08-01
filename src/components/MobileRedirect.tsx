@@ -1,32 +1,25 @@
-import { useEffect } from 'react';
-import { useLocation } from 'wouter';
+import React, { useEffect, useState } from 'react';
+import { shouldRedirectToMobile } from '../utils/deviceDetection';
 
-export const MobileRedirect = () => {
-  const [, setLocation] = useLocation();
+export default function MobileRedirect() {
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    // Aggressive mobile detection
-    const detectMobile = () => {
-      const userAgent = navigator.userAgent.toLowerCase();
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      
-      // Check multiple indicators
-      const isMobileUA = /android|iphone|ipad|ipod|blackberry|windows phone|mobile|tablet/.test(userAgent);
-      const isMobileWidth = width <= 768;
-      const isPortrait = height > width;
-      const isTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      
-      // Force mobile if ANY condition is met
-      return isMobileUA || isMobileWidth || (isTouchScreen && isPortrait);
-    };
+    // Prevent multiple redirect checks
+    if (isRedirecting) return;
 
-    // Check and redirect if mobile
-    if (detectMobile() && !window.location.pathname.startsWith('/mobile')) {
-      console.log('📱 Mobile device detected - redirecting to mobile interface');
-      setLocation('/mobile/admin/dashboard');
-    }
-  }, [setLocation]);
+    // Small delay to prevent flash
+    const timeoutId = setTimeout(() => {
+      if (shouldRedirectToMobile()) {
+        setIsRedirecting(true);
+        // Use replace instead of href to prevent back button issues
+        window.location.replace('/mobile');
+      }
+    }, 100);
 
+    return () => clearTimeout(timeoutId);
+  }, [isRedirecting]);
+
+  // Don't render anything to prevent flash
   return null;
-};
+}

@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent flash during mobile detection */
+body {
+  transition: opacity 0.1s ease-in-out;
+}
+
+/* Prevent content flash during redirects */
+.mobile-redirect-loading {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.mobile-redirect-loaded {
+  opacity: 1;
+}
+
 /* WebView Performance Optimizations for Mobile APK */
 @media (max-width: 768px) {
   /* Enable hardware acceleration for mobile WebView */
