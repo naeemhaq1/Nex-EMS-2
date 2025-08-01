@@ -1,7 +1,12 @@
+
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { calculateAttendanceMetrics, getTodayAttendanceMetrics, getYesterdayAttendanceMetrics, getAttendanceDetails } from '../utils/attendanceCalculations';
 import { z } from 'zod';
+import { Request, Response } from "express";
+import { storage } from "../storage";
+import { startOfDay, endOfDay, subDays } from "date-fns";
+import { getCurrentPKTTime } from "../utils/timezone";
 
 const router = Router();
 
@@ -58,14 +63,6 @@ router.get('/details/:date', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Failed to get attendance details' });
   }
 });
-
-export default router;
-import { Request, Response, Router } from "express";
-import { storage } from "../storage";
-import { startOfDay, endOfDay, subDays } from "date-fns";
-import { getCurrentPKTTime } from "../utils/timezone";
-
-const router = Router();
 
 // Get attendance records with pagination and filters
 router.get("/", async (req: Request, res: Response) => {
