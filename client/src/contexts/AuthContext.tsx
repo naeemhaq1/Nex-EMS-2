@@ -1,10 +1,14 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
 interface User {
   id: number;
   username: string;
   role: string;
-  createdAt: string;
+  employee_id?: number;
+  name?: string;
+  phone?: string;
+  last_login?: string;
+  created_at?: string;
 }
 
 interface AuthContextType {
@@ -260,10 +264,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    console.error('useAuth called outside of AuthProvider');
+    // Return a fallback context instead of throwing
+    return {
+      user: null,
+      login: async () => false,
+      logout: () => {},
+      isLoading: false,
+      checkAuth: async () => {}
+    };
   }
   return context;
-}
+};
