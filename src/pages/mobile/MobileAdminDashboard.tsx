@@ -161,22 +161,8 @@ export default function MobileAdminDashboard() {
   // Handle authentication errors
   if (error && ((error as any).message?.includes('401') || (error as any).status === 401)) {
     // Force redirect to login immediately to prevent flash
-    setTimeout(() => {
-      window.location.replace('/');
-    }, 100);
-    
-    return (
-      <div className="min-h-screen bg-[#1A1B3E] flex items-center justify-center">
-        <div className="text-center p-6">
-          <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
-            <Shield className="w-8 h-8 text-red-400" />
-          </div>
-          <h2 className="text-xl font-bold text-white mb-2">Authentication Required</h2>
-          <p className="text-gray-400 mb-6">Redirecting to login...</p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-        </div>
-      </div>
-    );
+    window.location.replace('/');
+    return null;
   }
 
   return (
@@ -288,7 +274,7 @@ export default function MobileAdminDashboard() {
             </div>
             <span className="text-[10px] text-white mt-1 font-medium">Admin</span>
           </button>
-          
+
           <button 
             onClick={() => window.location.href = '/mobile/admin/analytics'}
             className="flex flex-col items-center py-2 px-3 transition-all duration-200 active:scale-95"
@@ -298,7 +284,7 @@ export default function MobileAdminDashboard() {
             </div>
             <span className="text-[10px] text-gray-400 mt-1 font-medium">Analytics</span>
           </button>
-          
+
           <button 
             onClick={() => window.location.href = '/mobile/admin/system'}
             className="flex flex-col items-center py-2 px-3 transition-all duration-200 active:scale-95"
@@ -308,7 +294,7 @@ export default function MobileAdminDashboard() {
             </div>
             <span className="text-[10px] text-gray-400 mt-1 font-medium">System</span>
           </button>
-          
+
           <button 
             onClick={() => window.location.href = '/mobile/admin/alerts'}
             className="flex flex-col items-center py-2 px-3 transition-all duration-200 active:scale-95"
@@ -318,7 +304,7 @@ export default function MobileAdminDashboard() {
             </div>
             <span className="text-[10px] text-gray-400 mt-1 font-medium">Alerts</span>
           </button>
-          
+
           <button 
             onClick={() => window.location.href = '/mobile/employee/dashboard'}
             className="flex flex-col items-center py-2 px-3 transition-all duration-200 active:scale-95"

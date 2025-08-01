@@ -49,8 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Fast session check with reduced timeout for quick dashboard loading
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1200); // Increased timeout for mobile
-      
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // Increased timeout for mobile stability
+
       const response = await fetch('/api/auth/user', {
         credentials: 'include',
         signal: controller.signal,
@@ -61,14 +61,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'X-Mobile-Auth': 'true' // Add mobile auth header
         }
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('Auth check successful:', data);
         setUser(data);
-        
+
         // Store successful auth state in localStorage for cross-tab consistency
         localStorage.setItem('auth-state', JSON.stringify({
           authenticated: true,
@@ -77,41 +77,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }));
       } else {
         console.log('Auth check failed with status:', response.status);
-        
-        // Check if we have a recent auth state from another tab
-        const storedAuthState = localStorage.getItem('auth-state');
-        if (storedAuthState) {
-          try {
-            const authState = JSON.parse(storedAuthState);
-            // If auth state is less than 30 seconds old, try to sync session
-            if (Date.now() - authState.timestamp < 30000 && authState.authenticated) {
-              console.log('Found recent auth state, attempting session sync...');
-              // Skip session sync for now and proceed with normal auth
-              console.log('Skipping session sync, proceeding with normal auth check');
-            }
-          } catch (e) {
-            console.log('Failed to parse stored auth state');
-          }
-        }
-        
+
         // In development mode, try auto-login if auth check fails
         if (isDevelopment && response.status === 401) {
           console.log('Attempting auto-login in development mode...');
           await attemptAutoLogin();
         } else {
+          console.log('Setting user to null due to auth failure');
           setUser(null);
         }
       }
     } catch (error: any) {
       if (error.name === 'AbortError') {
         console.log('Auth check timeout - continuing gracefully');
-        // Suppress AbortError to prevent runtime error plugin notifications
-        console.log('Unhandled AbortError promise rejection caught and suppressed');
+        setUser(null);
         return;
       } else {
         console.error('Auth check failed:', error);
       }
-      
+
       // In development mode, try auto-login on any auth error
       if (isDevelopment) {
         console.log('Attempting auto-login in development mode after error...');
@@ -132,11 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const attemptAutoLogin = async () => {
     try {
       console.log('Auto-login: Attempting dev auto-login');
-      
+
       // Ultra-fast auto-login for quick dashboard access
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 1000); // Increased timeout for mobile compatibility
-      
+
       const response = await fetch('/api/dev/auto-login', {
         method: 'POST',
         credentials: 'include',
@@ -147,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'X-Mobile-Compatible': 'true' // Mobile compatibility flag
         },
       });
-      
+
       clearTimeout(timeoutId);
 
       if (response.ok) {
@@ -213,11 +197,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Clear user state immediately
       setUser(null);
-      
+
       // Clear any cached authentication data
       localStorage.clear();
       sessionStorage.clear();
-      
+
       // Call logout endpoint with cache-busting
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
@@ -228,7 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'Expires': '0'
         }
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         if (result.success) {

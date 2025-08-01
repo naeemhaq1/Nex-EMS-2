@@ -8,25 +8,27 @@ export default function MobileRedirectHandler() {
   const [hasRedirected, setHasRedirected] = useState(false);
   
   useEffect(() => {
+    // Immediate redirect for unauthenticated users to prevent flash
+    if (!loading && !user && !hasRedirected) {
+      console.log('MobileRedirectHandler: No user found, redirecting to login immediately');
+      setHasRedirected(true);
+      window.location.replace('/');
+      return;
+    }
+    
     // Only redirect once we have a confirmed user and haven't redirected yet
     if (user && !loading && !hasRedirected) {
       console.log('MobileRedirectHandler: User role:', user.role);
       setHasRedirected(true);
       
-      // Add small delay to ensure routing is stable
-      setTimeout(() => {
-        if (user.role === "admin" || user.role === "superadmin" || user.role === "general_admin") {
-          console.log('MobileRedirectHandler: Redirecting admin to admin dashboard');
-          setLocation('/mobile/admin/dashboard');
-        } else {
-          console.log('MobileRedirectHandler: Redirecting employee to employee dashboard');
-          setLocation('/mobile/employee/dashboard');
-        }
-      }, 100);
-    } else if (!loading && !user) {
-      // If we're not loading and there's no user, redirect to login
-      console.log('MobileRedirectHandler: No user found, redirecting to login');
-      setLocation('/');
+      // Immediate redirect for authenticated users
+      if (user.role === "admin" || user.role === "superadmin" || user.role === "general_admin") {
+        console.log('MobileRedirectHandler: Redirecting admin to admin dashboard');
+        setLocation('/mobile/admin/dashboard');
+      } else {
+        console.log('MobileRedirectHandler: Redirecting employee to employee dashboard');
+        setLocation('/mobile/employee/dashboard');
+      }
     }
   }, [user, loading, setLocation, hasRedirected]);
   
