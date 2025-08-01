@@ -33,11 +33,21 @@ testConnection().catch(console.error);
 export const pool = {
   query: async (text: string, params?: any[]) => {
     try {
-      const result = await sql.unsafe(text, params);
+      // Use the template literal syntax for Neon instead of unsafe
+      let result;
+      if (params && params.length > 0) {
+        // For parameterized queries, we need to handle them differently
+        // Since Neon doesn't have unsafe, we'll use the sql template function
+        result = await sql(text, params);
+      } else {
+        // For non-parameterized queries, use the sql template directly
+        result = await sql([text] as any);
+      }
+      
       // Convert Neon result format to pg-compatible format
       return {
         rows: Array.isArray(result) ? result : [result],
-        rowCount: Array.isArray(result) ? result.length : 1,
+        rowCount: Array.isArray(result) ? result.length : (result ? 1 : 0),
         command: text.trim().split(' ')[0].toUpperCase(),
         fields: [],
         oid: 0
@@ -50,10 +60,15 @@ export const pool = {
   end: () => Promise.resolve(),
   connect: () => Promise.resolve({ 
     query: async (text: string, params?: any[]) => {
-      const result = await sql.unsafe(text, params);
+      let result;
+      if (params && params.length > 0) {
+        result = await sql(text, params);
+      } else {
+        result = await sql([text] as any);
+      }
       return {
         rows: Array.isArray(result) ? result : [result],
-        rowCount: Array.isArray(result) ? result.length : 1,
+        rowCount: Array.isArray(result) ? result.length : (result ? 1 : 0),
         command: text.trim().split(' ')[0].toUpperCase(),
         fields: [],
         oid: 0
