@@ -14,6 +14,16 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      queryFn: async ({ queryKey }) => {
+        const url = Array.isArray(queryKey) ? queryKey[0] : queryKey;
+        const response = await fetch(url as string, {
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      },
     },
   },
 });
