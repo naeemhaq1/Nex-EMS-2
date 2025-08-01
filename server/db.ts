@@ -43,7 +43,7 @@ export const pool = {
         // For non-parameterized queries, use the sql template directly
         result = await sql([text] as any);
       }
-      
+
       // Convert Neon result format to pg-compatible format
       return {
         rows: Array.isArray(result) ? result : [result],
