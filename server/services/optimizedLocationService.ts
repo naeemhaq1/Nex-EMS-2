@@ -76,7 +76,7 @@ export class OptimizedLocationService extends EventEmitter {
    */
   private async checkGeofenceEvents(location: LocationData): Promise<boolean> {
     const lastLocation = this.lastProcessedLocation.get(location.employeeId);
-    
+
     for (const [zoneId, zone] of this.geofenceZones) {
       const distance = this.calculateDistance(
         location.latitude, location.longitude,
@@ -84,7 +84,7 @@ export class OptimizedLocationService extends EventEmitter {
       );
 
       const isInZone = distance <= zone.radiusMeters;
-      
+
       // Check if this is a geofence entry/exit event
       if (lastLocation) {
         const lastDistance = this.calculateDistance(
@@ -107,7 +107,7 @@ export class OptimizedLocationService extends EventEmitter {
         location.latitude, location.longitude,
         lastLocation.latitude, lastLocation.longitude
       );
-      
+
       if (movement > 500) { // 500 meters threshold
         return true;
       }
@@ -123,7 +123,7 @@ export class OptimizedLocationService extends EventEmitter {
   private async processLocationImmediate(location: LocationData): Promise<void> {
     // Only process if it's not in a known geofence
     const knownZone = this.findKnownGeofence(location.latitude, location.longitude);
-    
+
     if (!knownZone) {
       // Queue for batch geocoding later
       this.pendingGeocodingQueue.push(location);
@@ -166,10 +166,10 @@ export class OptimizedLocationService extends EventEmitter {
 
       for (let i = 0; i < totalBatches; i++) {
         const batch = this.pendingGeocodingQueue.slice(i * batchSize, (i + 1) * batchSize);
-        
+
         // Group by approximate location to reduce API calls
         const locationClusters = this.clusterNearbyLocations(batch);
-        
+
         for (const cluster of locationClusters) {
           // Only make one API call per cluster
           const representativeLocation = cluster[0];
@@ -190,7 +190,7 @@ export class OptimizedLocationService extends EventEmitter {
 
       // Clear the queue
       this.pendingGeocodingQueue = [];
-      
+
     } catch (error) {
       console.error('[OptimizedLocation] Batch processing error:', error);
     } finally {

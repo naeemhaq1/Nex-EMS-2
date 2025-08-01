@@ -39,7 +39,7 @@ class ConfigService {
 
       // Load all settings from database
       const settings = await db.execute(`SELECT key, value FROM system_settings`);
-      
+
       for (const setting of settings.rows) {
         const { key, value } = setting as { key: string; value: string };
         this.configCache.set(key, JSON.parse(value));

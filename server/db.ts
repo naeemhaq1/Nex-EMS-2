@@ -1,22 +1,20 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
-import * as schema from "@shared/schema";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { neon } from "@neondatabase/serverless";
+import { Pool } from "pg";
 
-neonConfig.webSocketConstructor = ws;
-
-// Ensure DATABASE_URL is available
-const databaseUrl = process.env.DATABASE_URL;
-console.log('DATABASE_URL check:', databaseUrl ? 'Present' : 'Missing');
-
-if (!databaseUrl) {
-  console.error('Environment variables available:', Object.keys(process.env).filter(key => key.includes('DATABASE')));
-  throw new Error(
-    "DATABASE_URL must be set. Please check your .env file and ensure DATABASE_URL is properly configured.",
-  );
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL environment variable is required");
 }
 
-export const pool = new Pool({ connectionString: databaseUrl });
-export const db = drizzle({ client: pool, schema });
+// Use neon for serverless environments
+const sql = neon(connectionString);
+export const db = drizzle(sql, {
+  logger: false // Disable query logging for cleaner output
+});
 
-console.log('✅ Database connection pool created successfully');
+// Also export pool for session store
+export const pool = new Pool({
+  connectionString,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
