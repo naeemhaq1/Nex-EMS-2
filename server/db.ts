@@ -32,5 +32,12 @@ testConnection().catch(console.error);
 export const pool = {
   query: async (text: string, params?: any[]) => {
     return await sql(text, params);
-  }
+  },
+  end: () => Promise.resolve(),
+  connect: () => Promise.resolve({ 
+    query: async (text: string, params?: any[]) => {
+      return await sql(text, params);
+    },
+    release: () => {}
+  })
 };

@@ -34,9 +34,12 @@ const PostgreSQLStore = connectPgSimple(session);
 
 export const sessionMiddleware = session({
   store: new PostgreSQLStore({
-    pool: pool,
+    pool: pool as any,
     tableName: 'session',
     createTableIfMissing: true,
+    errorLog: (error: any) => {
+      console.error('Session store error:', error);
+    }
   }),
   secret: process.env.SESSION_SECRET || "nexlinx-ems-session-secret-2024",
   resave: false,
@@ -52,6 +55,12 @@ export const sessionMiddleware = session({
 });
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  // Check if session exists
+  if (!req.session) {
+    console.error('Session not available - middleware not properly configured');
+    return res.status(401).json({ error: "Session not configured" });
+  }
+  
   // Enhanced session validation with security checks
   const sessionId = req.sessionID;
   const userId = req.session.userId;
@@ -60,6 +69,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
   console.log('Auth middleware - sessionID:', sessionId);
   console.log('Auth middleware - userId:', userId);
   console.log('Auth middleware - usernum:', usernum);
+  console.log('Auth middleware - session exists:', !!req.session);
   
   // Check if either userId OR usernum is available (not both required)
   if (!userId && !usernum) {
