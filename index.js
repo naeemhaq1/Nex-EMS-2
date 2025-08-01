@@ -130,22 +130,26 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 // Import routes
-import authRoutes from './routes/stableAuth.js';
-import stableAuthRoutes from './routes/stableAuth.js';
-import userRoutes from './routes/users.js';
-import userManagementRoutes from './routes/userManagement.js';
-import roleManagementRoutes from './routes/roleManagement.js';
-import sessionManagementRoutes from './routes/sessionManagement.js';
+import authRoutes from './routes/auth.js';
+import sessionRoutes from './routes/sessionManagement.js';
+import dataInterfaceRoutes from './routes/dataInterface.ts';
 import dataQualityRoutes from './routes/dataQuality.ts';
+import employeesRoutes from './routes/employees.ts';
+import dashboardRoutes from './routes/dashboard.ts';
+import attendanceRoutes from './routes/attendance.ts';
+import reportsRoutes from './routes/reports.ts';
+import stableAuthRoutes from './routes/stableAuth.js';
 
-// Auth routes
+// Mount routes
 app.use('/api/auth', authRoutes);
+app.use('/api/sessions', sessionRoutes);
+app.use('/api/data', dataInterfaceRoutes);
+app.use('/api/data', dataQualityRoutes);
+app.use('/api/employees', employeesRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/reports', reportsRoutes);
 app.use('/api/stable-auth', stableAuthRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/admin', userManagementRoutes);
-app.use('/api/admin/role-management', roleManagementRoutes);
-app.use('/api/session-management', sessionManagementRoutes);
-app.use('/api/admin', dataQualityRoutes);
 
 // Serve the React app for all other routes
 app.get('*', (req, res) => {

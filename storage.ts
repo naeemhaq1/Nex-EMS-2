@@ -5341,3 +5341,136 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+// Basic storage implementation to support the API routes
+// This would normally be implemented with your actual database
+
+interface Employee {
+  id: number;
+  employeeCode: string;
+  firstName: string;
+  lastName: string;
+  department?: string;
+  position?: string;
+  salary?: number;
+  isActive?: boolean;
+}
+
+interface AttendanceRecord {
+  id: number;
+  employeeCode: string;
+  checkIn?: Date;
+  checkOut?: Date;
+  hoursWorked?: number;
+  totalHours?: number;
+  location?: string;
+  createdAt: Date;
+}
+
+class Storage {
+  // Mock implementation - replace with actual database queries
+  
+  async getEmployees(params: any = {}) {
+    // This should be replaced with actual database query
+    console.log('getEmployees called with params:', params);
+    
+    // Return mock data for now
+    return {
+      employees: [
+        {
+          id: 1,
+          employeeCode: 'EMP001',
+          firstName: 'John',
+          lastName: 'Doe',
+          department: 'IT',
+          position: 'Developer',
+          salary: 50000,
+          isActive: true
+        },
+        {
+          id: 2,
+          employeeCode: 'EMP002',
+          firstName: 'Jane',
+          lastName: 'Smith',
+          department: 'HR',
+          position: 'Manager',
+          salary: 60000,
+          isActive: true
+        }
+      ],
+      total: 2
+    };
+  }
+  
+  async getEmployeeById(id: number) {
+    console.log('getEmployeeById called with id:', id);
+    
+    return {
+      id: 1,
+      employeeCode: 'EMP001',
+      firstName: 'John',
+      lastName: 'Doe',
+      department: 'IT',
+      position: 'Developer',
+      salary: 50000,
+      isActive: true
+    };
+  }
+  
+  async getAttendanceRecords(params: any = {}) {
+    console.log('getAttendanceRecords called with params:', params);
+    
+    // Return mock attendance data
+    const mockRecords = [
+      {
+        id: 1,
+        employeeCode: 'EMP001',
+        checkIn: new Date(),
+        checkOut: null,
+        hoursWorked: 8,
+        totalHours: 8,
+        location: 'Main Office',
+        createdAt: new Date()
+      },
+      {
+        id: 2,
+        employeeCode: 'EMP002',
+        checkIn: new Date(Date.now() - 3600000), // 1 hour ago
+        checkOut: new Date(),
+        hoursWorked: 8.5,
+        totalHours: 8.5,
+        location: 'Main Office',
+        createdAt: new Date()
+      }
+    ];
+    
+    return {
+      records: mockRecords,
+      total: mockRecords.length
+    };
+  }
+  
+  async createEmployee(employeeData: any) {
+    console.log('createEmployee called with data:', employeeData);
+    
+    return {
+      id: Date.now(),
+      ...employeeData
+    };
+  }
+  
+  async updateEmployee(id: number, updateData: any) {
+    console.log('updateEmployee called with id:', id, 'data:', updateData);
+    
+    return {
+      id,
+      ...updateData
+    };
+  }
+  
+  async deleteEmployee(id: number) {
+    console.log('deleteEmployee called with id:', id);
+    return true;
+  }
+}
+
+export const storage = new Storage();

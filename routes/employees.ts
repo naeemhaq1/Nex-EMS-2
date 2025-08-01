@@ -336,3 +336,113 @@ export async function getEmployeeStatus(req: Request, res: Response) {
     res.status(500).json({ error: 'Failed to fetch employee status' });
   }
 }
+import { Request, Response, Router } from "express";
+import { storage } from "../storage";
+
+const router = Router();
+
+// Get all employees with pagination
+router.get("/", async (req: Request, res: Response) => {
+  try {
+    const { page = 1, limit = 50, search, department, isActive } = req.query;
+    
+    const params: any = {
+      page: parseInt(page as string),
+      limit: parseInt(limit as string)
+    };
+    
+    if (search) params.search = search as string;
+    if (department) params.department = department as string;
+    if (isActive !== undefined) params.isActive = isActive === 'true';
+    
+    const result = await storage.getEmployees(params);
+    
+    res.json({
+      data: result.employees,
+      total: result.total,
+      page: params.page,
+      limit: params.limit,
+      totalPages: Math.ceil(result.total / params.limit)
+    });
+  } catch (error) {
+    console.error('Error fetching employees:', error);
+    res.status(500).json({ error: 'Failed to fetch employees' });
+  }
+});
+
+// Get employee by ID
+router.get("/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const employee = await storage.getEmployeeById(parseInt(id));
+    
+    if (!employee) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+    
+    res.json(employee);
+  } catch (error) {
+    console.error('Error fetching employee:', error);
+    res.status(500).json({ error: 'Failed to fetch employee' });
+  }
+});
+
+// Get departments list
+router.get("/departments", async (req: Request, res: Response) => {
+  try {
+    const employees = await storage.getEmployees({ limit: 1000 });
+    const departments = [...new Set(employees.employees.map(e => e.department).filter(Boolean))];
+    
+    res.json(departments);
+  } catch (error) {
+    console.error('Error fetching departments:', error);
+    res.status(500).json({ error: 'Failed to fetch departments' });
+  }
+});
+
+// Create new employee
+router.post("/", async (req: Request, res: Response) => {
+  try {
+    const employeeData = req.body;
+    const employee = await storage.createEmployee(employeeData);
+    
+    res.status(201).json(employee);
+  } catch (error) {
+    console.error('Error creating employee:', error);
+    res.status(500).json({ error: 'Failed to create employee' });
+  }
+});
+
+// Update employee
+router.patch("/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    const employee = await storage.updateEmployee(parseInt(id), updateData);
+    
+    if (!employee) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+    
+    res.json(employee);
+  } catch (error) {
+    console.error('Error updating employee:', error);
+    res.status(500).json({ error: 'Failed to update employee' });
+  }
+});
+
+// Delete employee
+router.delete("/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await storage.deleteEmployee(parseInt(id));
+    
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting employee:', error);
+    res.status(500).json({ error: 'Failed to delete employee' });
+  }
+});
+
+export default router;
