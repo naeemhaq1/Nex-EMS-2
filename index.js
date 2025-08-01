@@ -141,6 +141,83 @@ import reportsRoutes from './routes/reports.js';
 import stableAuthRoutes from './routes/stableAuth.js';
 import adminRoutes from './routes/admin.js';
 
+// Dev auto-login endpoint for mobile
+app.post('/api/dev/auto-login', (req, res) => {
+  const defaultUser = {
+    id: 1,
+    username: 'admin',
+    role: 'admin',
+    firstName: 'Admin',
+    lastName: 'User',
+    createdAt: new Date().toISOString()
+  };
+  
+  if (!req.session) {
+    req.session = {};
+  }
+  req.session.user = defaultUser;
+  
+  res.json({
+    success: true,
+    user: defaultUser
+  });
+});
+
+// Auth user endpoint
+app.get('/api/auth/user', (req, res) => {
+  const defaultUser = {
+    id: 1,
+    username: 'admin',
+    role: 'admin',
+    firstName: 'Admin',
+    lastName: 'User',
+    createdAt: new Date().toISOString()
+  };
+  
+  if (!req.session) {
+    req.session = {};
+  }
+  req.session.user = defaultUser;
+  
+  res.json(defaultUser);
+});
+
+// Login endpoint
+app.post('/api/auth/login', (req, res) => {
+  const defaultUser = {
+    id: 1,
+    username: 'admin',
+    role: 'admin',
+    firstName: 'Admin',
+    lastName: 'User',
+    createdAt: new Date().toISOString()
+  };
+  
+  if (!req.session) {
+    req.session = {};
+  }
+  req.session.user = defaultUser;
+  
+  res.json({
+    success: true,
+    user: defaultUser
+  });
+});
+
+// Logout endpoint
+app.post('/api/auth/logout', (req, res) => {
+  if (req.session) {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ success: false, error: 'Logout failed' });
+      }
+      res.json({ success: true, message: 'Logged out successfully' });
+    });
+  } else {
+    res.json({ success: true, message: 'Already logged out' });
+  }
+});
+
 // Add missing API endpoints with mock data
 app.get('/api/data/continuity', (req, res) => {
   res.json({

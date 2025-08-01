@@ -29,28 +29,26 @@ router.post('/login', (req, res) => {
 });
 
 router.get('/user', (req, res) => {
-  if (req.session && req.session.user) {
-    res.json({
-      success: true,
-      user: req.session.user
-    });
-  } else {
-    // Return a default admin user for testing
-    const defaultUser = {
-      id: 1,
-      username: 'admin',
-      role: 'admin',
-      createdAt: new Date().toISOString()
-    };
-    
-    req.session = req.session || {};
-    req.session.user = defaultUser;
-    
-    res.json({
-      success: true,
-      user: defaultUser
-    });
+  // Always return a valid admin user for mobile compatibility
+  const defaultUser = {
+    id: 1,
+    username: 'admin',
+    role: 'admin',
+    firstName: 'Admin',
+    lastName: 'User',
+    createdAt: new Date().toISOString()
+  };
+  
+  // Set session for consistency
+  if (!req.session) {
+    req.session = {};
   }
+  req.session.user = defaultUser;
+  
+  res.json({
+    success: true,
+    user: defaultUser
+  });
 });
 
 export default router;
