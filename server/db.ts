@@ -88,3 +88,6 @@ export const pool = {
     release: () => {}
   })
 };
+
+// Add client alias for services that expect client.query
+export const client = pool;

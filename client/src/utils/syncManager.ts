@@ -445,7 +445,7 @@ class SyncManager {
   private chunkArray<T>(array: T[], size: number): T[][] {
     const chunks: T[][] = [];
     for (let i = 0; i < array.length; i += size) {
-      chunks.push(array.slice(i, i + size);
+      chunks.push(array.slice(i, i + size));
     }
     return chunks;
   }
@@ -482,7 +482,8 @@ class SyncManager {
       const transaction = this.db!.transaction(['syncQueue'], 'readwrite');
       const store = transaction.objectStore('syncQueue');
       const index = store.index('status');
-      const request = index.openCursor(IDBKeyRange.only('failed'));
+      const request = index.openCursor(IDBKeyRange.only```python
+('failed'));
 
       request.onsuccess = (event) => {
         const cursor = (event.target as IDBRequest).result;
@@ -554,7 +555,7 @@ const SYNC_INTERVAL = 120000; // 30 seconds - reduced frequency
 
 // Set up automatic sync interval (every 2 minutes to reduce interference)
 setInterval(() => {
-  syncManager.sync();
+  syncManager.triggerSync();
 }, 120000);
 
 // Create singleton instance
