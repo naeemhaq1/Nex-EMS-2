@@ -21,7 +21,7 @@ router.post('/login', async (req, res) => {
 
     // Trim trailing spaces from username and find user
     const trimmedUsername = username.trim();
-    
+
     // Query user with proper error handling
     let user;
     try {

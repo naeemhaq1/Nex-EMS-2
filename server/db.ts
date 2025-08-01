@@ -1,4 +1,3 @@
-
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { neon } from "@neondatabase/serverless";
 import * as schema from "@shared/schema";
@@ -8,8 +7,10 @@ if (!connectionString) {
   throw new Error("DATABASE_URL environment variable is required");
 }
 
-// Use neon function for serverless environments
-const sql = neon(connectionString);
+// Create the SQL connection
+export const sql = neon(connectionString);
+
+// Create the drizzle database instance
 export const db = drizzle(sql, { schema });
 
 // Test connection on startup
@@ -27,5 +28,9 @@ async function testConnection() {
 // Initialize connection test
 testConnection().catch(console.error);
 
-// Export sql for direct queries if needed
-export { sql };
+// For backward compatibility with existing code that expects pool
+export const pool = {
+  query: async (text: string, params?: any[]) => {
+    return await sql(text, params);
+  }
+};

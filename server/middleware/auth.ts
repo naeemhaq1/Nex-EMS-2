@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
-import { pool } from "../db";
+import { db, sql } from "../db";
 import { storage } from "../storage";
 
 declare module "express-session" {
