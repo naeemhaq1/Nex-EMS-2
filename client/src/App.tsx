@@ -1,5 +1,5 @@
+
 import React, { Suspense } from 'react';
-import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -23,7 +23,13 @@ function App() {
         <TooltipProvider>
           <AuthProvider>
             <div className="min-h-screen bg-background text-foreground">
-              <AppRoutes />
+              <Suspense fallback={
+                <div className="flex items-center justify-center min-h-screen">
+                  <div className="text-lg">Loading...</div>
+                </div>
+              }>
+                <AppRoutes />
+              </Suspense>
               <Toaster />
             </div>
           </AuthProvider>

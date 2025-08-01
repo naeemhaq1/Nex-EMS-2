@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
@@ -18,13 +19,7 @@ interface AuthContextType {
   updateUser: (userData: Partial<User>) => void;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: false,
-  login: async () => ({ success: false }),
-  logout: () => {},
-  updateUser: () => {}
-});
+const AuthContext = createContext<AuthContextType | null>(null);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -35,19 +30,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      const response = await fetch('/api/auth/me', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      } else {
-        // For development, set a mock user if auth fails
+    let mounted = true;
+    
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include'
+        });
+        
+        if (!mounted) return;
+        
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        } else {
+          // For development, set a mock user if auth fails
+          if (process.env.NODE_ENV === 'development') {
+            setUser({
+              id: 1,
+              username: 'admin',
+              role: 'admin',
+              empCode: '123',
+              firstName: 'John',
+              lastName: 'Doe',
+              isFirstLogin: false
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        if (!mounted) return;
+        
+        // For development, set a mock user
         if (process.env.NODE_ENV === 'development') {
           setUser({
             id: 1,
@@ -59,25 +73,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
             isFirstLogin: false
           });
         }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      // For development, set a mock user
-      if (process.env.NODE_ENV === 'development') {
-        setUser({
-          id: 1,
-          username: 'admin',
-          role: 'admin',
-          empCode: '123',
-          firstName: 'John',
-          lastName: 'Doe',
-          isFirstLogin: false
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    checkAuthStatus();
+    
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const login = async (username: string, password: string) => {
     try {
@@ -156,7 +164,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
