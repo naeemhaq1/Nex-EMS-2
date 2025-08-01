@@ -59,10 +59,18 @@ export const shouldRedirectToMobile = (): boolean => {
     return false;
   }
   
-  // Check for device indicators
+  // PRIORITY 1: Screen size is the primary indicator
+  const isSmallScreen = window.innerWidth <= 768;
+  const isMediumScreen = window.innerWidth <= 1024;
+  
+  // PRIORITY 2: Touch capability
+  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  const hasOrientation = typeof window.orientation !== 'undefined';
+  
+  // PRIORITY 3: User agent patterns
   const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
   
-  // Definitive mobile patterns (phones/small tablets)
+  // Mobile device patterns
   const mobilePatternsStrict = [
     /Android.*Mobile/i,
     /iPhone/i,
@@ -73,31 +81,26 @@ export const shouldRedirectToMobile = (): boolean => {
     /IEMobile/i
   ];
   
-  // Desktop patterns (prioritize desktop when detected)
-  const desktopPatterns = [
-    /Windows NT.*(?!.*Mobile)/i,
-    /Macintosh.*(?!.*Mobile)/i,
-    /Linux.*X11.*(?!.*Mobile)/i,
-    /Chrome.*(?!.*Mobile).*Safari/i
-  ];
+  const isMobileUA = mobilePatternsStrict.some(pattern => pattern.test(userAgent));
   
-  // Check for explicit desktop indicators first
-  const isDesktopUA = desktopPatterns.some(pattern => pattern.test(userAgent));
-  const isLargeScreen = window.innerWidth >= 1024;
-  
-  // If clearly desktop (large screen + desktop UA), always use desktop
-  if (isDesktopUA && isLargeScreen) {
-    return false;
+  // DECISION LOGIC: Prioritize screen size
+  // Small screen (≤768px) = always use mobile
+  if (isSmallScreen) {
+    return true;
   }
   
-  // Check for mobile patterns
-  const isMobileUA = mobilePatternsStrict.some(pattern => pattern.test(userAgent));
-  const isSmallScreen = window.innerWidth <= 768;
-  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-  const hasOrientation = typeof window.orientation !== 'undefined';
+  // Medium screen (769-1024px) + touch = use mobile
+  if (isMediumScreen && (isTouchDevice || hasOrientation)) {
+    return true;
+  }
   
-  // Only redirect to mobile if we have strong mobile indicators
-  return isMobileUA || (isSmallScreen && (isTouchDevice || hasOrientation));
+  // Mobile user agent = use mobile (even on larger screens for phones in landscape)
+  if (isMobileUA) {
+    return true;
+  }
+  
+  // Default to desktop for large screens without mobile indicators
+  return false;
 };
 
 export const shouldRedirectToDesktop = (): boolean => {
