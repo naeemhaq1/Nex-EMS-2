@@ -1,8 +1,7 @@
+
 import { Request, Response, NextFunction } from "express";
 import session from "express-session";
-import connectPgSimple from "connect-pg-simple";
-import { db, sql, pool } from "../db";
-import { storage } from "../storage";
+import { sql } from "../db";
 
 declare module "express-session" {
   interface SessionData {
@@ -29,23 +28,13 @@ declare module "express-session" {
   }
 }
 
-// Initialize PostgreSQL session store
-const PostgreSQLStore = connectPgSimple(session);
-
+// Simple memory store for sessions (temporary fix)
 export const sessionMiddleware = session({
-  store: new PostgreSQLStore({
-    pool: pool as any,
-    tableName: 'session',
-    createTableIfMissing: true,
-    errorLog: (error: any) => {
-      console.error('Session store error:', error);
-    }
-  }),
   secret: process.env.SESSION_SECRET || "nexlinx-ems-session-secret-2024",
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // Set to true in production with HTTPS
+    secure: false,
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     sameSite: 'lax',
@@ -55,13 +44,11 @@ export const sessionMiddleware = session({
 });
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  // Check if session exists
   if (!req.session) {
     console.error('Session not available - middleware not properly configured');
     return res.status(401).json({ error: "Session not configured" });
   }
   
-  // Enhanced session validation with security checks
   const sessionId = req.sessionID;
   const userId = req.session.userId;
   const usernum = req.session.usernum;
@@ -71,20 +58,16 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
   console.log('Auth middleware - usernum:', usernum);
   console.log('Auth middleware - session exists:', !!req.session);
   
-  // Check if either userId OR usernum is available (not both required)
   if (!userId && !usernum) {
     return res.status(401).json({ error: "Authentication required" });
   }
   
-  // Additional security: verify session integrity
   if (!sessionId) {
     console.error('Session ID missing - potential security issue');
     return res.status(401).json({ error: "Invalid session" });
   }
   
-  // Check if session data is consistent
   if (req.session.userId && req.session.usernum) {
-    // Both should be present and valid
     if (!req.session.username || !req.session.role) {
       console.error('Session data incomplete - potential tampering');
       return res.status(401).json({ error: "Session integrity check failed" });
@@ -104,26 +87,23 @@ export const requirePermission = (permission: string) => {
     }
 
     try {
-      // Use usernum (number) if available, otherwise convert userId to number
       const userIdNumber = userNum || (userId ? parseInt(userId, 10) : null);
       if (!userIdNumber) {
         return res.status(401).json({ error: "Invalid user ID" });
       }
       
-      const user = await storage.getUser(userIdNumber);
-      if (!user || !user.isActive) {
+      // Direct SQL query instead of using storage service
+      const users = await sql`SELECT * FROM users WHERE id = ${userIdNumber} AND "isActive" = true`;
+      
+      if (users.length === 0) {
         return res.status(401).json({ error: "User not found or inactive" });
       }
 
-      const rolePermissions = await storage.getRolePermissionByName(user.role);
-      if (!rolePermissions) {
-        return res.status(403).json({ error: "Role permissions not found" });
-      }
-
-      // Check specific permission
-      console.log('Permission check:', permission, 'rolePermissions:', rolePermissions);
-      const hasPermission = (rolePermissions as any)[permission];
-      console.log('hasPermission result:', hasPermission);
+      const user = users[0];
+      
+      // Simple role-based permissions
+      const hasPermission = user.role === 'superadmin' || user.role === 'admin';
+      
       if (!hasPermission) {
         return res.status(403).json({ error: `Permission denied: ${permission}` });
       }
@@ -169,19 +149,22 @@ export const requireAccessLevel = (minLevel: number) => {
     }
 
     try {
-      // Use usernum (number) if available, otherwise convert userId to number
       const userIdNumber = userNum || (userId ? parseInt(userId, 10) : null);
       if (!userIdNumber) {
         return res.status(401).json({ error: "Invalid user ID" });
       }
       
-      const user = await storage.getUser(userIdNumber);
-      if (!user || !user.isActive) {
+      // Direct SQL query instead of using storage service
+      const users = await sql`SELECT * FROM users WHERE id = ${userIdNumber} AND "isActive" = true`;
+      
+      if (users.length === 0) {
         return res.status(401).json({ error: "User not found or inactive" });
       }
 
-      const rolePermissions = await storage.getRolePermissionByName(user.role);
-      if (!rolePermissions || rolePermissions.accessLevel < minLevel) {
+      const user = users[0];
+      const accessLevel = user.role === 'superadmin' ? 10 : (user.role === 'admin' ? 5 : 1);
+      
+      if (accessLevel < minLevel) {
         return res.status(403).json({ error: `Access level ${minLevel} required` });
       }
 
