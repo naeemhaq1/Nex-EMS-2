@@ -217,13 +217,17 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // FIXED: Force port 5000 to prevent any redirects to port 8000
-  const port = 5000; // Explicitly set to 5000 regardless of environment
-  console.log(`🔧 FORCED PORT CONFIGURATION: Server will run on port ${port} (ignoring environment PORT variable)`);
+  // Use centralized port configuration
+  const { portConfig } = await import('./config/portConfig');
+  const port = portConfig.getFrontendPort();
+  const host = portConfig.getHost();
+  
+  console.log(`🔧 PORT CONFIGURATION: ${portConfig.getDisplayInfo()}`);
+  console.log(`🔧 Server will run on ${host}:${port}`);
 
   server.listen({
     port,
-    host: "0.0.0.0",
+    host,
     reusePort: true,
   }, async () => {
     log(`✅ Server confirmed running on port ${port} - NO PORT 8000 REDIRECTS!`);
