@@ -22,7 +22,7 @@ app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body;
 
   // Temporary test user for development
-  if (username === 'admin' && password === 'admin') {
+  if (username === 'admin' && password === 'admin123') {
     res.json({
       success: true,
       user: {
