@@ -1,17 +1,19 @@
-
 import React, { Suspense } from 'react';
+import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './contexts/AuthContext';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/toaster';
-import AppRoutes from './AppRoutes';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { TooltipProvider } from '@/components/ui/tooltip';
+
+// Lazy load AppRoutes to prevent circular dependency issues
+const AppRoutes = React.lazy(() => import('./AppRoutes'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 1,
+      retry: false,
+      refetchOnWindowFocus: false,
     },
   },
 });
@@ -19,21 +21,17 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TooltipProvider>
-          <AuthProvider>
-            <div className="min-h-screen bg-background text-foreground">
-              <Suspense fallback={
-                <div className="flex items-center justify-center min-h-screen">
-                  <div className="text-lg">Loading...</div>
-                </div>
-              }>
+      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+        <AuthProvider>
+          <TooltipProvider>
+            <BrowserRouter>
+              <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
                 <AppRoutes />
               </Suspense>
               <Toaster />
-            </div>
-          </AuthProvider>
-        </TooltipProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

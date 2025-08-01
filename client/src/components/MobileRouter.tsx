@@ -1,32 +1,38 @@
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { Switch, Route } from "wouter";
+import MobileDashboard from "@/pages/mobile/MobileDashboard";
+import MobileAnalytics from "@/pages/mobile/MobileAnalytics";
+import MobileAttendance from "@/pages/mobile/MobileAttendance";
+import MobileEmployeeDirectory from "@/pages/mobile/MobileEmployeeDirectory";
+import MobileReports from "@/pages/mobile/MobileReports";
+import MobileComprehensiveReport from "@/pages/mobile/MobileComprehensiveReport";
+import MobileSettings from "@/pages/mobile/MobileSettings";
+import MobileAIPredictions from "@/pages/mobile/MobileAIPredictions";
+import MobileSchedule from "@/pages/mobile/MobileSchedule";
+import MobileAttendanceManagement from "@/pages/mobile/MobileAttendanceManagement";
+import MobileGroups from "@/pages/mobile/MobileGroups";
+import MobileCheckAttend from "@/pages/mobile/MobileCheckAttend";
+import NotFound from "@/pages/not-found";
 
-// Import mobile pages with error boundaries
-const MobileEmployeeDashboard = React.lazy(() => import('@/pages/mobile/MobileEmployeeDashboard'));
-const MobileAdminDashboard = React.lazy(() => import('@/pages/mobile/MobileAdminDashboard'));
-const MobileAttendance = React.lazy(() => import('@/pages/mobile/MobileAttendance'));
-const MobileSettings = React.lazy(() => import('@/pages/mobile/MobileSettings'));
-
-export default function MobileRouter() {
-  const { user } = useAuth();
-
+export function MobileRouter() {
   return (
-    <React.Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    }>
-      <Routes>
-        <Route path="/" element={
-          user?.role === 'admin' ? <MobileAdminDashboard /> : <MobileEmployeeDashboard />
-        } />
-        <Route path="/attendance" element={<MobileAttendance />} />
-        <Route path="/settings" element={<MobileSettings />} />
-        <Route path="*" element={
-          user?.role === 'admin' ? <MobileAdminDashboard /> : <MobileEmployeeDashboard />
-        } />
-      </Routes>
-    </React.Suspense>
+    <Switch>
+      <Route path="/mobile" component={MobileDashboard} />
+      <Route path="/mobile/analytics" component={MobileAnalytics} />
+      <Route path="/mobile/employees" component={MobileEmployeeDirectory} />
+      <Route path="/mobile/attendance" component={MobileAttendance} />
+      <Route path="/mobile/attendance-management" component={MobileAttendanceManagement} />
+      <Route path="/mobile/ai-predictions" component={MobileAIPredictions} />
+      <Route path="/mobile/groups" component={MobileGroups} />
+
+      <Route path="/mobile/shifts" component={MobileSchedule} />
+      <Route path="/mobile/schedule" component={MobileSchedule} />
+      <Route path="/mobile/reports" component={MobileReports} />
+      <Route path="/mobile/comprehensive-report" component={MobileComprehensiveReport} />
+      <Route path="/mobile/settings" component={MobileSettings} />
+      <Route path="/mobile/devices" component={MobileSettings} />
+      <Route path="/mobile/sync" component={MobileSettings} />
+      <Route path="/mobile/odoo" component={MobileSettings} />
+      <Route component={NotFound} />
+    </Switch>
   );
 }

@@ -1,25 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import * as React from "react"
 
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
+const MOBILE_BREAKPOINT = 768
 
-  useEffect(() => {
+export function useIsMobile() {
+  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
+
+  React.useEffect(() => {
     const checkMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-      const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
-      const isMobileDevice = mobileRegex.test(userAgent.toLowerCase());
-      const isSmallScreen = window.innerWidth <= 768;
-      setIsMobile(isMobileDevice || isSmallScreen);
-    };
+      const isSmall = window.innerWidth <= MOBILE_BREAKPOINT
+      const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
+      const hasOrientation = typeof window.orientation !== 'undefined'
+      
+      // Consider mobile if small screen OR touch device with medium screen
+      const shouldBeMobile = isSmall || (window.innerWidth <= 1024 && (isTouchDevice || hasOrientation))
+      setIsMobile(shouldBeMobile)
+    }
 
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`)
+    const mqlTablet = window.matchMedia(`(max-width: 1024px)`)
+    
+    mql.addEventListener("change", checkMobile)
+    mqlTablet.addEventListener("change", checkMobile)
+    checkMobile()
+    
+    return () => {
+      mql.removeEventListener("change", checkMobile)
+      mqlTablet.removeEventListener("change", checkMobile)
+    }
+  }, [])
 
-  return isMobile;
+  return !!isMobile
 }
-
-// Export both named and default exports
-export const useMobile = useIsMobile;
-export default useIsMobile;
