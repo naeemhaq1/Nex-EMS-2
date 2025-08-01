@@ -635,7 +635,7 @@ export interface IStorage {
   removeGroupMember(groupId: number, contactId: number, userId: number): Promise<void>;
 
   // WhatsApp Messages with Admin Isolation
-  getWhatsAppMessages(userId: number, filters?: {
+  async getWhatsAppMessages(userId: number, filters?: {
     phoneNumber?: string;
     messageType?: string;
     messageStatus?: string;
@@ -645,6 +645,7 @@ export interface IStorage {
     const userInfo = await this.getUser(userId);
     if (!userInfo) throw new Error('User not found');
 
+    const whatsappMessages = (await import('@shared/schema')).whatsappMessages;
     let query = db.select().from(whatsappMessages);
     const conditions: any[] = [];
 
@@ -691,6 +692,7 @@ export interface IStorage {
   }
 
   async createWhatsAppMessage(message: InsertWhatsAppMessage): Promise<WhatsAppMessage> {
+    const whatsappMessages = (await import('@shared/schema')).whatsappMessages;
     const [created] = await db
       .insert(whatsappMessages)
       .values({
@@ -703,6 +705,7 @@ export interface IStorage {
   }
 
   async updateWhatsAppMessage(id: number, message: Partial<InsertWhatsAppMessage>): Promise<WhatsAppMessage> {
+    const whatsappMessages = (await import('@shared/schema')).whatsappMessages;
     const [updated] = await db
       .update(whatsappMessages)
       .set({
@@ -715,135 +718,246 @@ export interface IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
-// Basic storage implementation to support the API routes
-// This would normally be implemented with your actual database
-
-interface Employee {
-  id: number;
-  employeeCode: string;
-  firstName: string;
-  lastName: string;
-  department?: string;
-  position?: string;
-  salary?: number;
-  isActive?: boolean;
-}
-
-interface AttendanceRecord {
-  id: number;
-  employeeCode: string;
-  checkIn?: Date;
-  checkOut?: Date;
-  hoursWorked?: number;
-  totalHours?: number;
-  location?: string;
-  createdAt: Date;
-}
-
-class Storage {
-  // Mock implementation - replace with actual database queries
-
-  async getEmployees(params: any = {}) {
-    // This should be replaced with actual database query
-    console.log('getEmployees called with params:', params);
-
-    // Return mock data for now
-    return {
-      employees: [
-        {
-          id: 1,
-          employeeCode: 'EMP001',
-          firstName: 'John',
-          lastName: 'Doe',
-          department: 'IT',
-          position: 'Developer',
-          salary: 50000,
-          isActive: true
-        },
-        {
-          id: 2,
-          employeeCode: 'EMP002',
-          firstName: 'Jane',
-          lastName: 'Smith',
-          department: 'HR',
-          position: 'Manager',
-          salary: 60000,
-          isActive: true
-        }
-      ],
-      total: 2
-    };
+class DatabaseStorage implements IStorage {
+  // Implementation methods will be added here
+  async getUser(id: number): Promise<User | undefined> {
+    return await db.select().from(users).where(eq(users.id, id)).then(rows => rows[0]);
   }
 
-  async getEmployeeById(id: number) {
-    console.log('getEmployeeById called with id:', id);
-
-    return {
-      id: 1,
-      employeeCode: 'EMP001',
-      firstName: 'John',
-      lastName: 'Doe',
-      department: 'IT',
-      position: 'Developer',
-      salary: 50000,
-      isActive: true
-    };
+  async getUserById(id: number): Promise<User | undefined> {
+    return this.getUser(id);
   }
 
-  async getAttendanceRecords(params: any = {}) {
-    console.log('getAttendanceRecords called with params:', params);
-
-    // Return mock attendance data
-    const mockRecords = [
-      {
-        id: 1,
-        employeeCode: 'EMP001',
-        checkIn: new Date(),
-        checkOut: null,
-        hoursWorked: 8,
-        totalHours: 8,
-        location: 'Main Office',
-        createdAt: new Date()
-      },
-      {
-        id: 2,
-        employeeCode: 'EMP002',
-        checkIn: new Date(Date.now() - 3600000), // 1 hour ago
-        checkOut: new Date(),
-        hoursWorked: 8.5,
-        totalHours: 8.5,
-        location: 'Main Office',
-        createdAt: new Date()
-      }
-    ];
-
-    return {
-      records: mockRecords,
-      total: mockRecords.length
-    };
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return await db.select().from(users).where(eq(users.username, username)).then(rows => rows[0]);
   }
 
-  async createEmployee(employeeData: any) {
-    console.log('createEmployee called with data:', employeeData);
-
-    return {
-      id: Date.now(),
-      ...employeeData
-    };
+  async getUserByEmployeeId(employeeId: string): Promise<User | undefined> {
+    return await db.select().from(users).where(eq(users.employeeId, employeeId)).then(rows => rows[0]);
   }
 
-  async updateEmployee(id: number, updateData: any) {
-    console.log('updateEmployee called with id:', id, 'data:', updateData);
-
-    return {
-      id,
-      ...updateData
-    };
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    return await db.select().from(users).where(eq(users.resetToken, token)).then(rows => rows[0]);
   }
 
-  async deleteEmployee(id: number) {
-    console.log('deleteEmployee called with id:', id);
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const [created] = await db.insert(users).values(user).returning();
+    return created;
+  }
+
+  async updateUser(id: number, user: Partial<InsertUser>): Promise<User> {
+    const [updated] = await db.update(users).set(user).where(eq(users.id, id)).returning();
+    return updated;
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    await db.delete(users).where(eq(users.id, id));
     return true;
   }
+
+  // Add other required interface methods with basic implementations
+  async getRolePermissions(): Promise<RolePermission[]> { return []; }
+  async getRolePermissionByName(roleName: string): Promise<RolePermission | undefined> { return undefined; }
+  async createRolePermission(permission: InsertRolePermission): Promise<RolePermission> { throw new Error('Not implemented'); }
+  async updateRolePermission(id: number, permission: Partial<InsertRolePermission>): Promise<RolePermission> { throw new Error('Not implemented'); }
+  async getUserPermissions(userId: number): Promise<RolePermission | undefined> { return undefined; }
+  async canUserCreateRole(userId: number, targetRole: string): Promise<boolean> { return false; }
+  async getManagerAssignments(userId?: number, roleType?: string): Promise<ManagerAssignment[]> { return []; }
+  async createManagerAssignment(assignment: InsertManagerAssignment): Promise<ManagerAssignment> { throw new Error('Not implemented'); }
+  async deleteManagerAssignment(id: number): Promise<void> {}
+  async getManagersByDepartment(departmentName: string, roleType?: string): Promise<User[]> { return []; }
+  async getDepartmentsByManager(userId: number, roleType?: string): Promise<string[]> { return []; }
+  async getEmployee(id: number): Promise<Employee | undefined> { return undefined; }
+  async getEmployeeByCode(code: string): Promise<Employee | undefined> { return undefined; }
+  async getEmployees(params?: any): Promise<{ employees: Employee[]; total: number }> { return { employees: [], total: 0 }; }
+  async getEmployeesWithDepartmentAccess(params?: any, user?: User): Promise<{ employees: Employee[]; total: number }> { return { employees: [], total: 0 }; }
+  async createEmployee(employee: InsertEmployee): Promise<Employee> { throw new Error('Not implemented'); }
+  async updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee> { throw new Error('Not implemented'); }
+  async getAllEmployees(): Promise<Employee[]> { return []; }
+  async getAllEmployeesWithDepartmentAccess(user?: User): Promise<Employee[]> { return []; }
+  async getLastEmployee(): Promise<Employee | undefined> { return undefined; }
+  async getEmployeeCount(params?: any): Promise<number> { return 0; }
+  async getEmployeeStatusData(): Promise<any[]> { return []; }
+  async getAttendanceRecord(id: number): Promise<AttendanceRecord | undefined> { return undefined; }
+  async getAttendanceRecords(params?: any): Promise<{ records: AttendanceRecord[]; total: number }> { return { records: [], total: 0 }; }
+  async createAttendanceRecord(record: InsertAttendance): Promise<AttendanceRecord> { throw new Error('Not implemented'); }
+  async updateAttendanceRecord(id: number, record: Partial<InsertAttendance>): Promise<AttendanceRecord> { throw new Error('Not implemented'); }
+  async getDashboardMetrics(): Promise<any> { return {}; }
+  async getRecentActivity(limit?: number): Promise<any[]> { return []; }
+  async insertEmployeePullData(data: any[]): Promise<void> {}
+  async insertAttendancePullData(data: any[]): Promise<void> {}
+  async processEmployeeData(): Promise<number> { return 0; }
+  async processAttendanceData(): Promise<number> { return 0; }
+  async updateSyncStatus(type: string, status: string, recordsProcessed?: number, recordsTotal?: number, error?: string, currentPage?: number, lastProcessedId?: string): Promise<void> {}
+  async getSyncStatus(): Promise<any[]> { return []; }
+  async getDevices(): Promise<Device[]> { return []; }
+  async getDevice(id: number): Promise<Device | undefined> { return undefined; }
+  async createDevice(device: InsertDevice): Promise<Device> { throw new Error('Not implemented'); }
+  async updateDevice(id: number, device: Partial<InsertDevice>): Promise<Device> { throw new Error('Not implemented'); }
+  async deleteDevice(id: number): Promise<void> {}
+  async getSelectedDevices(): Promise<Device[]> { return []; }
+  async updateDeviceSelection(deviceId: string, isSelected: boolean): Promise<void> {}
+  async getShifts(): Promise<Shift[]> { return []; }
+  async getShift(id: number): Promise<Shift | undefined> { return undefined; }
+  async createShift(shift: InsertShift): Promise<Shift> { throw new Error('Not implemented'); }
+  async updateShift(id: number, shift: Partial<InsertShift>): Promise<Shift> { throw new Error('Not implemented'); }
+  async deleteShift(id: number): Promise<void> {}
+  async getAuditLogs(params?: any): Promise<{ logs: AuditLog[]; total: number }> { return { logs: [], total: 0 }; }
+  async getShiftAssignments(params?: any): Promise<ShiftAssignment[]> { return []; }
+  async getShiftAssignment(id: number): Promise<ShiftAssignment | undefined> { return undefined; }
+  async createShiftAssignment(assignment: InsertShiftAssignment): Promise<ShiftAssignment> { throw new Error('Not implemented'); }
+  async updateShiftAssignment(id: number, assignment: Partial<InsertShiftAssignment>): Promise<ShiftAssignment> { throw new Error('Not implemented'); }
+  async deleteShiftAssignment(id: number): Promise<void> {}
+  async getSetting(key: string): Promise<Setting | undefined> { return undefined; }
+  async getSettings(category?: string): Promise<Setting[]> { return []; }
+  async setSetting(setting: InsertSetting): Promise<Setting> { throw new Error('Not implemented'); }
+  async updateSetting(key: string, value: string, updatedBy?: number): Promise<Setting> { throw new Error('Not implemented'); }
+  async deleteSetting(key: string): Promise<void> {}
+  async getDepartments(): Promise<string[]> { return []; }
+  async getDepartmentsForExclusions(): Promise<any[]> { return []; }
+  async getEmployeesWithoutDepartment(): Promise<{ employees: Employee[]; total: number }> { return { employees: [], total: 0 }; }
+  async getPositions(): Promise<string[]> { return []; }
+  async getDesignations(): Promise<string[]> { return []; }
+  async getDepartmentGroups(): Promise<DepartmentGroup[]> { return []; }
+  async getDepartmentGroup(id: number): Promise<DepartmentGroup | undefined> { return undefined; }
+  async createDepartmentGroup(group: InsertDepartmentGroup): Promise<DepartmentGroup> { throw new Error('Not implemented'); }
+  async updateDepartmentGroup(id: number, group: Partial<InsertDepartmentGroup>): Promise<DepartmentGroup> { throw new Error('Not implemented'); }
+  async deleteDepartmentGroup(id: number): Promise<void> {}
+  async createActionRecord(record: InsertActionRecord): Promise<ActionRecord> { throw new Error('Not implemented'); }
+  async getActionRecords(params?: any): Promise<{ records: ActionRecord[]; total: number }> { return { records: [], total: 0 }; }
+  async getActionRecord(id: number): Promise<ActionRecord | undefined> { return undefined; }
+  getDb(): any { return db; }
+  async getRawAttendanceForToday(startDate: Date, endDate: Date): Promise<any[]> { return []; }
+  async getAttendancePullExtByDateRange(startDate: Date, endDate: Date): Promise<any[]> { return []; }
+  async bulkInsertAttendancePullExt(records: any[], source: string): Promise<void> {}
+  async getAttendancePolicySettings(): Promise<AttendancePolicySettings | undefined> { return undefined; }
+  async createAttendancePolicySettings(settings: InsertAttendancePolicySettings): Promise<AttendancePolicySettings> { throw new Error('Not implemented'); }
+  async updateAttendancePolicySettings(id: number, settings: Partial<InsertAttendancePolicySettings>): Promise<AttendancePolicySettings> { throw new Error('Not implemented'); }
+  async getEmployeeStreak(employeeId: number): Promise<AttendanceStreak | undefined> { return undefined; }
+  async updateEmployeeStreak(employeeId: number, data: Partial<InsertAttendanceStreak>): Promise<AttendanceStreak> { throw new Error('Not implemented'); }
+  async createEmployeeStreak(data: InsertAttendanceStreak): Promise<AttendanceStreak> { throw new Error('Not implemented'); }
+  async getBadges(params?: any): Promise<Badge[]> { return []; }
+  async getBadge(id: number): Promise<Badge | undefined> { return undefined; }
+  async createBadge(badge: InsertBadge): Promise<Badge> { throw new Error('Not implemented'); }
+  async updateBadge(id: number, badge: Partial<InsertBadge>): Promise<Badge> { throw new Error('Not implemented'); }
+  async deleteBadge(id: number): Promise<void> {}
+  async getEmployeeBadges(employeeId: number): Promise<any[]> { return []; }
+  async awardBadge(employeeId: number, badgeId: number): Promise<EmployeeBadge> { throw new Error('Not implemented'); }
+  async updateBadgeProgress(employeeId: number, badgeId: number, progress: number): Promise<void> {}
+  async createGamificationEvent(event: InsertGamificationEvent): Promise<GamificationEvent> { throw new Error('Not implemented'); }
+  async getGamificationEvents(params?: any): Promise<GamificationEvent[]> { return []; }
+  async getTopPerformers(limit?: number): Promise<any[]> { return []; }
+  async getLeaderboard(period?: string): Promise<any[]> { return []; }
+  async createExternalAttendance(data: InsertAttendanceExternal): Promise<AttendanceExternal> { throw new Error('Not implemented'); }
+  async getExternalAttendance(params?: any): Promise<AttendanceExternal[]> { return []; }
+  async approveExternalAttendance(id: number, approvedBy: number): Promise<void> {}
+  async rejectExternalAttendance(id: number, approvedBy: number, reason: string): Promise<void> {}
+  async createForcedPunchout(punchout: InsertForcedPunchout): Promise<ForcedPunchout> { throw new Error('Not implemented'); }
+  async getForcedPunchouts(params?: any): Promise<ForcedPunchout[]> { return []; }
+  async getForcedPunchout(id: number): Promise<ForcedPunchout | undefined> { return undefined; }
+  async getExclusions(): Promise<Exclusion[]> { return []; }
+  async createExclusion(data: InsertExclusion): Promise<Exclusion> { throw new Error('Not implemented'); }
+  async updateExclusion(id: number, data: Partial<InsertExclusion>): Promise<Exclusion> { throw new Error('Not implemented'); }
+  async deleteExclusion(id: number): Promise<void> {}
+  async deleteExclusionsBulk(ids: number[]): Promise<void> {}
+  async getExclusionsByType(type: 'department' | 'employee'): Promise<Exclusion[]> { return []; }
+  async getTeamTemplates(): Promise<TeamTemplate[]> { return []; }
+  async getTeamTemplate(id: number): Promise<TeamTemplate | undefined> { return undefined; }
+  async createTeamTemplate(template: InsertTeamTemplate): Promise<TeamTemplate> { throw new Error('Not implemented'); }
+  async updateTeamTemplate(id: number, template: Partial<InsertTeamTemplate>): Promise<TeamTemplate> { throw new Error('Not implemented'); }
+  async deleteTeamTemplate(id: number): Promise<void> {}
+  async getAssembledTeams(params?: any): Promise<AssembledTeam[]> { return []; }
+  async getAssembledTeam(id: number): Promise<AssembledTeam | undefined> { return undefined; }
+  async createAssembledTeam(team: InsertAssembledTeam): Promise<AssembledTeam> { throw new Error('Not implemented'); }
+  async updateAssembledTeam(id: number, team: Partial<InsertAssembledTeam>): Promise<AssembledTeam> { throw new Error('Not implemented'); }
+  async deleteAssembledTeam(id: number): Promise<void> {}
+  async getTeamMembers(teamId: number): Promise<TeamMember[]> { return []; }
+  async getTeamMember(id: number): Promise<TeamMember | undefined> { return undefined; }
+  async createTeamMember(member: InsertTeamMember): Promise<TeamMember> { throw new Error('Not implemented'); }
+  async updateTeamMember(id: number, member: Partial<InsertTeamMember>): Promise<TeamMember> { throw new Error('Not implemented'); }
+  async deleteTeamMember(id: number): Promise<void> {}
+  async deleteTeamMembersByTeam(teamId: number): Promise<void> {}
+  async addTeamMember(member: InsertTeamMember): Promise<TeamMember> { throw new Error('Not implemented'); }
+  async removeTeamMember(id: number): Promise<void> {}
+  async getDepartmentManagers(): Promise<any[]> { return []; }
+  async assignDepartmentManager(userId: number, departments: string[]): Promise<User> { throw new Error('Not implemented'); }
+  async removeDepartmentManager(userId: number): Promise<void> {}
+  async getTeamShifts(teamId: number): Promise<ShiftAssignment[]> { return []; }
+  async assignTeamShift(teamId: number, shiftData: any): Promise<ShiftAssignment> { throw new Error('Not implemented'); }
+  async getWhatsappOnboardingRequests(params?: any): Promise<{ requests: WhatsappOnboardingRequest[]; total: number }> { return { requests: [], total: 0 }; }
+  async createWhatsappOnboardingRequest(request: InsertWhatsappOnboardingRequest): Promise<WhatsappOnboardingRequest> { throw new Error('Not implemented'); }
+  async updateWhatsappOnboardingRequest(id: number, request: Partial<InsertWhatsappOnboardingRequest>): Promise<WhatsappOnboardingRequest> { throw new Error('Not implemented'); }
+  async deleteWhatsappOnboardingRequest(id: number): Promise<void> {}
+  async getWhatsappOnboardingRequestByPhone(phoneNumber: string): Promise<WhatsappOnboardingRequest | undefined> { return undefined; }
+  async createWhatsappMessageLog(log: InsertWhatsappMessageLog): Promise<WhatsappMessageLog> { throw new Error('Not implemented'); }
+  async logWhatsappMessage(log: InsertWhatsappMessageLog): Promise<WhatsappMessageLog> { throw new Error('Not implemented'); }
+  async getWhatsappMessageLogs(params?: any): Promise<WhatsappMessageLog[]> { return []; }
+  async getWhatsappOnboardingStats(): Promise<WhatsappOnboardingStats | undefined> { return undefined; }
+  async updateWhatsappOnboardingStats(updates: Partial<InsertWhatsappOnboardingStats>): Promise<WhatsappOnboardingStats> { throw new Error('Not implemented'); }
+  async initializeWhatsappOnboardingStats(): Promise<WhatsappOnboardingStats> { throw new Error('Not implemented'); }
+  async getScoringRules(): Promise<ScoringRule[]> { return []; }
+  async getScoringRule(id: number): Promise<ScoringRule | undefined> { return undefined; }
+  async createScoringRule(rule: InsertScoringRule): Promise<ScoringRule> { throw new Error('Not implemented'); }
+  async updateScoringRule(id: number, rule: Partial<InsertScoringRule>): Promise<ScoringRule> { throw new Error('Not implemented'); }
+  async deleteScoringRule(id: number): Promise<void> {}
+  async getEmployeeScores(params?: any): Promise<EmployeeScore[]> { return []; }
+  async getEmployeeScore(employeeId: number, date: Date): Promise<EmployeeScore | undefined> { return undefined; }
+  async createEmployeeScore(score: InsertEmployeeScore): Promise<EmployeeScore> { throw new Error('Not implemented'); }
+  async updateEmployeeScore(id: number, score: Partial<InsertEmployeeScore>): Promise<EmployeeScore> { throw new Error('Not implemented'); }
+  async deleteEmployeeScore(id: number): Promise<void> {}
+  async getScoringAuditTrail(params?: any): Promise<ScoringAuditTrail[]> { return []; }
+  async createScoringAuditTrail(audit: InsertScoringAuditTrail): Promise<ScoringAuditTrail> { throw new Error('Not implemented'); }
+  async getScoringConfiguration(): Promise<ScoringConfiguration | undefined> { return undefined; }
+  async updateScoringConfiguration(config: Partial<InsertScoringConfiguration>): Promise<ScoringConfiguration> { throw new Error('Not implemented'); }
+  async initializeScoringConfiguration(): Promise<ScoringConfiguration> { throw new Error('Not implemented'); }
+  async getScoringBaselines(params?: any): Promise<ScoringBaselines[]> { return []; }
+  async getScoringBaseline(employeeId: number, date: Date): Promise<ScoringBaselines | undefined> { return undefined; }
+  async createScoringBaseline(baseline: InsertScoringBaselines): Promise<ScoringBaselines> { throw new Error('Not implemented'); }
+  async updateScoringBaseline(id: number, baseline: Partial<InsertScoringBaselines>): Promise<ScoringBaselines> { throw new Error('Not implemented'); }
+  async deleteScoringBaseline(id: number): Promise<void> {}
+  async generateScoringBaselines(employeeId?: number): Promise<{ generated: number; updated: number }> { return { generated: 0, updated: 0 }; }
+  async getScoringLeaderboard(params?: any): Promise<any[]> { return []; }
+  async getEmployeeRequests(employeeId: number): Promise<any[]> { return []; }
+  async getLeaveTypes(): Promise<LeaveType[]> { return []; }
+  async getReimbursementCategories(): Promise<ReimbursementCategory[]> { return []; }
+  async createWorkFromHomeRequest(request: InsertWorkFromHomeRequest): Promise<WorkFromHomeRequest> { throw new Error('Not implemented'); }
+  async createLeaveRequest(request: InsertLeaveRequest): Promise<LeaveRequest> { throw new Error('Not implemented'); }
+  async createOvertimeRequest(request: InsertOvertimeRequest): Promise<OvertimeRequest> { throw new Error('Not implemented'); }
+  async createReimbursementRequest(request: InsertReimbursementRequest): Promise<ReimbursementRequest> { throw new Error('Not implemented'); }
+  async createTrainingRequest(request: InsertTrainingRequest): Promise<TrainingRequest> { throw new Error('Not implemented'); }
+  async createDocumentRequest(request: InsertDocumentRequest): Promise<DocumentRequest> { throw new Error('Not implemented'); }
+  async createGrievance(request: InsertGrievance): Promise<Grievance> { throw new Error('Not implemented'); }
+  async createShiftChangeRequest(request: InsertShiftChangeRequest): Promise<ShiftChangeRequest> { throw new Error('Not implemented'); }
+  async createLateArrivalReason(request: InsertLateArrivalReason): Promise<LateArrivalReason> { throw new Error('Not implemented'); }
+  async getAnnouncements(params?: any): Promise<Announcement[]> { return []; }
+  async getAnnouncement(id: number): Promise<Announcement | undefined> { return undefined; }
+  async getActiveAnnouncements(params?: any): Promise<Announcement[]> { return []; }
+  async createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement> { throw new Error('Not implemented'); }
+  async updateAnnouncement(id: number, announcement: Partial<InsertAnnouncement>): Promise<Announcement | undefined> { return undefined; }
+  async deleteAnnouncement(id: number): Promise<void> {}
+  async getDashboardProfile(userId: number): Promise<DashboardProfile | undefined> { return undefined; }
+  async createDashboardProfile(profile: InsertDashboardProfile): Promise<DashboardProfile> { throw new Error('Not implemented'); }
+  async updateDashboardProfile(id: number, profile: Partial<InsertDashboardProfile>): Promise<DashboardProfile> { throw new Error('Not implemented'); }
+  async deleteDashboardProfile(id: number): Promise<void> {}
+  async getDashboardProfiles(userId?: number): Promise<DashboardProfile[]> { return []; }
+  async getWhatsAppContacts(userId: number, filters?: any): Promise<WhatsAppContact[]> { return []; }
+  async getWhatsAppContact(id: number, userId: number): Promise<WhatsAppContact | undefined> { return undefined; }
+  async getWhatsAppContactByPhone(phoneNumber: string, userId: number): Promise<WhatsAppContact | undefined> { return undefined; }
+  async createWhatsAppContact(contact: InsertWhatsAppContact): Promise<WhatsAppContact> { throw new Error('Not implemented'); }
+  async updateWhatsAppContact(id: number, contact: Partial<InsertWhatsAppContact>, userId: number): Promise<WhatsAppContact | undefined> { return undefined; }
+  async deleteWhatsAppContact(id: number, userId: number): Promise<void> {}
+  async getWhatsAppGroups(userId: number, filters?: any): Promise<WhatsAppGroup[]> { return []; }
+  async getWhatsAppGroup(id: number, userId: number): Promise<WhatsAppGroup | undefined> { return undefined; }
+  async createWhatsAppGroup(group: InsertWhatsAppGroup): Promise<WhatsAppGroup> { throw new Error('Not implemented'); }
+  async updateWhatsAppGroup(id: number, group: Partial<InsertWhatsAppGroup>, userId: number): Promise<WhatsAppGroup | undefined> { return undefined; }
+  async deleteWhatsAppGroup(id: number, userId: number): Promise<void> {}
+  async getGroupMembers(groupId: number, userId: number): Promise<WhatsAppGroupMember[]> { return []; }
+  async addGroupMember(member: InsertWhatsAppGroupMember): Promise<WhatsAppGroupMember> { throw new Error('Not implemented'); }
+  async removeGroupMember(groupId: number, contactId: number, userId: number): Promise<void> {}
 }
+
+export const storage = new DatabaseStorage();
