@@ -1,31 +1,22 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
-import { useLocation } from 'wouter';
-import MobileStyleDashboard from "@/components/MobileStyleDashboard";
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [, setLocation] = useLocation();
 
-  useEffect(() => {
-    // Redirect staff users to proper desktop employee dashboard
-    if (user?.role === 'staff' || user?.role === 'employee') {
-      setLocation('/desktop/employee/dashboard');
-      return;
-    }
-  }, [user, setLocation]);
-
-  // Only show for admin users
-  if (user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'general_admin') {
-    return <MobileStyleDashboard />;
-  }
-
-  // Loading state or redirect in progress
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1A1B3E]">
-      <div className="text-white text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4 mx-auto"></div>
-        <p className="text-lg">Redirecting...</p>
+    <div className="p-6 min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+        <Card>
+          <CardHeader>
+            <CardTitle>Welcome, {user?.username}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>This is your main dashboard</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
