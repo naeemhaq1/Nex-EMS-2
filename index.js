@@ -9,6 +9,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '0.0.0.0';
 
+// Add middleware to parse JSON bodies
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Serve static files from build output
 app.use(express.static(path.join(__dirname, 'dist', 'public')));
 
