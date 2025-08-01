@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 // Lazy load components
 const Login = React.lazy(() => import('@/pages/Login'));
 const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
-const MobileRouter = React.lazy(() => import('@/components/MobileRouter'));
+const MobileRouter = React.lazy(() => import('@/pages/mobile/MobileRouter'));
 const NotFound = React.lazy(() => import('@/pages/not-found'));
 
 // Loading component
@@ -19,13 +19,23 @@ const LoadingSpinner = () => (
 const AppRoutes: React.FC = () => {
   const { user } = useAuth();
 
+  // Check if device is mobile
+  const isMobile = React.useMemo(() => {
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+    const isMobileUA = /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone|Mobile|Tablet|Opera Mini|IEMobile/i.test(userAgent);
+    const isMobileWidth = window.innerWidth <= 768;
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    
+    return isMobileUA || isMobileWidth || isTouchDevice;
+  }, []);
+
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
         {/* Public routes */}
         <Route 
           path="/login" 
-          element={!user ? <Login /> : <Navigate to="/dashboard" replace />} 
+          element={!user ? <Login /> : <Navigate to={isMobile ? "/mobile" : "/dashboard"} replace />} 
         />
         
         {/* Protected routes */}
@@ -40,10 +50,19 @@ const AppRoutes: React.FC = () => {
           element={user ? <MobileRouter /> : <Navigate to="/login" replace />} 
         />
         
-        {/* Root redirect */}
+        {/* Root redirect with mobile detection */}
         <Route 
           path="/" 
-          element={<Navigate to={user ? "/dashboard" : "/login"} replace />} 
+          element={
+            <Navigate 
+              to={
+                user 
+                  ? (isMobile ? "/mobile" : "/dashboard")
+                  : "/login"
+              } 
+              replace 
+            />
+          } 
         />
         
         {/* 404 page */}
