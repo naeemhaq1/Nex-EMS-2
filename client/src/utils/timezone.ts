@@ -1,3 +1,4 @@
+
 export function toPakistanTime(date: Date): Date {
   const utcTime = date.getTime() + (date.getTimezoneOffset() * 60000);
   const pktOffset = 5 * 60 * 60 * 1000; // PKT is UTC+5
@@ -103,8 +104,5 @@ export const formatTime12h = (date: Date): string => {
 
 export function getCurrentPKTTime(): Date {
   const now = new Date();
-  // Return current time adjusted for Pakistan timezone
-  return new Date(now.getTime() + (5 * 60 * 60 * 1000));
+  return toPakistanTime(now);
 }
-
-export { formatTime12h as default };
