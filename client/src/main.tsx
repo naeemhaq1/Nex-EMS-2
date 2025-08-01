@@ -4,6 +4,9 @@ import App from "./App";
 import "./index.css";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
+// Debug React instances
+console.log('React version in main.tsx:', React.version);
+
 // Hide initial loading screen once React app is ready
 function hideInitialLoader() {
   const loader = document.getElementById("initial-loader");
@@ -25,7 +28,7 @@ function preloadCriticalResources() {
       credentials: 'include'
     }).catch(() => {}); // Silent fail for prefetch
   });
-  
+
   // Preload critical CSS
   const cssLink = document.createElement("link");
   cssLink.rel = "preload";
@@ -56,15 +59,15 @@ function AppWithLoader() {
     // Force hide loader immediately when React starts
     console.log('React mounted, hiding loader immediately');
     hideInitialLoader();
-    
+
     // Also hide after short delay as backup
     const timer = setTimeout(() => {
       hideInitialLoader();
     }, 100);
-    
+
     return () => clearTimeout(timer);
   }, []);
-  
+
   return <App />;
 }
 
