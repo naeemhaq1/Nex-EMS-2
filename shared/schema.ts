@@ -1,6 +1,6 @@
 import { pgTable, text, serial, integer, boolean, timestamp, date, decimal, varchar, jsonb, time, numeric } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
-import { createInsertSchema } from "drizzle-zod";
+// import { createInsertSchema } from "drizzle-zod"; // Removed to fix colBuilder.setName errors
 import { z } from "zod";
 import { departmentGroups } from "./departmentGroups";
 
@@ -1582,157 +1582,90 @@ export const systemConfigurationRelations = relations(systemConfiguration, ({ on
 
 
 // Schemas
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
+// Manual Zod schemas to replace createInsertSchema calls
+export const insertUserSchema = z.object({
+  username: z.string(),
+  password: z.string(),
+  role: z.string().default("staff"),
+  accountType: z.string().default("employee"),
+  employeeId: z.string().optional(),
+  managedDepartments: z.array(z.string()).optional(),
+  isActive: z.boolean().default(true),
+  userState: z.string().default("Active"),
+  isTemporaryPassword: z.boolean().default(true),
+  lastPasswordChange: z.date().optional(),
+  passwordResetToken: z.string().optional(),
+  passwordResetExpires: z.date().optional(),
+  facebookId: z.string().optional(),
+  facebookAccessToken: z.string().optional(),
+  facebookProfilePhoto: z.string().optional(),
+  facebookEmail: z.string().optional(),
+  facebookName: z.string().optional(),
+  facebookLinkedAt: z.date().optional(),
 });
 
-export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertManagerAssignmentSchema = createInsertSchema(managerAssignments).omit({
-  id: true,
-  assignedAt: true,
-});
-
-export const insertEmployeeSchema = createInsertSchema(employeeRecords).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertAttendanceSchema = createInsertSchema(attendanceRecords).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertDeviceSchema = createInsertSchema(devices).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertShiftSchema = createInsertSchema(shifts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertShiftAssignmentSchema = createInsertSchema(shiftAssignments).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
-  id: true,
-  timestamp: true,
-});
-
-export const insertSettingSchema = createInsertSchema(settings).omit({
-  id: true,
-  updatedAt: true,
-});
-
-export const insertActionRecordSchema = createInsertSchema(actionRecords).omit({
-  id: true,
-  timestamp: true,
-  createdAt: true,
-});
-
-export const insertForcedPunchoutSchema = createInsertSchema(forcedPunchouts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertTerminateActionSchema = createInsertSchema(terminateActions).omit({
-  id: true,
-  time: true,
-  createdAt: true,
-});
-
-export const insertExclusionSchema = createInsertSchema(exclusions).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertFormerEmployeeSchema = createInsertSchema(formerEmployees).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertAttendanceExternalSchema = createInsertSchema(attendanceExternal).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  approvedAt: true,
-  syncedAt: true,
-});
-
-export const insertAttendanceStreakSchema = createInsertSchema(attendanceStreaks).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertBadgeSchema = createInsertSchema(badges).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertEmployeeBadgeSchema = createInsertSchema(employeeBadges).omit({
-  id: true,
-  earnedAt: true,
-});
-
-export const insertGamificationEventSchema = createInsertSchema(gamificationEvents).omit({
-  id: true,
-  timestamp: true,
-});
-
-export const insertAttendancePolicySettingsSchema = createInsertSchema(attendancePolicySettings).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  lastUpdatedAt: true,
-});
-
-export const insertEmployeeAlertSchema = createInsertSchema(employeeAlerts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  alertTriggeredAt: true,
-  alertResolvedAt: true,
-});
-
-export const insertMobileLocationDataSchema = createInsertSchema(mobileLocationData).omit({
-  id: true,
-  createdAt: true,
-  timestamp: true,
-  syncedAt: true,
-});
-
-export const insertTeamTemplateSchema = createInsertSchema(teamTemplates).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertAssembledTeamSchema = createInsertSchema(assembledTeams).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
-  id: true,
-  createdAt: true,
+export const insertEmployeeSchema = z.object({
+  employeeCode: z.string(),
+  code2: z.string().optional(),
+  biotimeId: z.string(),
+  salutation: z.string().optional(),
+  firstName: z.string(),
+  middleName: z.string().optional(),
+  lastName: z.string(),
+  realFirst: z.string().optional(),
+  realMiddle: z.string().optional(),
+  realLast: z.string().optional(),
+  email: z.string().optional(),
+  phone: z.string().optional(),
+  mobile: z.string().optional(),
+  wanumber: z.string().optional(),
+  profilePhoto: z.string().optional(),
+  address: z.string().optional(),
+  vrn: z.string().optional(),
+  username: z.string().optional(),
+  nationalId: z.string().optional(),
+  cnicMissing: z.string().default("yes"),
+  department: z.string().optional(),
+  subDepartment: z.string().optional(),
+  position: z.string().optional(),
+  project: z.string().optional(),
+  empType: z.string().default("Desk Job"),
+  isFieldDepartment: z.boolean().default(false),
+  hireDate: z.date().optional(),
+  isActive: z.boolean().default(true),
+  birthday: z.date().optional(),
+  contractDate: z.date().optional(),
+  contractTerm: z.string().optional(),
+  contractExpiryDate: z.date().optional(),
+  workTeam: z.string().optional(),
+  designation: z.string().optional(),
+  subdesignation: z.string().optional(),
+  poslevel: z.string().optional(),
+  joiningDate: z.date().optional(),
+  entitlementDate: z.date().optional(),
+  location: z.string().optional(),
+  nonBio: z.boolean().default(false),
+  shiftId: z.number().optional(),
+  suspect: z.boolean().default(false),
+  susreason: z.string().optional(),
+  pop: z.string().optional(),
+  stopPay: z.boolean().default(false),
+  systemAccount: z.boolean().default(false),
+  appStatus: z.string().default("not_installed"),
+  appLoc: z.string().default("no_data"),
+  appStatusCheckedAt: z.date().optional(),
+  appLocCheckedAt: z.date().optional(),
+  eRole: z.string().default("Normal"),
+  hasFaceTemplate: z.boolean().default(false),
+  faceTemplateCount: z.number().default(0),
+  faceTemplateVersion: z.string().optional(),
+  faceTemplateData: z.string().optional(),
+  biometricEnrollmentStatus: z.string().default("not_enrolled"),
+  lastBiometricSync: z.date().optional(),
+  vnb: z.boolean().default(false),
+  wareg: z.boolean().default(false),
+  lasttime: z.date().optional(),
+  lastbpunch: z.date().optional(),
 });
 
 // Types
