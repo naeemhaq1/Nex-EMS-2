@@ -23,11 +23,14 @@ export const departmentGroupRelations = relations(departmentGroups, ({ one }) =>
   }),
 }));
 
-export const insertDepartmentGroupSchema = createInsertSchema(departmentGroups, {
+export const insertDepartmentGroupSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
   departments: z.array(z.string()),
-}).omit({
-  createdAt: true,
-  updatedAt: true,
+  color: z.string().default("#3B82F6"),
+  isSystem: z.boolean().default(false),
+  sortOrder: z.number().default(0),
+  createdBy: z.number().optional(),
 });
 
 export type DepartmentGroup = typeof departmentGroups.$inferSelect;
