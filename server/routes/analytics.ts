@@ -15,7 +15,6 @@ import {
   getYesterdayAttendance,
   getTodayLiveActivity,
   getDrillDownData,
-  forcePunchOut,
   getDataAvailabilityHeatmap,
   getNonBioEmployees,
   getCalculatedNonBioEmployees
@@ -54,6 +53,5 @@ router.get('/data-availability-heatmap', getDataAvailabilityHeatmap);
 
 // Actions
 router.post('/terminate-attendance', terminateAttendance);
-router.post('/force-punch-out', forcePunchOut);
 
 export default router;

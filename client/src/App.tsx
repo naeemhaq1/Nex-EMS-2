@@ -94,17 +94,17 @@ function AppRoutes() {
   useEffect(() => {
     const checkForMobileRedirect = () => {
       if (!user || loading) return false;
-      
+
       // Force mobile redirect for common mobile user agents
       const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
       const isMobileUA = /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone|Mobile|Tablet|Opera Mini|IEMobile/i.test(userAgent);
       const isMobileWidth = window.innerWidth <= 768;
       const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
       const hasOrientation = typeof window.orientation !== 'undefined';
-      
+
       // Be more aggressive with mobile detection
       const isMobile = isMobileUA || isMobileWidth || (isTouchDevice && hasOrientation);
-      
+
       // TEMPORARILY DISABLED - Force redirect if mobile detected and not already on mobile route
       // if (isMobile && !location.startsWith('/mobile')) {
       //   console.log('Mobile device detected, forcing redirect to mobile interface');
@@ -137,19 +137,19 @@ function AppRoutes() {
       //   }
       //   return;
       // }
-      
+
       // Root path logic with optimized role-based redirects and session persistence
       if (location === '/' && user) {
         console.log('User role:', user.role, 'Current location:', location);
-        
+
         // Enhanced role-based routing with better session handling
         if (user.role === 'admin' || user.role === 'superadmin' || user.role === 'general_admin') {
           console.log('Admin detected, checking device type...');
-          
+
           // Mobile admin detection with consistent session handling
           const isMobile = window.innerWidth <= 768 || 
                           /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone|Mobile|Tablet/i.test(navigator.userAgent);
-          
+
           if (isMobile) {
             console.log('Redirecting admin to mobile dashboard');
             setLocation('/mobile/admin/dashboard');
@@ -161,7 +161,7 @@ function AppRoutes() {
           // Regular employee logic with session persistence
           const isMobile = window.innerWidth <= 768 || 
                           /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone|Mobile|Tablet/i.test(navigator.userAgent);
-          
+
           if (isMobile) {
             console.log('Redirecting employee to mobile dashboard');
             setLocation('/mobile/employee/dashboard');
@@ -215,7 +215,7 @@ function AppRoutes() {
   }
 
   // Allow both mobile and desktop interfaces based on user choice
-  
+
   // Handle desktop force route
   if (location === '/desktop' && user?.role === 'staff') {
     setLocation('/desktop/employee/dashboard');
