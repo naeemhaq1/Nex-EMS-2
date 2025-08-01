@@ -50,6 +50,7 @@ export default defineConfig({
     '__WS_TOKEN__': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
     'import.meta.env.WS_TOKEN': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
     BigInt: 'globalThis.BigInt',
+    bigint: 'globalThis.BigInt',
   },
   optimizeDeps: {
     include: ["react", "react-dom"],
