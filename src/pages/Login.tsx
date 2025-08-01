@@ -50,15 +50,13 @@ export default function Login() {
           setError(result.error || "Login failed. Please check your credentials.");
         }
       } else {
-        console.log('Login successful, redirecting...');
-        // Small delay to ensure state is set
-        setTimeout(() => {
-          if (shouldRedirectToMobile()) {
-            setLocation('/mobile/employee/dashboard');
-          } else {
-            setLocation('/admin');
-          }
-        }, 100);
+        console.log('Login successful, redirecting immediately...');
+        // Immediate redirect without delay
+        if (shouldRedirectToMobile()) {
+          setLocation('/mobile/admin/dashboard');
+        } else {
+          setLocation('/admin');
+        }
       }
     } catch (error) {
       console.error('Login error:', error);

@@ -30,15 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isDevelopment) {
-      // Development mode: Fast auto-login with immediate session persistence
-      console.log('DEV MODE: Attempting auto-login...');
-      attemptAutoLogin().then(() => {
-        // Immediate session verification for faster loading
-        setTimeout(() => {
-          console.log('DEV MODE: Verifying session persistence...');
-          checkAuth();
-        }, 100); // Reduced from 500ms to 100ms for sub-5 second dashboard loading
-      });
+      // Development mode: Immediate auto-login
+      console.log('DEV MODE: Attempting immediate auto-login...');
+      attemptAutoLogin();
     } else {
       // Production mode: Check existing auth without auto-login
       checkAuth();
@@ -100,24 +94,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const attemptAutoLogin = async () => {
     try {
-      console.log('Auto-login: Attempting dev auto-login');
-
-      // Ultra-fast auto-login for quick dashboard access
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1000); // Increased timeout for mobile compatibility
+      console.log('Auto-login: Attempting immediate dev auto-login');
 
       const response = await fetch('/api/stable-auth/dev/auto-login', {
         method: 'POST',
         credentials: 'include',
-        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'X-Fast-Login': 'true', // Signal for expedited processing
-          'X-Mobile-Compatible': 'true' // Mobile compatibility flag
+          'X-Fast-Login': 'true',
+          'X-Mobile-Compatible': 'true'
         },
       });
-
-      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
@@ -126,24 +113,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(data.user);
           console.log('User set in context:', data.user);
         }
-        setLoading(false);
       } else {
         console.log('Auto-login failed with status:', response.status);
         setUser(null);
-        setLoading(false);
       }
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.log('Auto-login timeout - gracefully handled');
-        // Suppress AbortError to prevent runtime error plugin notifications
-        console.log('Unhandled AbortError promise rejection caught and suppressed');
-        setUser(null);
-        setLoading(false);
-        return;
-      } else {
-        console.error('Auto-login error:', error);
-      }
+      console.error('Auto-login error:', error);
       setUser(null);
+    } finally {
       setLoading(false);
     }
   };

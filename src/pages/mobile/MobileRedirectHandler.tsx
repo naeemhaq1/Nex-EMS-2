@@ -6,7 +6,7 @@ export default function MobileRedirectHandler() {
   const { user, loading } = useAuth();
   const [, setLocation] = useLocation();
   const [hasRedirected, setHasRedirected] = useState(false);
-  
+
   useEffect(() => {
     // Immediate redirect for unauthenticated users to prevent flash
     if (!loading && !user && !hasRedirected) {
@@ -15,12 +15,12 @@ export default function MobileRedirectHandler() {
       window.location.replace('/');
       return;
     }
-    
+
     // Only redirect once we have a confirmed user and haven't redirected yet
     if (user && !loading && !hasRedirected) {
       console.log('MobileRedirectHandler: User role:', user.role);
       setHasRedirected(true);
-      
+
       // Immediate redirect for authenticated users
       if (user.role === "admin" || user.role === "superadmin" || user.role === "general_admin") {
         console.log('MobileRedirectHandler: Redirecting admin to admin dashboard');
@@ -31,7 +31,7 @@ export default function MobileRedirectHandler() {
       }
     }
   }, [user, loading, setLocation, hasRedirected]);
-  
+
   // Show loading state while auth is being determined
   if (loading) {
     return (
@@ -43,7 +43,7 @@ export default function MobileRedirectHandler() {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen bg-[#1A1B3E] flex items-center justify-center">
       <div className="text-white">Loading dashboard...</div>

@@ -50,6 +50,9 @@ export default function AppRoutes() {
         <Route path="/mobile/admin/dashboard" component={MobileAdminDashboard} />
         <Route path="/mobile/employee/dashboard" component={MobileEmployeeDashboard} />
         
+        {/* Fallback mobile admin route */}
+        <Route path="/mobile/admin" component={MobileAdminDashboard} />
+        
         {/* Desktop Routes */}
         <Route path="/" component={Dashboard} />
         <Route path="/dashboard" component={Dashboard} />
