@@ -1,5 +1,5 @@
-
 // Shared module exports
+// IMPORTANT: Do not import React here to prevent multiple instances
 export * from './schema';
 export * from './versioning';
 export * from './departmentFieldConfig';

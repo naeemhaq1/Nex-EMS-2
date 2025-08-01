@@ -16,8 +16,13 @@ export default defineConfig({
   },
   root: path.resolve(__dirname, "client"),
   server: {
+    host: '0.0.0.0',
+    port: 5173,
     fs: {
       allow: ['..', '.', '../shared', '../server']
+    },
+    hmr: {
+      clientPort: 443
     },
     watch: {
       ignored: ['!**/node_modules/.vite/**']
