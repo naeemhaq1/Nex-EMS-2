@@ -246,7 +246,16 @@ app.use((req, res, next) => {
 
 // Auth routes
 import userRoutes from './routes/users';
-// Routes
+// Routes - ensure auth routes are properly mapped
 app.use('/api/users', userRoutes);
 app.use('/api/auth', userRoutes); // Login routes are in userRoutes
+
+// Ensure session routes work properly
+app.get('/api/auth/check', (req, res) => {
+  if (req.session.userId || req.session.usernum) {
+    res.json({ authenticated: true, user: req.session });
+  } else {
+    res.status(401).json({ authenticated: false });
+  }
+});
 app.use('/api/dev', userRoutes);

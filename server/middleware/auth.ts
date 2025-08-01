@@ -41,7 +41,7 @@ export const sessionMiddleware = session({
     tableName: 'session',
     createTableIfMissing: true,
   }),
-  secret: process.env.SESSION_SECRET || "nexlinx-ems-session-secret",
+  secret: process.env.SESSION_SECRET || "nexlinx-ems-session-secret-2024",
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -50,7 +50,7 @@ export const sessionMiddleware = session({
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     sameSite: 'lax',
   },
-  name: 'connect.sid',
+  name: 'nexlinx-session',
   rolling: true,
 });
 

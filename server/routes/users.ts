@@ -257,6 +257,34 @@ router.get('/user', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+// Session debug endpoint (development only)
+router.get('/dev/session-debug', async (req: Request, res: Response) => {
+  if (process.env.NODE_ENV !== 'development') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  
+  res.json({
+    session: req.session,
+    sessionID: req.sessionID,
+    cookies: req.headers.cookie
+  });
+});
+
+// Clear all sessions (development only)
+router.post('/dev/clear-sessions', async (req: Request, res: Response) => {
+  if (process.env.NODE_ENV !== 'development') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  
+  try {
+    await pool.query('DELETE FROM session');
+    res.json({ success: true, message: 'All sessions cleared' });
+  } catch (error) {
+    console.error('Error clearing sessions:', error);
+    res.status(500).json({ error: 'Failed to clear sessions' });
+  }
+});
+
 // Dev auto-login endpoint (development only)
 router.post('/dev/auto-login', async (req: Request, res: Response) => {
   if (process.env.NODE_ENV !== 'development') {
