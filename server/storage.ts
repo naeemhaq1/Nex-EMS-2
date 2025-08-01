@@ -655,7 +655,7 @@ export class DatabaseStorage implements IStorage {
       console.error('Error getting user by username:', error);
       throw error;
     }
-  },
+  }
 
   async getUserByEmployeeId(employeeId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.employeeId, employeeId));
