@@ -141,7 +141,7 @@ import reportsRoutes from './routes/reports.js';
 import stableAuthRoutes from './routes/stableAuth.js';
 import adminRoutes from './routes/admin.js';
 
-// Dev auto-login endpoint for mobile
+// Dev auto-login endpoint for mobile - Optimized for instant response
 app.post('/api/dev/auto-login', (req, res) => {
   const defaultUser = {
     id: 1,
@@ -152,14 +152,23 @@ app.post('/api/dev/auto-login', (req, res) => {
     createdAt: new Date().toISOString()
   };
   
+  // Instant session setup
   if (!req.session) {
     req.session = {};
   }
   req.session.user = defaultUser;
   
+  // Set cache headers for instant mobile response
+  res.set({
+    'Cache-Control': 'no-cache',
+    'X-Mobile-Ready': 'true',
+    'X-Instant-Login': 'success'
+  });
+  
   res.json({
     success: true,
-    user: defaultUser
+    user: defaultUser,
+    timestamp: Date.now()
   });
 });
 
