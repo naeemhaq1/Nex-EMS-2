@@ -2,20 +2,20 @@
 import { QueryClient } from "@tanstack/react-query";
 
 // Default query function for TanStack Query
-const defaultQueryFn = async ({ queryKey }: { queryKey: string[] }) => {
-  const url = `${window.location.origin}${queryKey[0]}`;
-  const res = await fetch(url, {
+const defaultQueryFn = async ({ queryKey }: { queryKey: readonly unknown[] }) => {
+  const url = queryKey[0] as string;
+  const response = await fetch(url, {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
   });
   
-  if (!res.ok) {
-    throw new Error('Network response was not ok');
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
   }
   
-  return res.json();
+  return response.json();
 };
 
 export const queryClient = new QueryClient({
@@ -24,7 +24,7 @@ export const queryClient = new QueryClient({
       queryFn: defaultQueryFn,
       staleTime: 1000 * 60 * 5, // 5 minutes
       gcTime: 1000 * 60 * 10, // 10 minutes
-      retry: 1,
+      retry: 2,
       refetchOnWindowFocus: false,
     },
   },

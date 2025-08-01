@@ -1,72 +1,29 @@
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-// NEXLINX EMS - Main Server Entry Point
-// Production-ready Node.js server with proper port configuration
-
-const path = require('path');
-const express = require('express');
-
-// Load environment variables from port config
-require('dotenv').config({ path: '.env.port-config' });
-
-console.log('[NEXLINX] Starting NEXLINX EMS Server...');
-console.log('[NEXLINX] Port Mode:', process.env.PORT_MODE || 'single-port');
-console.log('[NEXLINX] Main Port:', process.env.PORT || '5000');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '5000');
-const HOST = process.env.HOST || '0.0.0.0';
-
-// Enable trust proxy for production
-app.set('trust proxy', true);
-
-// Basic middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+const PORT = process.env.PORT || 5000;
 
 // Serve static files from client build
-app.use(express.static(path.join(__dirname, 'client', 'dist')));
+app.use(express.static(path.join(__dirname, 'client/dist')));
 
-// API routes placeholder
+// Basic API health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    mode: process.env.PORT_MODE || 'single-port',
-    port: PORT
-  });
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Serve React app for all other routes
+// Handle React Router - send all requests to index.html
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'client/dist/index.html'));
 });
 
-// Error handling
-app.use((err, req, res, next) => {
-  console.error('[NEXLINX] Server Error:', err.message);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-// Start server
-const server = app.listen(PORT, HOST, () => {
-  console.log(`[NEXLINX] Server running on http://${HOST}:${PORT}`);
-  console.log(`[NEXLINX] Mode: ${process.env.PORT_MODE || 'single-port'}`);
-  console.log(`[NEXLINX] Environment: ${process.env.NODE_ENV || 'development'}`);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('[NEXLINX] Received SIGTERM, shutting down gracefully');
-  server.close(() => {
-    console.log('[NEXLINX] Server closed');
-    process.exit(0);
-  });
-});
-
-process.on('SIGINT', () => {
-  console.log('[NEXLINX] Received SIGINT, shutting down gracefully');
-  server.close(() => {
-    console.log('[NEXLINX] Server closed');
-    process.exit(0);
-  });
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 NEXLINX EMS Server running on http://0.0.0.0:${PORT}`);
+  console.log(`📱 Mobile interface: http://0.0.0.0:${PORT}/mobile`);
+  console.log(`💻 Desktop interface: http://0.0.0.0:${PORT}/admin`);
 });

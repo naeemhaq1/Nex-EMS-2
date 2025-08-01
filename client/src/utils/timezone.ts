@@ -1,77 +1,60 @@
+// Pakistan Standard Time (PKT) timezone utilities
+const PKT_OFFSET = 5; // PKT is UTC+5
 
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+export const getCurrentPKTTime = (): Date => {
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const pkt = new Date(utc + (PKT_OFFSET * 3600000));
+  return pkt;
+};
 
-const PKT_TIMEZONE = 'Asia/Karachi';
+export const formatPKTTime = (date: Date = getCurrentPKTTime()): string => {
+  return date.toLocaleString('en-PK', {
+    timeZone: 'Asia/Karachi',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+};
 
-export function getCurrentPKTTime(): Date {
-  return toZonedTime(new Date(), PKT_TIMEZONE);
-}
+export const formatMobileDate = (date: Date = getCurrentPKTTime()): string => {
+  return date.toLocaleDateString('en-PK', {
+    timeZone: 'Asia/Karachi',
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
 
-export function formatPKTTime(date: Date, formatStr: string = 'PPpp'): string {
-  const pktTime = toZonedTime(date, PKT_TIMEZONE);
-  return format(pktTime, formatStr);
-}
+export const formatMobileTime = (date: Date = getCurrentPKTTime()): string => {
+  return date.toLocaleTimeString('en-PK', {
+    timeZone: 'Asia/Karachi',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+};
 
-export function formatMobileDate(date: Date): string {
-  return formatPKTTime(date, 'MMM dd, yyyy');
-}
+export const isPKTBusinessHours = (date: Date = getCurrentPKTTime()): boolean => {
+  const hour = date.getHours();
+  return hour >= 9 && hour < 18; // 9 AM to 6 PM PKT
+};
 
-export function formatMobileTime(date: Date): string {
-  return formatPKTTime(date, 'HH:mm');
-}
+export const getPKTDateString = (date: Date = getCurrentPKTTime()): string => {
+  return date.toISOString().split('T')[0];
+};
 
-export function formatMobileDateTime(date: Date): string {
-  return formatPKTTime(date, 'MMM dd, HH:mm');
-}
+export const convertToPKT = (utcDate: Date): Date => {
+  const utc = utcDate.getTime();
+  return new Date(utc + (PKT_OFFSET * 3600000));
+};
 
-export function isPKTWorkingHours(date: Date = new Date()): boolean {
-  const pktTime = toZonedTime(date, PKT_TIMEZONE);
-  const hour = pktTime.getHours();
-  const day = pktTime.getDay();
-  
-  // Monday to Friday, 9 AM to 6 PM PKT
-  return day >= 1 && day <= 5 && hour >= 9 && hour < 18;
-}
-
-export function convertToPKT(date: Date | string): Date {
-  const inputDate = typeof date === 'string' ? new Date(date) : date;
-  return toZonedTime(inputDate, PKT_TIMEZONE);
-}
-
-export function formatForAPI(date: Date): string {
-  return date.toISOString();
-}
-
-export function getTimezoneOffset(): string {
-  return '+05:00'; // PKT is UTC+5
-}
-
-export function isToday(date: Date): boolean {
-  const pktToday = getCurrentPKTTime();
-  const pktDate = convertToPKT(date);
-  
-  return pktToday.toDateString() === pktDate.toDateString();
-}
-
-export function isYesterday(date: Date): boolean {
-  const pktToday = getCurrentPKTTime();
-  const pktYesterday = new Date(pktToday);
-  pktYesterday.setDate(pktYesterday.getDate() - 1);
-  
-  const pktDate = convertToPKT(date);
-  
-  return pktYesterday.toDateString() === pktDate.toDateString();
-}
-
-export function getStartOfDay(date: Date = new Date()): Date {
-  const pktDate = convertToPKT(date);
-  pktDate.setHours(0, 0, 0, 0);
-  return pktDate;
-}
-
-export function getEndOfDay(date: Date = new Date()): Date {
-  const pktDate = convertToPKT(date);
-  pktDate.setHours(23, 59, 59, 999);
-  return pktDate;
-}
+export const convertFromPKT = (pktDate: Date): Date => {
+  const pkt = pktDate.getTime();
+  return new Date(pkt - (PKT_OFFSET * 3600000));
+};
