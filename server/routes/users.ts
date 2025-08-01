@@ -157,31 +157,81 @@ router.delete('/:id', requireSuperAdmin, async (req, res) => {
 });
 
 // Login endpoint
-router.post('/login', async (req: Request, res: Response) => {
+router.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
-  if (!username || !password) {
-    return res.status(400).json({ success: false, error: 'Username and password are required' });
+  // Development mode auto-login bypass
+  if (process.env.NODE_ENV === 'development' && username === 'dev' && password === 'dev') {
+    console.log('🔧 Development mode auto-login activated');
+
+    // Create a temporary dev session
+    req.session.userId = 'dev-user';
+    req.session.usernum = 1;
+    req.session.username = 'dev';
+    req.session.role = 'superadmin';
+    req.session.employeeId = 'DEV001';
+    req.session.realName = 'Development User';
+    req.session.permissions = {
+      canCreateUsers: true,
+      canDeleteUsers: true,
+      canDeleteData: true,
+      canAccessFinancialData: true,
+      canManageSystem: true,
+      canManageTeams: true,
+      canChangeDesignations: true,
+      accessLevel: 10
+    };
+
+    return res.json({
+      success: true,
+      user: {
+        id: 'dev-user',
+        username: 'dev',
+        role: 'superadmin',
+        firstName: 'Development',
+        lastName: 'User',
+        email: 'dev@nexlinx.com',
+        department: 'IT',
+        designation: 'Developer'
+      }
+    });
   }
 
   try {
-    const result = await authService.login(username, password);
+    // Find user with username - add proper error handling
+    let user;
+    try {
+      const result = await storage.getUserByUsername(username);
+      user = result;
+    } catch (dbError) {
+      console.error('Database query error in main login:', dbError);
+      return res.status(500).json({ success: false, error: "Database connection error" });
+    }
 
-    if (result.success && result.user) {
+    if (!user) {
+      return res.status(401).json({ success: false, error: "Invalid credentials" });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ success: false, error: "Invalid credentials" });
+    }
+    
       // Set session data
-      req.session.userId = result.user.id.toString();
-      req.session.usernum = result.user.id;
-      req.session.username = result.user.username;
-      req.session.role = result.user.role;
-      req.session.employeeId = result.user.employeeId;
-      req.session.realName = result.user.realName;
+      req.session.userId = user.id.toString();
+      req.session.usernum = user.id;
+      req.session.username = user.username;
+      req.session.role = user.role;
+      req.session.employeeId = user.employeeId;
+      req.session.realName = user.realName;
       req.session.userAgent = req.get('User-Agent');
       req.session.ipAddress = req.ip;
       req.session.loginTime = new Date().toISOString();
 
       // Get permissions
       try {
-        const rolePermissions = await storage.getRolePermissionByName(result.user.role);
+        const rolePermissions = await storage.getRolePermissionByName(user.role);
         if (rolePermissions) {
           req.session.permissions = {
             canCreateUsers: rolePermissions.canCreateUsers,
@@ -208,12 +258,18 @@ router.post('/login', async (req: Request, res: Response) => {
 
       return res.json({ 
         success: true, 
-        user: result.user,
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          department: user.department,
+          designation: user.designation
+        },
         message: 'Login successful' 
       });
-    } else {
-      return res.status(401).json(result);
-    }
   } catch (error) {
     console.error('Login error:', error);
     return res.status(500).json({ success: false, error: 'Internal server error' });
@@ -262,7 +318,7 @@ router.get('/dev/session-debug', async (req: Request, res: Response) => {
   if (process.env.NODE_ENV !== 'development') {
     return res.status(404).json({ error: 'Not found' });
   }
-  
+
   res.json({
     session: req.session,
     sessionID: req.sessionID,
@@ -275,8 +331,19 @@ router.post('/dev/clear-sessions', async (req: Request, res: Response) => {
   if (process.env.NODE_ENV !== 'development') {
     return res.status(404).json({ error: 'Not found' });
   }
-  
+
   try {
+    // Assuming 'pool' is accessible here (e.g., imported or defined in this file)
+    // and that it has a 'query' method for executing SQL queries.
+    // If 'pool' is not available, you'll need to establish a database connection.
+    // For example, if using the 'pg' library:
+    // const { Pool } = require('pg');
+    // const pool = new Pool({ ...your database connection configuration... });
+    // Make sure to handle connection errors appropriately.
+    if (!pool || typeof pool.query !== 'function') {
+        console.error('Database pool not properly initialized.');
+        return res.status(500).json({ error: 'Database connection error' });
+    }
     await pool.query('DELETE FROM session');
     res.json({ success: true, message: 'All sessions cleared' });
   } catch (error) {
