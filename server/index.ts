@@ -64,7 +64,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
+
   // REDIRECT FIX: If user is on port 8000, redirect to port 80 (main app)
   if (req.headers.host && req.headers.host.includes(':8000')) {
     const correctHost = req.headers.host.replace(':8000', '');
@@ -72,12 +72,12 @@ app.use((req, res, next) => {
     console.log(`🔄 REDIRECTING from port 8000 to main app: ${redirectUrl}`);
     return res.redirect(301, redirectUrl);
   }
-  
+
   // Override host checking for Vite
   if (req.headers.host && req.headers.host.includes('replit.dev')) {
     req.headers['x-forwarded-host'] = req.headers.host;
   }
-  
+
   next();
 });
 
@@ -126,7 +126,7 @@ app.use((req, res, next) => {
 
 (async () => {
   console.log('[App] Starting Nexlinx EMS...');
-  
+
   // Clear ports gracefully before starting services
   console.log('[Port Cleanup] Clearing ports 5000, 5001, 5002 gracefully...');
   await Promise.all([
@@ -135,10 +135,10 @@ app.use((req, res, next) => {
     clearPortGracefully(5002)
   ]);
   console.log('[Port Cleanup] All ports cleared successfully');
-  
+
   // Setup graceful shutdown handlers only (skip pre-startup cleanup to avoid deadlock)
   GracefulCleanup.setupGracefulShutdown();
-  
+
   console.log('[App] API interceptor mounted with highest priority');
 
   const server = await registerRoutes(app);
@@ -154,7 +154,7 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  
+
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
@@ -177,7 +177,7 @@ app.use((req, res, next) => {
   // FIXED: Force port 5000 to prevent any redirects
   const port = 5000; // Explicitly set to 5000 regardless of environment
   console.log(`🔧 FORCED PORT CONFIGURATION: Server will run on port ${port} (no redirects allowed)`);
-  
+
   server.listen({
     port,
     host: "0.0.0.0",
@@ -187,11 +187,11 @@ app.use((req, res, next) => {
     console.log(`🌐 IMPORTANT: Application is accessible at the ROOT domain (port 80/443)`);
     console.log(`🚫 AVOID: Do not use port 8000 - it will redirect to main app`);
     console.log(`✅ CORRECT URL: Use the primary domain without port specification`);
-    
+
     try {
       // OPTIMIZED STARTUP: Initialize services asynchronously for faster boot
       console.log('🚀 FAST STARTUP: Initializing core services asynchronously...');
-      
+
       // Start critical services in parallel for faster startup
       const startupPromises = [
         // Initialize Port Manager (lightweight)
@@ -199,7 +199,7 @@ app.use((req, res, next) => {
           console.log('🔧 Port Manager initializing...');
           return initializePortManager();
         }),
-        
+
         // Initialize Dependency Manager (background)
         import('./services/dependencyManager').then(async ({ dependencyManager }) => {
           console.log('🔧 Dependency Manager initializing...');
@@ -209,7 +209,7 @@ app.use((req, res, next) => {
           });
           return dependencyManager.startServices();
         }),
-        
+
         // Initialize WhatsApp services (background)
         Promise.all([
           import('./services/whatsappAPIMonitorService'),
@@ -233,20 +233,17 @@ app.use((req, res, next) => {
         Promise.all(startupPromises),
         new Promise(resolve => setTimeout(resolve, 5000)) // 5 second timeout
       ]);
-      
+
       log('✅ FAST STARTUP: Core services initialized (others continuing in background)');
       console.log('🚀 APPLICATION READY: Services continue initializing in background for optimal performance');
-      
-      // Main server runs on port 5000 with port manager and web interface
-      log("🌐 Main web interface server started on port 5000");
-      log("📋 Port Manager Service: Accessible on port 5000");
-      log("📋 Core Services: Running on port 5001");
-      log("📋 WhatsApp Services: Running on port 5002");
-      log("🚀 OPTIMIZED STARTUP: Complete in <10 seconds");
-      
+
     } catch (error) {
       console.error("❌ Error starting main server:", error);
       console.log("🚀 APPLICATION READY: Continuing with basic functionality");
     }
   });
 })();
+
+// Auth routes
+app.use('/api/auth', userRoutes);
+app.use('/api/dev', userRoutes);

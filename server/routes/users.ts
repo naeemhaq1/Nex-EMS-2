@@ -4,6 +4,7 @@ import { requireAuth, requireSuperAdmin, requireAdmin } from '../middleware/auth
 import { insertUserSchema } from '@shared/schema';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
+import { Request, Response } from 'express';
 
 const router = Router();
 
@@ -27,7 +28,7 @@ router.get('/', requireAdmin, async (req, res) => {
 router.post('/admin', requireSuperAdmin, async (req, res) => {
   try {
     const { username, password, employeeId } = req.body;
-    
+
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });
     }
@@ -70,7 +71,7 @@ router.patch('/:id', requireSuperAdmin, async (req, res) => {
     const { username, password, role, employeeId, isActive } = req.body;
 
     const updateData: any = {};
-    
+
     if (username) updateData.username = username;
     if (password) updateData.password = await bcrypt.hash(password, 10);
     if (role) updateData.role = role;
@@ -78,7 +79,7 @@ router.patch('/:id', requireSuperAdmin, async (req, res) => {
     if (isActive !== undefined) updateData.isActive = isActive;
 
     const updatedUser = await storage.updateUser(userId, updateData);
-    
+
     if (!updatedUser) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -101,7 +102,7 @@ router.post('/:id/role', requireAdmin, async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const { role } = req.body;
-    
+
     if (!role) {
       return res.status(400).json({ error: 'Role is required' });
     }
@@ -112,7 +113,7 @@ router.post('/:id/role', requireAdmin, async (req, res) => {
     }
 
     const updatedUser = await storage.updateUser(userId, { role });
-    
+
     if (!updatedUser) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -134,7 +135,7 @@ router.post('/:id/role', requireAdmin, async (req, res) => {
 router.delete('/:id', requireSuperAdmin, async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
-    
+
     // Prevent deletion of SuperAdmin users
     const user = await storage.getUserById(userId);
     if (user && user.role === 'superadmin') {
@@ -142,7 +143,7 @@ router.delete('/:id', requireSuperAdmin, async (req, res) => {
     }
 
     const success = await storage.deleteUser(userId);
-    
+
     if (!success) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -151,6 +152,153 @@ router.delete('/:id', requireSuperAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error deleting user:', error);
     res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+// Login endpoint
+router.post('/login', async (req: Request, res: Response) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ success: false, error: 'Username and password are required' });
+  }
+
+  try {
+    const result = await authService.login(username, password);
+
+    if (result.success && result.user) {
+      // Set session data
+      req.session.userId = result.user.id.toString();
+      req.session.usernum = result.user.id;
+      req.session.username = result.user.username;
+      req.session.role = result.user.role;
+      req.session.employeeId = result.user.employeeId;
+      req.session.realName = result.user.realName;
+      req.session.userAgent = req.get('User-Agent');
+      req.session.ipAddress = req.ip;
+      req.session.loginTime = new Date().toISOString();
+
+      // Get permissions
+      try {
+        const rolePermissions = await storage.getRolePermissionByName(result.user.role);
+        if (rolePermissions) {
+          req.session.permissions = {
+            canCreateUsers: rolePermissions.canCreateUsers,
+            canDeleteUsers: rolePermissions.canDeleteUsers,
+            canDeleteData: rolePermissions.canDeleteData,
+            canAccessFinancialData: rolePermissions.canAccessFinancialData,
+            canManageSystem: rolePermissions.canManageSystem,
+            canManageTeams: rolePermissions.canManageTeams,
+            canChangeDesignations: rolePermissions.canChangeDesignations,
+            accessLevel: rolePermissions.accessLevel
+          };
+        }
+      } catch (permError) {
+        console.warn('Could not load role permissions:', permError);
+      }
+
+      // Save session
+      await new Promise((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) reject(err);
+          else resolve(true);
+        });
+      });
+
+      return res.json({ 
+        success: true, 
+        user: result.user,
+        message: 'Login successful' 
+      });
+    } else {
+      return res.status(401).json(result);
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Get current user
+router.get('/user', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = req.session.usernum || parseInt(req.session.userId || '0', 10);
+    if (!userId) {
+      return res.status(401).json({ error: 'No user session' });
+    }
+
+    const result = await authService.getUserById(userId);
+    if (result.success) {
+      return res.json(result.user);
+    } else {
+      return res.status(404).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Get user error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Dev auto-login endpoint (development only)
+router.post('/dev/auto-login', async (req: Request, res: Response) => {
+  if (process.env.NODE_ENV !== 'development') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+
+  try {
+    // Try to login with default admin credentials
+    const result = await authService.login('admin', 'Nexlinx123#');
+
+    if (result.success && result.user) {
+      // Set session data
+      req.session.userId = result.user.id.toString();
+      req.session.usernum = result.user.id;
+      req.session.username = result.user.username;
+      req.session.role = result.user.role;
+      req.session.employeeId = result.user.employeeId;
+      req.session.realName = result.user.realName;
+      req.session.userAgent = req.get('User-Agent');
+      req.session.ipAddress = req.ip;
+      req.session.loginTime = new Date().toISOString();
+
+      // Get permissions
+      try {
+        const rolePermissions = await storage.getRolePermissionByName(result.user.role);
+        if (rolePermissions) {
+          req.session.permissions = {
+            canCreateUsers: rolePermissions.canCreateUsers,
+            canDeleteUsers: rolePermissions.canDeleteUsers,
+            canDeleteData: rolePermissions.canDeleteData,
+            canAccessFinancialData: rolePermissions.canAccessFinancialData,
+            canManageSystem: rolePermissions.canManageSystem,
+            canManageTeams: rolePermissions.canManageTeams,
+            canChangeDesignations: rolePermissions.canChangeDesignations,
+            accessLevel: rolePermissions.accessLevel
+          };
+        }
+      } catch (permError) {
+        console.warn('Could not load role permissions:', permError);
+      }
+
+      // Save session
+      await new Promise((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) reject(err);
+          else resolve(true);
+        });
+      });
+
+      return res.json({ 
+        success: true, 
+        user: result.user,
+        message: 'Auto-login successful' 
+      });
+    } else {
+      return res.status(500).json({ success: false, error: 'Auto-login failed' });
+    }
+  } catch (error) {
+    console.error('Auto-login error:', error);
+    return res.status(500).json({ success: false, error: 'Auto-login failed' });
   }
 });
 
