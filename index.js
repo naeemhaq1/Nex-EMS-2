@@ -139,6 +139,7 @@ import dashboardRoutes from './routes/dashboard.js';
 import attendanceRoutes from './routes/attendance.js';
 import reportsRoutes from './routes/reports.js';
 import stableAuthRoutes from './routes/stableAuth.js';
+import adminRoutes from './routes/admin.js';
 
 // Add missing API endpoints with mock data
 app.get('/api/data/continuity', (req, res) => {
@@ -226,6 +227,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/stable-auth', stableAuthRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Serve the React app for all other routes
 app.get('*', (req, res) => {
