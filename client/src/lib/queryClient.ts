@@ -1,3 +1,4 @@
+
 import { QueryClient } from "@tanstack/react-query";
 
 // Default query function for TanStack Query
