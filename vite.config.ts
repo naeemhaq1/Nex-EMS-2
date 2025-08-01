@@ -15,8 +15,10 @@ export default defineConfig({
       // Force single React instance to prevent hook dispatcher errors
       "react": path.resolve(__dirname, "./node_modules/react"),
       "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+      "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime"),
+      "react-dom/client": path.resolve(__dirname, "./node_modules/react-dom/client"),
     },
-    dedupe: ["react", "react-dom"],
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "react-dom/client"],
   },
   root: path.resolve(__dirname, "client"),
   build: {
