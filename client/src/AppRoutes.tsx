@@ -1,136 +1,68 @@
-
-<old_str>import React from 'react';
+import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
-import { useMobile } from './hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMobile } from '@/hooks/use-mobile';
 
-// Import pages
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import MobileEmployeeDashboard from './pages/mobile/MobileEmployeeDashboard';
-import MobileAdminDashboard from './pages/mobile/admin/MobileAdminDashboard';
-import MobileAttendance from './pages/mobile/MobileAttendance';
-import MobileSettings from './pages/mobile/MobileSettings';
+// Lazy load components for better performance
+const Login = React.lazy(() => import('@/pages/Login'));
+const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
+const MobileRouter = React.lazy(() => import('@/components/MobileRouter'));
+
+// Desktop Components
+const Layout = React.lazy(() => import('@/components/Layout'));
+const DesktopEmployeeDashboard = React.lazy(() => import('@/pages/DesktopEmployeeDashboard'));
+const DesktopAdminDashboard = React.lazy(() => import('@/pages/DesktopAdminDashboard'));
+const AttendanceRecords = React.lazy(() => import('@/pages/AttendanceRecords'));
+const EmployeeDirectory = React.lazy(() => import('@/pages/EmployeeDirectory'));
+const EmployeeProfile = React.lazy(() => import('@/pages/EmployeeProfile'));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen bg-[#1A1B3E]">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+  </div>
+);
 
 export default function AppRoutes() {
   const { user, loading } = useAuth();
   const isMobile = useMobile();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
+    return <LoadingFallback />;
   }
 
   if (!user) {
     return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+      <Suspense fallback={<LoadingFallback />}>
+        <Login />
+      </Suspense>
     );
   }
 
-  // Mobile routes
-  if (isMobile) {
-    if (user.role === 'admin' || user.role === 'superadmin') {
-      return (
-        <Routes>
-          <Route path="/" element={<MobileAdminDashboard />} />
-          <Route path="/dashboard" element={<MobileAdminDashboard />} />
-          <Route path="/attendance" element={<MobileAttendance />} />
-          <Route path="/settings" element={<MobileSettings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      );
-    } else {
-      return (
-        <Routes>
-          <Route path="/" element={<MobileEmployeeDashboard />} />
-          <Route path="/dashboard" element={<MobileEmployeeDashboard />} />
-          <Route path="/attendance" element={<MobileAttendance />} />
-          <Route path="/settings" element={<MobileSettings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      );
-    }
-  }
-
-  // Desktop routes
-  return (
-    <Routes>
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-}</old_str>
-<new_str>import React, { Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { useMobile } from '@/hooks/use-mobile';
-
-// Desktop Components
-import Layout from '@/components/Layout';
-import DesktopEmployeeDashboard from '@/pages/DesktopEmployeeDashboard';
-import DesktopAdminDashboard from '@/pages/DesktopAdminDashboard';
-import Login from '@/pages/Login';
-import AttendanceRecords from '@/pages/AttendanceRecords';
-import EmployeeDirectory from '@/pages/EmployeeDirectory';
-import EmployeeProfile from '@/pages/EmployeeProfile';
-
-// Mobile Components
-import MobileLayout from '@/components/MobileLayout';
-import MobileRouter from '@/components/MobileRouter';
-
-// Other Components
-import NotFound from '@/pages/not-found';
-
-const AppRoutes: React.FC = () => {
-  const { user, loading } = useAuth();
-  const isMobile = useMobile();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#1A1B3E] flex items-center justify-center">
-        <div className="text-white text-lg">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    );
-  }
-
-  // Mobile routing - Use MobileRouter component
+  // Mobile routing
   if (isMobile) {
     return (
-      <MobileLayout>
+      <Suspense fallback={<LoadingFallback />}>
         <MobileRouter />
-      </MobileLayout>
+      </Suspense>
     );
   }
 
-  // Desktop routing - Determine dashboard based on user role
+  // Desktop routing
   const isAdmin = ['admin', 'superadmin', 'general_admin', 'manager'].includes(user.role || '');
 
   return (
-    <Layout>
-      <Suspense fallback={
-        <div className="min-h-screen bg-[#1A1B3E] flex items-center justify-center">
-          <div className="text-white text-lg">Loading...</div>
-        </div>
-      }>
+    <Suspense fallback={<LoadingFallback />}>
+      <Layout>
         <Routes>
-          <Route path="/" element={isAdmin ? <DesktopAdminDashboard /> : <DesktopEmployeeDashboard />} />
-          <Route path="/dashboard" element={isAdmin ? <DesktopAdminDashboard /> : <DesktopEmployeeDashboard />} />
+          <Route 
+            path="/" 
+            element={isAdmin ? <DesktopAdminDashboard /> : <DesktopEmployeeDashboard />} 
+          />
+          <Route 
+            path="/dashboard" 
+            element={isAdmin ? <DesktopAdminDashboard /> : <DesktopEmployeeDashboard />} 
+          />
           <Route path="/desktop/admin/dashboard" element={<DesktopAdminDashboard />} />
           <Route path="/desktop/employee/dashboard" element={<DesktopEmployeeDashboard />} />
           <Route path="/admin/dashboard" element={<DesktopAdminDashboard />} />
@@ -138,11 +70,9 @@ const AppRoutes: React.FC = () => {
           <Route path="/attendance" element={<AttendanceRecords />} />
           <Route path="/employees" element={<EmployeeDirectory />} />
           <Route path="/employee/:id" element={<EmployeeProfile />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Suspense>
-    </Layout>
+      </Layout>
+    </Suspense>
   );
-};
-
-export default AppRoutes;</new_str>
+}

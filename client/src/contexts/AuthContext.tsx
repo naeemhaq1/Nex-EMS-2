@@ -1,25 +1,20 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
-  id: number;
+  id: string;
   username: string;
   role: string;
-  empCode?: string;
-  firstName?: string;
-  lastName?: string;
-  isFirstLogin?: boolean;
+  email?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
-  updateUser: (userData: Partial<User>) => void;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -30,62 +25,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
-    
-    const checkAuthStatus = async () => {
-      try {
-        const response = await fetch('/api/auth/me', {
-          credentials: 'include'
-        });
-        
-        if (!mounted) return;
-        
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-        } else {
-          // For development, set a mock user if auth fails
-          if (process.env.NODE_ENV === 'development') {
-            setUser({
-              id: 1,
-              username: 'admin',
-              role: 'admin',
-              empCode: '123',
-              firstName: 'John',
-              lastName: 'Doe',
-              isFirstLogin: false
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        if (!mounted) return;
-        
-        // For development, set a mock user
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      } else {
+        // For development, set a mock user if auth fails
         if (process.env.NODE_ENV === 'development') {
           setUser({
-            id: 1,
+            id: '1',
             username: 'admin',
             role: 'admin',
-            empCode: '123',
-            firstName: 'John',
-            lastName: 'Doe',
-            isFirstLogin: false
+            email: 'admin@example.com'
           });
         }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
       }
-    };
-
-    checkAuthStatus();
-    
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      // For development, set a mock user
+      if (process.env.NODE_ENV === 'development') {
+        setUser({
+          id: '1',
+          username: 'admin',
+          role: 'admin',
+          email: 'admin@example.com'
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const login = async (username: string, password: string) => {
     try {
@@ -99,30 +75,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        return { success: false, error: errorData.message || 'Login failed' };
+        throw new Error('Login failed');
       }
 
       const userData = await response.json();
       setUser(userData);
-      return { success: true, user: userData };
     } catch (error) {
       console.error('Login error:', error);
       // For development, accept any login
       if (process.env.NODE_ENV === 'development') {
-        const mockUser = {
-          id: 1,
+        setUser({
+          id: '1',
           username: username || 'admin',
           role: 'admin',
-          empCode: '123',
-          firstName: 'John',
-          lastName: 'Doe',
-          isFirstLogin: false
-        };
-        setUser(mockUser);
-        return { success: true, user: mockUser };
+          email: 'admin@example.com'
+        });
       } else {
-        return { success: false, error: 'Login failed' };
+        throw error;
       }
     }
   };
@@ -140,21 +109,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const updateUser = (userData: Partial<User>) => {
-    setUser(prevUser => {
-      if (prevUser) {
-        return { ...prevUser, ...userData };
-      }
-      return prevUser;
-    });
-  };
-
   const value: AuthContextType = {
     user,
     loading,
     login,
-    logout,
-    updateUser
+    logout
   };
 
   return (
@@ -164,9 +123,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 }
 
-export function useAuth(): AuthContextType {
+export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
