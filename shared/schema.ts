@@ -2707,6 +2707,31 @@ export const insertEmployeeScoreSchema = z.object({
   percentile: z.number().optional(),
 });
 
+export const insertAttendancePolicySettingsSchema = z.object({
+  gracePeriodMinutes: z.number().default(30),
+  lateArrival1stOccurrenceHours: z.number().default(0),
+  lateArrival2ndOccurrenceHours: z.number().default(0.5),
+  lateArrival3rdOccurrenceHours: z.number().default(1),
+  significantDelay1stOccurrenceHours: z.number().default(1),
+  significantDelay2ndOccurrenceHours: z.number().default(2),
+  significantDelay3rdOccurrenceHours: z.number().default(3),
+  extendedDelayTreatedAsHalfDay: z.boolean().default(true),
+  lateDeductionPerMinute: z.number().default(10),
+  absentDeductionPerDay: z.number().default(1000),
+  halfDayDeduction: z.number().default(500),
+  standardShiftHours: z.number().default(8),
+  minimumWeeklyHours: z.number().default(50),
+  shiftStartTime: z.string().default('09:00:00'),
+  shiftEndTime: z.string().default('18:00:00'),
+  halfDayMinimumHours: z.number().default(4),
+  overtimeThresholdHours: z.number().default(8),
+  overtimeMultiplier: z.number().default(1.5),
+  weekendDays: z.array(z.string()).default(['Saturday', 'Sunday']),
+  effectiveDate: z.date().optional(),
+  lastUpdatedBy: z.number().optional(),
+  notes: z.string().optional(),
+});
+
 export const insertScoringAuditTrailSchema = createInsertSchema(scoringAuditTrail).omit({
   id: true,
   createdAt: true,
