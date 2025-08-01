@@ -1,10 +1,9 @@
 import express from 'express';
 import { EventEmitter } from 'events';
 import net from 'net';
-import { portConfig } from '../config/portConfig';
 
 interface PortConfig {
-  frontend: number;
+  frontend: number; // Always locked at 5000
   services: number;
   whatsapp: number;
 }
@@ -20,38 +19,21 @@ interface ServiceInstance {
 }
 
 class PortManager extends EventEmitter {
-  private currentConfig: PortConfig;
+  private currentConfig: PortConfig = {
+    frontend: 5000,
+    services: 5001,
+    whatsapp: 5002
+  };
   
   private serviceInstances: Map<string, ServiceInstance> = new Map();
   private isInitialized = false;
 
   constructor() {
     super();
-    // Initialize with centralized port configuration
-    const config = portConfig.getConfig();
-    this.currentConfig = {
-      frontend: config.frontend,
-      services: config.services,
-      whatsapp: config.whatsapp
-    };
-    console.log(`[PortManager] Initialized with ${portConfig.getDisplayInfo()}`);
   }
 
   getCurrentConfig(): PortConfig {
     return { ...this.currentConfig };
-  }
-
-  /**
-   * Sync with central port configuration
-   */
-  syncWithCentralConfig(): void {
-    const config = portConfig.getConfig();
-    this.currentConfig = {
-      frontend: config.frontend,
-      services: config.services,
-      whatsapp: config.whatsapp
-    };
-    console.log(`[PortManager] Synced with central config: ${portConfig.getDisplayInfo()}`);
   }
 
   async checkPortAvailability(port: number): Promise<boolean> {
@@ -325,35 +307,19 @@ class PortManager extends EventEmitter {
 
     try {
       console.log('🔧 Initializing Port Manager...');
-      console.log(`📊 Mode: ${portConfig.getDisplayInfo()}`);
       
-      // Sync with central configuration
-      this.syncWithCentralConfig();
-      
-      if (portConfig.isSinglePortMode()) {
-        console.log('🔗 Single-port mode: Services integrated into main server');
-        // In single-port mode, services are integrated into main server
-        // No separate service instances needed
-      } else {
-        // Three-tier mode: start separate service instances
-        console.log('🏗️ Three-tier mode: Starting separate service instances');
-        await this.startService('services', this.currentConfig.services);
-        await this.startService('whatsapp', this.currentConfig.whatsapp);
-      }
+      // Start services with default configuration
+      await this.startService('services', this.currentConfig.services);
+      await this.startService('whatsapp', this.currentConfig.whatsapp);
       
       this.isInitialized = true;
       console.log('✅ Port Manager initialized successfully');
       
       // Display current configuration
-      console.log(`📊 Active Port Configuration:`);
+      console.log(`📊 Current Port Configuration:`);
       console.log(`   • Frontend: ${this.currentConfig.frontend}`);
-      if (!portConfig.isSinglePortMode()) {
-        console.log(`   • Services: ${this.currentConfig.services}`);
-        console.log(`   • WhatsApp: ${this.currentConfig.whatsapp}`);
-      } else {
-        console.log(`   • Services: Integrated into frontend`);
-        console.log(`   • WhatsApp: Integrated into frontend`);
-      }
+      console.log(`   • Services: ${this.currentConfig.services}`);
+      console.log(`   • WhatsApp: ${this.currentConfig.whatsapp}`);
       
     } catch (error: any) {
       console.error('❌ Failed to initialize Port Manager:', error);

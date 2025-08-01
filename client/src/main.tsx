@@ -1,7 +1,6 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
 import { useEffect } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
 import "./index.css";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
@@ -26,7 +25,7 @@ function preloadCriticalResources() {
       credentials: 'include'
     }).catch(() => {}); // Silent fail for prefetch
   });
-
+  
   // Preload critical CSS
   const cssLink = document.createElement("link");
   cssLink.rel = "preload";
@@ -48,42 +47,25 @@ setTimeout(() => {
   }
 }, 1000);
 
-const container = document.getElementById('root');
-if (!container) {
-  throw new Error('Root element not found');
-}
-
-// Remove any existing loader
-const loaderElement = document.getElementById('initial-loader');
-if (loaderElement) {
-  loaderElement.remove();
-  console.log('React mounted, removing loader');
-}
-
-const root = createRoot(container);
+const root = createRoot(document.getElementById("root")!);
 
 // Wrap App in component that handles loading screen
 function AppWithLoader() {
   // Hide loader after React has properly mounted
   useEffect(() => {
-    // Immediate loader hiding for faster perceived performance
+    // Force hide loader immediately when React starts
     console.log('React mounted, hiding loader immediately');
     hideInitialLoader();
-
-    // Pre-initialize critical app components
-    const preInitTimer = setTimeout(() => {
-      // Pre-warm critical routes and contexts
-      console.log('Pre-warming critical components');
-    }, 50);
-
-    return () => clearTimeout(preInitTimer);
+    
+    // Also hide after short delay as backup
+    const timer = setTimeout(() => {
+      hideInitialLoader();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
-
+  
   return <App />;
 }
 
-root.render(
-  <StrictMode>
-    <AppWithLoader />
-  </StrictMode>
-);
+root.render(<AppWithLoader />);
