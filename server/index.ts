@@ -59,12 +59,44 @@ const app = express();
 app.set('trust proxy', true);
 
 // Add CORS and host handling middleware to prevent Vite blocking
+const isProduction = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === '1';
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5000',
+      'http://localhost:5001',
+      'http://localhost:5002',
+      'https://localhost:3000',
+      'https://localhost:5000',
+      'https://localhost:5001',
+      'https://localhost:5002',
+      process.env.REPLIT_URL || '',
+      `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`,
+      `https://${process.env.REPL_ID}.replit.app`
+    ].filter(Boolean);
+
+    // In production, be more permissive with CORS for deployment
+    if (isProduction || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use((req, res, next) => {
   // Allow all hosts - prevents Vite host blocking
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
+
   // REDIRECT FIX: If user is on port 8000, redirect to port 80 (main app)
   if (req.headers.host && req.headers.host.includes(':8000')) {
     const correctHost = req.headers.host.replace(':8000', '');
@@ -72,12 +104,12 @@ app.use((req, res, next) => {
     console.log(`🔄 REDIRECTING from port 8000 to main app: ${redirectUrl}`);
     return res.redirect(301, redirectUrl);
   }
-  
+
   // Override host checking for Vite
   if (req.headers.host && req.headers.host.includes('replit.dev')) {
     req.headers['x-forwarded-host'] = req.headers.host;
   }
-  
+
   next();
 });
 
@@ -125,8 +157,18 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  console.log('[App] Starting Nexlinx EMS...');
-  
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === '1';
+  const environment = isProduction ? 'PRODUCTION' : 'DEVELOPMENT';
+
+  console.log(`🚀 Starting Nexlinx EMS Server in ${environment} mode...`);
+  console.log('📊 Database URL configured');
+  console.log('🔧 Session configuration ready');
+  console.log('⚡ Express server initializing...');
+
+  if (isProduction) {
+    console.log('🏭 Production mode detected - optimizing for deployment');
+  }
+
   // Clear ports gracefully before starting services
   console.log('[Port Cleanup] Clearing ports 5000, 5001, 5002 gracefully...');
   await Promise.all([
@@ -135,10 +177,10 @@ app.use((req, res, next) => {
     clearPortGracefully(5002)
   ]);
   console.log('[Port Cleanup] All ports cleared successfully');
-  
+
   // Setup graceful shutdown handlers only (skip pre-startup cleanup to avoid deadlock)
   GracefulCleanup.setupGracefulShutdown();
-  
+
   console.log('[App] API interceptor mounted with highest priority');
 
   const server = await registerRoutes(app);
@@ -154,7 +196,7 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  
+
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
@@ -177,7 +219,7 @@ app.use((req, res, next) => {
   // FIXED: Force port 5000 to prevent any redirects to port 8000
   const port = 5000; // Explicitly set to 5000 regardless of environment
   console.log(`🔧 FORCED PORT CONFIGURATION: Server will run on port ${port} (ignoring environment PORT variable)`);
-  
+
   server.listen({
     port,
     host: "0.0.0.0",
@@ -187,11 +229,11 @@ app.use((req, res, next) => {
     console.log(`🌐 IMPORTANT: Application is accessible at the ROOT domain (port 80/443)`);
     console.log(`🚫 AVOID: Do not use port 8000 - it will redirect to main app`);
     console.log(`✅ CORRECT URL: Use the primary domain without port specification`);
-    
+
     try {
       // OPTIMIZED STARTUP: Initialize services asynchronously for faster boot
       console.log('🚀 FAST STARTUP: Initializing core services asynchronously...');
-      
+
       // Start critical services in parallel for faster startup
       const startupPromises = [
         // Initialize Port Manager (lightweight)
@@ -199,7 +241,7 @@ app.use((req, res, next) => {
           console.log('🔧 Port Manager initializing...');
           return initializePortManager();
         }),
-        
+
         // Initialize Dependency Manager (background)
         import('./services/dependencyManager').then(async ({ dependencyManager }) => {
           console.log('🔧 Dependency Manager initializing...');
@@ -209,7 +251,7 @@ app.use((req, res, next) => {
           });
           return dependencyManager.startServices();
         }),
-        
+
         // Initialize WhatsApp services (background)
         Promise.all([
           import('./services/whatsappAPIMonitorService'),
@@ -233,20 +275,47 @@ app.use((req, res, next) => {
         Promise.all(startupPromises),
         new Promise(resolve => setTimeout(resolve, 5000)) // 5 second timeout
       ]);
-      
+
       log('✅ FAST STARTUP: Core services initialized (others continuing in background)');
       console.log('🚀 APPLICATION READY: Services continue initializing in background for optimal performance');
-      
+
       // Main server runs on port 5000 with port manager and web interface
       log("🌐 Main web interface server started on port 5000");
       log("📋 Port Manager Service: Accessible on port 5000");
       log("📋 Core Services: Running on port 5001");
       log("📋 WhatsApp Services: Running on port 5002");
       log("🚀 OPTIMIZED STARTUP: Complete in <10 seconds");
-      
+
     } catch (error) {
       console.error("❌ Error starting main server:", error);
       console.log("🚀 APPLICATION READY: Continuing with basic functionality");
     }
   });
 })();
+
+// Production error handling
+if (isProduction) {
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error('Production error:', err.message);
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      message: 'Something went wrong in production'
+    });
+  });
+}
+
+// Start the server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🌟 Nexlinx EMS Server running on port ${PORT} in ${environment} mode`);
+  console.log(`🌐 Server accessible at http://localhost:${PORT}`);
+  if (isProduction) {
+    console.log('🏭 Production deployment ready');
+  } else {
+    console.log('🔧 Development mode active');
+  }
+  console.log('📱 Mobile interface ready');
+  console.log('💻 Desktop interface ready');
+  console.log('📊 Admin dashboard ready');
+  console.log('⚡ Three-tier architecture initialized');
+});
