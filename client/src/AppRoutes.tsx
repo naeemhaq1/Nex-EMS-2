@@ -1,3 +1,4 @@
+
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,15 +7,15 @@ import { useMobile } from '@/hooks/use-mobile';
 // Lazy load components for better performance
 const Login = React.lazy(() => import('@/pages/Login'));
 const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
-const MobileRouter = React.lazy(() => import('@/components/MobileRouter'));
+const MobileRouter = React.lazy(() => import('@/pages/mobile/MobileRouter'));
 
 // Desktop Components
 const Layout = React.lazy(() => import('@/components/Layout'));
 const DesktopEmployeeDashboard = React.lazy(() => import('@/pages/DesktopEmployeeDashboard'));
 const DesktopAdminDashboard = React.lazy(() => import('@/pages/DesktopAdminDashboard'));
 const AttendanceRecords = React.lazy(() => import('@/pages/AttendanceRecords'));
-const EmployeeDirectory = React.lazy(() => import('@/pages/EmployeeDirectory'));
-const EmployeeProfile = React.lazy(() => import('@/pages/EmployeeProfile'));
+const EmployeeDirectory = React.lazy(() => import('@/pages/NewEmployeeDirectory'));
+const EmployeeProfile = React.lazy(() => import('@/pages/NewEmployeeProfile'));
 
 // Loading fallback component
 const LoadingFallback = () => (

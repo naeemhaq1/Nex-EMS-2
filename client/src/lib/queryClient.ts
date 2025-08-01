@@ -1,82 +1,52 @@
-import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 
-async function throwIfResNotOk(res: Response) {
-  if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
-  }
-}
+// Default query function for TanStack Query
+const defaultQueryFn = async ({ queryKey }: { queryKey: any[] }) => {
+  const url = queryKey[0];
+  console.log('Default queryFn called for:', url);
 
-export async function apiRequest(
-  options: {
-    url: string;
-    method?: string;
-    data?: unknown | undefined;
-  }
-): Promise<any> {
-  const { url, method = "GET", data } = options;
-  
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+  const response = await fetch(url, {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
   });
 
-  await throwIfResNotOk(res);
-  
-  // For 204 No Content responses, don't try to parse JSON
-  if (res.status === 204) {
-    return null;
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
   }
-  
-  // Check if response has JSON content
-  const contentType = res.headers.get("content-type");
-  if (contentType && contentType.includes("application/json")) {
-    return await res.json();
-  }
-  
-  // For other responses, try to parse as JSON (fallback)
-  try {
-    return await res.json();
-  } catch {
-    // If JSON parsing fails, return null for successful responses
-    return null;
-  }
-}
 
-type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
-
-    await throwIfResNotOk(res);
-    return await res.json();
-  };
+  return response.json();
+};
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
+      queryFn: defaultQueryFn,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: (failureCount, error: any) => {
+        // Don't retry on 4xx errors except 408, 429
+        if (error?.status >= 400 && error?.status < 500 && ![408, 429].includes(error?.status)) {
+          return false;
+        }
+        return failureCount < 3;
+      },
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes cache for faster startup
-      cacheTime: 10 * 60 * 1000, // 10 minutes memory retention
-      retry: 1, // Single retry for failed requests
-      networkMode: 'online', // Skip network checks
+      // Suppress AbortError logs
+      onError: (error: any) => {
+        if (error?.name === 'AbortError') {
+          return; // Don't log AbortErrors
+        }
+        console.error('Query error:', error);
+      },
     },
     mutations: {
-      retry: 1,
-      networkMode: 'online',
+      onError: (error: any) => {
+        if (error?.name === 'AbortError') {
+          return; // Don't log AbortErrors
+        }
+        console.error('Mutation error:', error);
+      },
     },
   },
 });
