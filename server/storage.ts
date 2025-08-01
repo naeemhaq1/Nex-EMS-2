@@ -663,8 +663,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByResetToken(token: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.passwordResetToken, token));
-    return user || undefined;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.passwordResetToken, token));
+      return user || undefined;
+    } catch (error) {
+      console.error('Error getting user by reset token:', error);
+      throw error;
+    }
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
