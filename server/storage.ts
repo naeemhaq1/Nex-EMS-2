@@ -666,8 +666,6 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.passwordResetToken, token));
     return user || undefined;
   }
-    return user || undefined;
-  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
