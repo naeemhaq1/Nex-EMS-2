@@ -1,6 +1,4 @@
 
-#!/usr/bin/env node
-
 /**
  * Nexlinx EMS Main Entry Point
  * Starts the complete application with all services
