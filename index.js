@@ -138,7 +138,7 @@ import employeesRoutes from './routes/employees.ts';
 import dashboardRoutes from './routes/dashboard.ts';
 import attendanceRoutes from './routes/attendance.ts';
 import reportsRoutes from './routes/reports.ts';
-import stableAuthRoutes from './routes/stableAuth.js';
+import stableAuthRoutes from './routes/stableAuth.ts';
 
 // Mount routes
 app.use('/api/auth', authRoutes);
