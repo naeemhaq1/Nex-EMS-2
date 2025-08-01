@@ -16,12 +16,13 @@ export const departmentGroups = pgTable("department_groups", {
   createdBy: integer("created_by"),
 });
 
-export const departmentGroupRelations = relations(departmentGroups, ({ one }) => ({
-  creator: one(departmentGroups, {
-    fields: [departmentGroups.createdBy],
-    references: [departmentGroups.id],
-  }),
-}));
+// Temporarily removing relations to isolate setName error
+// export const departmentGroupRelations = relations(departmentGroups, ({ one }) => ({
+//   creator: one(departmentGroups, {
+//     fields: [departmentGroups.createdBy],
+//     references: [departmentGroups.id],
+//   }),
+// }));
 
 export const insertDepartmentGroupSchema = z.object({
   name: z.string().min(1),
