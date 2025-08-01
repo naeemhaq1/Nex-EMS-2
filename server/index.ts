@@ -245,7 +245,7 @@ app.use((req, res, next) => {
 })();
 
 // Auth routes
-import userRoutes from './routes/userRoutes';
+import userRoutes from './routes/users';
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/auth', userRoutes); // Login routes are in userRoutes
