@@ -44,12 +44,12 @@ export function getLastNDaysPakistan(n: number): string[] {
   const dates: string[] = [];
   const now = new Date();
   const pktNow = toPakistanTime(now);
-  
+
   for (let i = 0; i < n; i++) {
     const date = new Date(pktNow.getTime() - (i * 24 * 60 * 60 * 1000));
     dates.push(date.toISOString().split('T')[0]);
   }
-  
+
   return dates;
 }
 
@@ -67,7 +67,7 @@ export function isPakistanToday(dateStr: string): boolean {
 export function formatPakistanTime(dateInput: string | Date): string {
   const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
   const pktTime = toPakistanTime(date);
-  
+
   return pktTime.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
@@ -91,7 +91,7 @@ export function getMinutesDifference(startTime: string, endTime: string): number
 export function formatPKTDateTime(dateInput: string | Date, format: string = "YYYY-MM-DD HH:mm:ss"): string {
   const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
   const pktTime = toPakistanTime(date);
-  
+
   // Handle simple time formats
   if (format === "HH:mm:ss") {
     return pktTime.toLocaleTimeString('en-GB', { 
@@ -102,7 +102,7 @@ export function formatPKTDateTime(dateInput: string | Date, format: string = "YY
       timeZone: 'UTC' // Already converted to PKT above
     });
   }
-  
+
   if (format === "HH:mm") {
     return pktTime.toLocaleTimeString('en-GB', { 
       hour: '2-digit', 
@@ -111,7 +111,7 @@ export function formatPKTDateTime(dateInput: string | Date, format: string = "YY
       timeZone: 'UTC' // Already converted to PKT above
     });
   }
-  
+
   // Default full datetime format
   const year = pktTime.getFullYear();
   const month = String(pktTime.getMonth() + 1).padStart(2, '0');
@@ -119,7 +119,7 @@ export function formatPKTDateTime(dateInput: string | Date, format: string = "YY
   const hours = String(pktTime.getHours()).padStart(2, '0');
   const minutes = String(pktTime.getMinutes()).padStart(2, '0');
   const seconds = String(pktTime.getSeconds()).padStart(2, '0');
-  
+
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
@@ -136,10 +136,10 @@ export function getCurrentPKTTime(): Date {
 export function formatMobileDate(dateInput: string | Date): string {
   const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
   const pktTime = toPakistanTime(date);
-  
+
   const today = toPakistanTime(new Date());
   const isToday = pktTime.toDateString() === today.toDateString();
-  
+
   if (isToday) {
     return pktTime.toLocaleTimeString('en-US', {
       hour: '2-digit',
@@ -148,10 +148,26 @@ export function formatMobileDate(dateInput: string | Date): string {
       timeZone: 'UTC' // Already converted to PKT above
     });
   }
-  
+
   return pktTime.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     timeZone: 'UTC' // Already converted to PKT above
   });
 }
+
+export const formatTime24h = (date: Date): string => {
+  return date.toLocaleTimeString('en-US', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+export const formatTime12h = (date: Date): string => {
+  return date.toLocaleTimeString('en-US', {
+    hour12: true,
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
