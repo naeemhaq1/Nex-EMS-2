@@ -130,7 +130,7 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 // Import routes
-import authRoutes from './routes/auth.js';
+import authRoutes from './routes/stableAuth.js';
 import stableAuthRoutes from './routes/stableAuth.js';
 import userRoutes from './routes/users.js';
 import userManagementRoutes from './routes/userManagement.js';
