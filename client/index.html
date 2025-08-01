@@ -142,6 +142,19 @@
     
     <!-- Disable Vite error overlay and AbortError handling -->
     <script>
+      // CRITICAL BIGINT POLYFILL - Must be first to prevent undefined errors
+      if (typeof BigInt === 'undefined') {
+        window.BigInt = function(value) {
+          if (typeof value === 'string') {
+            return parseInt(value, 10);
+          }
+          return parseInt(value);
+        };
+        // Add BigInt to global scope for modules
+        window.global = window.global || window;
+        window.global.BigInt = window.BigInt;
+      }
+      
       // Disable runtime error modal overlay - MULTIPLE APPROACHES
       window.__vite_plugin_runtime_error_modal_disabled = true;
       window.__vite_plugin_runtime_error_modal_force_disable = true;

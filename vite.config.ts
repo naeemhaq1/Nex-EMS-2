@@ -43,8 +43,8 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis',
+    'process.env.WS_TOKEN': JSON.stringify(process.env.WS_TOKEN || 'fallback_token'),
     __WS_TOKEN__: JSON.stringify(process.env.WS_TOKEN || 'fallback_token'),
-    BigInt: 'BigInt',
   },
   optimizeDeps: {
     include: ["react", "react-dom"],
