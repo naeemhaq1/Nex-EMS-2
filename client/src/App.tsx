@@ -5,9 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { TooltipProvider } from '@/components/ui/tooltip';
-
-// Lazy load AppRoutes to prevent circular dependency issues
-const AppRoutes = React.lazy(() => import('./AppRoutes'));
+import AppRoutes from "./AppRoutes";
 
 const queryClient = new QueryClient({
   defaultOptions: {

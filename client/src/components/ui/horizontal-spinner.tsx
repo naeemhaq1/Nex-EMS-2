@@ -52,7 +52,7 @@ export function HorizontalSpinner({
       {label && (
         <div className="text-sm font-medium text-white mb-1">{label}</div>
       )}
-      
+
       <div className="flex items-center space-x-4">
         <Button
           variant="ghost"
@@ -99,3 +99,5 @@ export function HorizontalSpinner({
     </div>
   );
 }
+
+export default HorizontalSpinner;
