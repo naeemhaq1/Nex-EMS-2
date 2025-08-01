@@ -16,21 +16,30 @@ router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({ message: 'Username and password are required' });
+      return res.status(400).json({ success: false, message: 'Username and password are required' });
     }
 
     // Trim trailing spaces from username and find user
     const trimmedUsername = username.trim();
-    const [user] = await db.select().from(users).where(eq(users.username, trimmedUsername));
+    
+    // Add proper error handling for database query
+    let user;
+    try {
+      const result = await db.select().from(users).where(eq(users.username, trimmedUsername));
+      user = result[0];
+    } catch (dbError) {
+      console.error('Database query error:', dbError);
+      return res.status(500).json({ success: false, message: 'Database connection error' });
+    }
 
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
     // Generate JWT token
@@ -46,6 +55,7 @@ router.post('/login', async (req, res) => {
 
     // Return user data and token
     res.json({
+      success: true,
       user: {
         id: user.id,
         employeeCode: user.employeeCode,
@@ -60,7 +70,7 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Login failed' });
+    res.status(500).json({ success: false, message: 'Login failed' });
   }
 });
 

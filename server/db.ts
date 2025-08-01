@@ -1,24 +1,22 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { neon } from "@neondatabase/serverless";
-import { Pool } from "pg";
-import * as schema from "@shared/schema";
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import ws from 'ws';
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL environment variable is required");
+// Configure WebSocket for Neon
+if (!globalThis.WebSocket) {
+  globalThis.WebSocket = ws as any;
 }
 
-console.log('✅ Database connection configured successfully');
+// Configure Neon for serverless environment
+neonConfig.fetchConnectionCache = true;
 
-// Use neon for serverless environments  
-const sql = neon(connectionString);
-export const db = drizzle(sql, {
-  schema,
-  logger: false // Disable query logging for cleaner output
+const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  ssl: true,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000
 });
 
-// Also export pool for session store
-export const pool = new Pool({
-  connectionString,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-});
+export const db = drizzle(pool);
+export { pool };
