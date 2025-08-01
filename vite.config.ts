@@ -11,19 +11,16 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./client/src"),
-      "@shared": path.resolve(__dirname, "./shared"),
-      // Force single React instance to prevent hook dispatcher errors
-      "react": path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
-      "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime"),
-      "react-dom/client": path.resolve(__dirname, "./node_modules/react-dom/client"),
     },
-    dedupe: ["react", "react-dom", "react/jsx-runtime", "react-dom/client"],
   },
   root: path.resolve(__dirname, "client"),
   build: {
     outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
+  },
+  define: {
+    global: 'globalThis',
+    __WS_TOKEN__: JSON.stringify(process.env.WS_TOKEN || ''),
   },
   optimizeDeps: {
     include: ["react", "react-dom"],
