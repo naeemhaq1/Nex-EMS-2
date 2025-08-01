@@ -133,7 +133,7 @@ app.post('/api/auth/logout', (req, res) => {
 const authRoutes = require('./routes/auth');
 const stableAuthRoutes = require('./routes/stableAuth');
 const userRoutes = require('./routes/users');
-import userManagementRoutes from './routes/userManagement.js';
+import userManagementRoutes from './routes/userManagement.ts';
 import roleManagementRoutes from './routes/roleManagement.js';
 const sessionManagementRoutes = require('./routes/sessionManagement');
 
