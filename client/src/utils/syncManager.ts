@@ -482,8 +482,7 @@ class SyncManager {
       const transaction = this.db!.transaction(['syncQueue'], 'readwrite');
       const store = transaction.objectStore('syncQueue');
       const index = store.index('status');
-      const request = index.openCursor(IDBKeyRange.only```python
-('failed'));
+      const request = index.openCursor(IDBKeyRange.only('failed'));
 
       request.onsuccess = (event) => {
         const cursor = (event.target as IDBRequest).result;

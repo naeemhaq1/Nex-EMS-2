@@ -37,11 +37,11 @@ export const pool = {
       // Use the sql function directly with proper parameter handling
       let result;
       if (params && params.length > 0) {
-        // For parameterized queries - use proper Neon syntax
-        result = await sql.unsafe(text, params);
+        // For parameterized queries - use template literal syntax
+        result = await sql(text, params);
       } else {
-        // For non-parameterized queries - use raw query
-        result = await sql.unsafe(text);
+        // For non-parameterized queries - use template literal
+        result = await sql`${sql.unsafe(text)}`;
       }
 
       // Ensure result is always an array and properly formatted
@@ -66,9 +66,9 @@ export const pool = {
       try {
         let result;
         if (params && params.length > 0) {
-          result = await sql.unsafe(text, params);
+          result = await sql(text, params);
         } else {
-          result = await sql.unsafe(text);
+          result = await sql`${sql.unsafe(text)}`;
         }
         
         const rows = Array.isArray(result) ? result : (result ? [result] : []);
