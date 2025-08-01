@@ -28,11 +28,22 @@ async function testConnection() {
 // Initialize connection test
 testConnection().catch(console.error);
 
-// Create a PostgreSQL-compatible pool wrapper for session store
+// For backward compatibility with existing code that expects pool
+// Create a pool-compatible wrapper for the session store
 export const pool = {
   query: async (text: string, params?: any[]) => {
     try {
-      const result = await sql(text, params || []);
+      // Use the template literal syntax for Neon instead of unsafe
+      let result;
+      if (params && params.length > 0) {
+        // For parameterized queries, we need to handle them differently
+        // Since Neon doesn't have unsafe, we'll use the sql template function
+        result = await sql(text, params);
+      } else {
+        // For non-parameterized queries, use the sql template directly
+        result = await sql([text] as any);
+      }
+      
       // Convert Neon result format to pg-compatible format
       return {
         rows: Array.isArray(result) ? result : [result],
@@ -42,14 +53,19 @@ export const pool = {
         oid: 0
       };
     } catch (error) {
-      console.error('Database query error:', error);
+      console.error('Pool query error:', error);
       throw error;
     }
   },
   end: () => Promise.resolve(),
   connect: () => Promise.resolve({ 
     query: async (text: string, params?: any[]) => {
-      const result = await sql(text, params || []);
+      let result;
+      if (params && params.length > 0) {
+        result = await sql(text, params);
+      } else {
+        result = await sql([text] as any);
+      }
       return {
         rows: Array.isArray(result) ? result : [result],
         rowCount: Array.isArray(result) ? result.length : (result ? 1 : 0),

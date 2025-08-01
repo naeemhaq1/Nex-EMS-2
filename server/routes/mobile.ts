@@ -96,12 +96,3 @@ export async function getJobSites(req: Request, res: Response) {
     res.status(500).json({ error: "Failed to get job sites" });
   }
 }
-
-// Create and export router
-import express from 'express';
-const router = express.Router();
-
-router.post('/punch', mobilePunchOut);
-router.get('/job-sites', getJobSites);
-
-export default router;

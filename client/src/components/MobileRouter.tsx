@@ -12,8 +12,6 @@ import MobileAttendanceManagement from "@/pages/mobile/MobileAttendanceManagemen
 import MobileGroups from "@/pages/mobile/MobileGroups";
 import MobileCheckAttend from "@/pages/mobile/MobileCheckAttend";
 import NotFound from "@/pages/not-found";
-import MobileServiceMonitoringNew from '../pages/mobile/MobileServiceMonitoringNew';
-import ComprehensiveUserRoleManagement from '../pages/ComprehensiveUserRoleManagement';
 
 export function MobileRouter() {
   return (
