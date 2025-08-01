@@ -14,11 +14,40 @@ app.use(express.static(path.join(__dirname, 'dist', 'public')));
 
 // Basic health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    service: 'NEXLINX EMS'
-  });
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Add basic auth routes for testing
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body;
+
+  // Temporary test user for development
+  if (username === 'admin' && password === 'admin') {
+    res.json({
+      success: true,
+      user: {
+        id: 1,
+        username: 'admin',
+        role: 'admin',
+        firstName: 'Test',
+        lastName: 'Admin'
+      }
+    });
+  } else {
+    res.status(401).json({
+      success: false,
+      error: 'Invalid credentials'
+    });
+  }
+});
+
+app.get('/api/auth/me', (req, res) => {
+  // Return null for now - will be implemented with proper session management
+  res.json({ user: null });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  res.json({ success: true });
 });
 
 // Serve the React app for all other routes
