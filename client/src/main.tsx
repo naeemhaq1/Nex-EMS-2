@@ -1,6 +1,7 @@
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.tsx';
 import { useEffect } from "react";
-import { createRoot } from "react-dom/client";
-import App from "./App";
 import "./index.css";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
@@ -47,7 +48,19 @@ setTimeout(() => {
   }
 }, 1000);
 
-const root = createRoot(document.getElementById("root")!);
+const container = document.getElementById('root');
+if (!container) {
+  throw new Error('Root element not found');
+}
+
+// Remove any existing loader
+const loaderElement = document.getElementById('initial-loader');
+if (loaderElement) {
+  loaderElement.remove();
+  console.log('React mounted, removing loader');
+}
+
+const root = createRoot(container);
 
 // Wrap App in component that handles loading screen
 function AppWithLoader() {
@@ -69,4 +82,8 @@ function AppWithLoader() {
   return <App />;
 }
 
-root.render(<AppWithLoader />);
+root.render(
+  <StrictMode>
+    <AppWithLoader />
+  </StrictMode>
+);
