@@ -4,59 +4,50 @@ import { requireStableAuth, requirePermission } from '../middleware/stableAuth';
 
 const router = Router();
 
-/**
- * Login endpoint
- */
-router.post('/login', async (req: Request, res: Response) => {
+// Login endpoint
+router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
+    console.log('Stable auth login attempt:', username);
 
     if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password required' });
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Username and password are required' 
+      });
     }
 
-    const result = await stableAuthService.authenticate(username, password);
+    const result = await stableAuthService.authenticateUser(username, password);
+    console.log('Authentication result:', result.success ? 'Success' : result.error);
 
-    if (!result.success) {
-      return res.status(401).json({ error: result.error });
+    if (result.success && result.user) {
+      req.session.stableUserId = result.user.id;
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ success: false, error: 'Session error' });
+        }
+
+        console.log('Session saved for user:', result.user.id);
+        res.json({ 
+          success: true, 
+          user: result.user,
+          message: 'Login successful' 
+        });
+      });
+    } else {
+      console.log('Login failed:', result.error);
+      res.status(401).json({ 
+        success: false, 
+        error: result.error || 'Invalid credentials' 
+      });
     }
-
-    if (!result.user) {
-      return res.status(500).json({ error: 'Authentication error' });
-    }
-
-    // Set stable session data
-    req.session.stableUserId = result.user.id;
-    req.session.stableUsername = result.user.username;
-    req.session.stableRole = result.user.role;
-    req.session.stableAuthTime = Date.now();
-
-    // Also set legacy session data for backward compatibility
-    req.session.userId = result.user.id.toString();
-    req.session.usernum = result.user.id;
-    req.session.username = result.user.username;
-    req.session.role = result.user.role;
-    req.session.employeeId = result.user.employeeId;
-    req.session.permissions = result.user.permissions;
-
-    console.log(`[StableAuth] Login successful: ${result.user.username}`);
-
-    res.json({
-      success: true,
-      user: {
-        id: result.user.id,
-        username: result.user.username,
-        role: result.user.role,
-        fullName: result.user.fullName,
-        employeeCode: result.user.employeeCode,
-        permissions: result.user.permissions,
-      },
-      requiresPasswordChange: result.requiresPasswordChange
-    });
-
   } catch (error) {
-    console.error('[StableAuth] Login error:', error);
-    res.status(500).json({ error: 'Authentication system error' });
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
   }
 });
 
@@ -83,25 +74,53 @@ router.post('/logout', (req: Request, res: Response) => {
   }
 });
 
-/**
- * Get current user info
- */
-router.get('/me', requireStableAuth, (req: Request, res: Response) => {
-  if (!req.stableUser) {
-    return res.status(401).json({ error: 'Not authenticated' });
+// Get current user info
+router.get('/user', requireStableAuth, async (req, res) => {
+  try {
+    if (!req.stableUser) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    const user = await stableAuthService.getUserById(req.stableUser.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json({
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      fullName: user.fullName,
+      employeeCode: user.employeeCode,
+      permissions: user.permissions
+    });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
+});
 
-  res.json({
-    user: {
-      id: req.stableUser.id,
-      username: req.stableUser.username,
-      role: req.stableUser.role,
-      fullName: req.stableUser.fullName,
-      employeeCode: req.stableUser.employeeCode,
-      permissions: req.stableUser.permissions,
+  // Get current user info (alternative endpoint)
+  router.get('/me', requireStableAuth, async (req, res) => {
+    try {
+    if (!req.stableUser) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+      const user = await stableAuthService.getUserById(req.stableUser.id);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      res.json({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        fullName: user.fullName,
+        employeeCode: user.employeeCode,
+        permissions: user.permissions
+      });
+    } catch (error) {
+      console.error('Get user error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
-});
 
 /**
  * Change password

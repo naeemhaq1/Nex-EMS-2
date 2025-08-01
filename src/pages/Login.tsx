@@ -30,8 +30,13 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Use fast direct login with optimized AuthContext (1.5s timeout, JSONB operators)
+      console.log('Login form submitted for user:', username);
+      
+      // Clear any previous auth state
+      localStorage.removeItem('auth-state');
+      
       const result = await login(username, password);
+      console.log('Login result:', result);
       
       if (!result.success) {
         // Check if this is a first-time password change requirement
@@ -42,19 +47,22 @@ export default function Login() {
           });
           setView('first-time');
         } else {
-          setError(result.error || "Login failed");
+          setError(result.error || "Login failed. Please check your credentials.");
         }
       } else {
-        // Login successful - redirect to appropriate dashboard
-        if (shouldRedirectToMobile()) {
-          setLocation('/mobile/employee/dashboard');
-        } else {
-          setLocation('/');
-        }
+        console.log('Login successful, redirecting...');
+        // Small delay to ensure state is set
+        setTimeout(() => {
+          if (shouldRedirectToMobile()) {
+            setLocation('/mobile/employee/dashboard');
+          } else {
+            setLocation('/admin');
+          }
+        }, 100);
       }
     } catch (error) {
-      console.error('Fast login error:', error);
-      setError(error instanceof Error ? error.message : "Login failed. Please try again.");
+      console.error('Login error:', error);
+      setError("Login failed. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
