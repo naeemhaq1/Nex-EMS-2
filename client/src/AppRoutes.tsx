@@ -1,56 +1,69 @@
-import { Switch, Route } from 'wouter';
-import { useAuth } from '@/contexts/AuthContext';
-import { useMobile } from '@/hooks/use-mobile';
+
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
+import { useMobile } from './hooks/use-mobile';
 
 // Import pages
-import Login from '@/pages/Login';
-import Dashboard from '@/pages/Dashboard';
-
-// Mobile components
-import MobileRouter from '@/components/MobileRouter';
-import MobileEmployeeDashboard from '@/pages/mobile/MobileEmployeeDashboard';
-import MobileAdminDashboard from '@/pages/mobile/admin/MobileAdminDashboard';
-import MobileAttendance from '@/pages/mobile/MobileAttendance';
-import MobileSettings from '@/pages/mobile/MobileSettings';
-
-// Loading component
-import HorizontalSpinner from '@/components/ui/horizontal-spinner';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import MobileEmployeeDashboard from './pages/mobile/MobileEmployeeDashboard';
+import MobileAdminDashboard from './pages/mobile/admin/MobileAdminDashboard';
+import MobileAttendance from './pages/mobile/MobileAttendance';
+import MobileSettings from './pages/mobile/MobileSettings';
 
 export default function AppRoutes() {
   const { user, loading } = useAuth();
   const isMobile = useMobile();
 
-  // Show loading spinner while checking authentication
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <HorizontalSpinner />
+        <div className="text-lg">Loading...</div>
       </div>
     );
   }
 
-  // If not authenticated, show login
   if (!user) {
-    return <Login />;
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
   }
 
-  // If mobile, use mobile router
+  // Mobile routes
   if (isMobile) {
-    return <MobileRouter />;
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      return (
+        <Routes>
+          <Route path="/" element={<MobileAdminDashboard />} />
+          <Route path="/dashboard" element={<MobileAdminDashboard />} />
+          <Route path="/attendance" element={<MobileAttendance />} />
+          <Route path="/settings" element={<MobileSettings />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      );
+    } else {
+      return (
+        <Routes>
+          <Route path="/" element={<MobileEmployeeDashboard />} />
+          <Route path="/dashboard" element={<MobileEmployeeDashboard />} />
+          <Route path="/attendance" element={<MobileAttendance />} />
+          <Route path="/settings" element={<MobileSettings />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      );
+    }
   }
 
   // Desktop routes
   return (
-    <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/mobile/employee" component={MobileEmployeeDashboard} />
-      <Route path="/mobile/admin" component={MobileAdminDashboard} />
-      <Route path="/mobile/attendance" component={MobileAttendance} />
-      <Route path="/mobile/settings" component={MobileSettings} />
-      <Route>
-        <Dashboard />
-      </Route>
-    </Switch>
+    <Routes>
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
