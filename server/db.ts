@@ -1,3 +1,4 @@
+
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { neon } from "@neondatabase/serverless";
 import * as schema from "@shared/schema";
@@ -35,33 +36,27 @@ export const pool = {
     try {
       // Use the sql function directly with proper parameter handling
       let result;
-      try {
-        if (params && params.length > 0) {
-          // For parameterized queries - use proper Neon syntax
-          result = await sql.unsafe(text, params);
-        } else {
-          // For non-parameterized queries - use raw query
-          result = await sql.unsafe(text);
-        }
-
-        // Ensure result is always an array and properly formatted
-        const rows = Array.isArray(result) ? result : (result ? [result] : []);
-        
-        // Convert Neon result format to pg-compatible format
-        return {
-          rows: rows,
-          rowCount: rows.length,
-          command: text.trim().split(' ')[0].toUpperCase(),
-          fields: [],
-          oid: 0
-        };
-      } catch (error) {
-        console.error('[DB] Query error:', error);
-        throw error;
+      if (params && params.length > 0) {
+        // For parameterized queries - use proper Neon syntax
+        result = await sql.unsafe(text, params);
+      } else {
+        // For non-parameterized queries - use raw query
+        result = await sql.unsafe(text);
       }
+
+      // Ensure result is always an array and properly formatted
+      const rows = Array.isArray(result) ? result : (result ? [result] : []);
+      
+      // Convert Neon result format to pg-compatible format
+      return {
+        rows: rows,
+        rowCount: rows.length,
+        command: text.trim().split(' ')[0].toUpperCase(),
+        fields: [],
+        oid: 0
       };
     } catch (error) {
-      console.error('Pool query error:', error);
+      console.error('[DB] Query error:', error);
       throw error;
     }
   },
@@ -89,7 +84,6 @@ export const pool = {
         console.error('[Pool] Query error:', error);
         throw error;
       }
-      };
     },
     release: () => {}
   })
