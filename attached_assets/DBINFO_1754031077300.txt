@@ -1,0 +1,12 @@
+DATABASE_URL=postgresql://neondb_owner:npg_So0ByumUAI7t@ep-dawn-fog-afjl9uwz.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require
+
+PGDATABASE=neondb
+
+PGHOST=ep-dawn-fog-afjl9uwz.c-2.us-west-2.aws.neon.tech
+
+PGPORT=5432
+
+PGUSER=neondb_owner
+
+PGPASSWORD=npg_So0ByumUAI7t
+
