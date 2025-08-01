@@ -23,7 +23,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "node index.js"
 
 [[ports]]
 localPort = 5000
