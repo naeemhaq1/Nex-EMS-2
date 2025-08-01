@@ -14,7 +14,7 @@ export * from './jobSites';
 
 // Version management (isolated to prevent conflicts)
 export { version } from './version';
-export type { ComponentVersion } from './versioning';
+export * from './versioning';
 
 // Utilities (isolated)  
 export * from './utils/phoneUtils';
