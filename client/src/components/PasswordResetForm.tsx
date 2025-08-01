@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { passwordResetSchema } from '@shared/schema';
+import { passwordResetSchema } from '@shared';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -121,7 +121,7 @@ export default function PasswordResetForm({ onBack }: PasswordResetFormProps) {
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="mobileNumber"

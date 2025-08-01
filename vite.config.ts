@@ -17,7 +17,10 @@ export default defineConfig({
   root: path.resolve(__dirname, "client"),
   server: {
     fs: {
-      allow: ['..', '.']
+      allow: ['..', '.', '../shared', '../server']
+    },
+    watch: {
+      ignored: ['!**/node_modules/.vite/**']
     }
   },
   build: {

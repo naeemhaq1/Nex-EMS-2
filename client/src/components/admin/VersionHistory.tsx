@@ -20,7 +20,7 @@ import {
   getVersionHistory,
   type ComponentVersion,
   type VersionHistory as VersionHistoryType
-} from '@shared/versioning';
+} from '@shared';
 import {
   Package,
   Clock,
@@ -89,7 +89,7 @@ const ComponentCard: React.FC<{ component: ComponentVersion }> = ({ component })
       </CardHeader>
       <CardContent>
         <p className="text-gray-300 text-xs mb-3">{component.description}</p>
-        
+
         <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
           <div className="flex items-center space-x-1">
             <Clock className="w-3 h-3" />
@@ -252,7 +252,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({ trigger }) => {
             <TabsTrigger value="admin" className="text-white">Admin</TabsTrigger>
             <TabsTrigger value="core" className="text-white">Core</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="all" className="mt-6">
             <div className="space-y-8">
               <CategoryTab components={coreComponents} title="Core Components" />
@@ -263,27 +263,27 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({ trigger }) => {
               <CategoryTab components={adminComponents} title="Admin Components" />
             </div>
           </TabsContent>
-          
+
           <TabsContent value="dashboards" className="mt-6">
             <CategoryTab components={dashboardComponents} title="Dashboard Components" />
           </TabsContent>
-          
+
           <TabsContent value="services" className="mt-6">
             <CategoryTab components={serviceComponents} title="Service Components" />
           </TabsContent>
-          
+
           <TabsContent value="whatsapp" className="mt-6">
             <CategoryTab components={whatsappComponents} title="WhatsApp Components" />
           </TabsContent>
-          
+
           <TabsContent value="mobile" className="mt-6">
             <CategoryTab components={mobileComponents} title="Mobile Components" />
           </TabsContent>
-          
+
           <TabsContent value="admin" className="mt-6">
             <CategoryTab components={adminComponents} title="Admin Components" />
           </TabsContent>
-          
+
           <TabsContent value="core" className="mt-6">
             <CategoryTab components={coreComponents} title="Core Components" />
           </TabsContent>
