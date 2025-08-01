@@ -1,20 +1,19 @@
 import { drizzle } from "drizzle-orm/neon-serverless";
-import { Pool } from "@neondatabase/serverless";
+import { neon } from "@neondatabase/serverless";
 import * as schema from "@shared/schema";
 
-const connectionString = process.env.DATABASE_URL || "postgresql://username:password@localhost/database";
+const connectionString = process.env.DATABASE_URL;
 
-export const pool = new Pool({ 
-  connectionString,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+if (!connectionString) {
+  throw new Error("DATABASE_URL environment variable is required");
+}
 
-export const db = drizzle(pool, { schema });
+// Use neon function for serverless
+const sql = neon(connectionString);
+export const db = drizzle(sql, { schema });
 
-// Test connection on startup
-pool.query('SELECT 1').then(() => {
+// Test connection
+sql`SELECT 1`.then(() => {
   console.log('✅ Database connection verified');
 }).catch((error) => {
   console.error('❌ Database connection failed:', error);

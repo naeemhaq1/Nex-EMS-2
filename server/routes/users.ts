@@ -217,7 +217,7 @@ router.post("/login", async (req, res) => {
     if (!passwordMatch) {
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
-    
+
       // Set session data
       req.session.userId = user.id.toString();
       req.session.usernum = user.id;
@@ -352,66 +352,77 @@ router.post('/dev/clear-sessions', async (req: Request, res: Response) => {
   }
 });
 
-// Dev auto-login endpoint (development only)
-router.post('/dev/auto-login', async (req: Request, res: Response) => {
+// Dev mode auto-login endpoint
+router.post('/dev/auto-login', async (req, res) => {
   if (process.env.NODE_ENV !== 'development') {
-    return res.status(404).json({ error: 'Not found' });
+    return res.status(403).json({ success: false, message: 'Dev auto-login only available in development mode' });
   }
 
   try {
-    // Try to login with default admin credentials
-    const result = await authService.login('admin', 'Nexlinx123#');
+    console.log('Dev auto-login: Attempting to find dev user');
 
-    if (result.success && result.user) {
-      // Set session data
-      req.session.userId = result.user.id.toString();
-      req.session.usernum = result.user.id;
-      req.session.username = result.user.username;
-      req.session.role = result.user.role;
-      req.session.employeeId = result.user.employeeId;
-      req.session.realName = result.user.realName;
-      req.session.userAgent = req.get('User-Agent');
-      req.session.ipAddress = req.ip;
-      req.session.loginTime = new Date().toISOString();
+    // Look for dev user (dev/dev)
+    const result = await db.select().from(users).where(eq(users.username, 'dev')).limit(1);
+    const devUser = result[0];
 
-      // Get permissions
-      try {
-        const rolePermissions = await storage.getRolePermissionByName(result.user.role);
-        if (rolePermissions) {
-          req.session.permissions = {
-            canCreateUsers: rolePermissions.canCreateUsers,
-            canDeleteUsers: rolePermissions.canDeleteUsers,
-            canDeleteData: rolePermissions.canDeleteData,
-            canAccessFinancialData: rolePermissions.canAccessFinancialData,
-            canManageSystem: rolePermissions.canManageSystem,
-            canManageTeams: rolePermissions.canManageTeams,
-            canChangeDesignations: rolePermissions.canChangeDesignations,
-            accessLevel: rolePermissions.accessLevel
-          };
+    if (!devUser) {
+      console.log('Dev auto-login: Dev user not found, creating one');
+
+      // Create dev user if it doesn't exist
+      const bcrypt = await import('bcrypt');
+      const hashedPassword = await bcrypt.hash('dev', 10);
+
+      const [newDevUser] = await db.insert(users).values({
+        username: 'dev',
+        password: hashedPassword,
+        role: 'admin',
+        firstName: 'Dev',
+        lastName: 'User',
+        employeeCode: 'DEV001',
+        isActive: true
+      }).returning();
+
+      // Create session for new user
+      req.session.userId = newDevUser.id;
+      req.session.username = newDevUser.username;
+      req.session.role = newDevUser.role;
+      req.session.isLoggedIn = true;
+
+      console.log('Dev auto-login: New dev user created and logged in');
+      return res.json({
+        success: true,
+        user: {
+          id: newDevUser.id,
+          username: newDevUser.username,
+          role: newDevUser.role,
+          firstName: newDevUser.firstName,
+          lastName: newDevUser.lastName,
+          employeeCode: newDevUser.employeeCode
         }
-      } catch (permError) {
-        console.warn('Could not load role permissions:', permError);
-      }
-
-      // Save session
-      await new Promise((resolve, reject) => {
-        req.session.save((err) => {
-          if (err) reject(err);
-          else resolve(true);
-        });
       });
-
-      return res.json({ 
-        success: true, 
-        user: result.user,
-        message: 'Auto-login successful' 
-      });
-    } else {
-      return res.status(500).json({ success: false, error: 'Auto-login failed' });
     }
+
+    // Create session for existing user
+    req.session.userId = devUser.id;
+    req.session.username = devUser.username;
+    req.session.role = devUser.role;
+    req.session.isLoggedIn = true;
+
+    console.log('Dev auto-login: Existing dev user logged in');
+    res.json({
+      success: true,
+      user: {
+        id: devUser.id,
+        username: devUser.username,
+        role: devUser.role,
+        firstName: devUser.firstName,
+        lastName: devUser.lastName,
+        employeeCode: devUser.employeeCode
+      }
+    });
   } catch (error) {
-    console.error('Auto-login error:', error);
-    return res.status(500).json({ success: false, error: 'Auto-login failed' });
+    console.error('Dev auto-login error:', error);
+    res.status(500).json({ success: false, message: 'Auto-login failed: ' + error.message });
   }
 });
 
