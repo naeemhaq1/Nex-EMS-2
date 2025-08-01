@@ -99,7 +99,7 @@ export function Sidebar() {
       icon: Shield,
       items: [
         ...(user?.role === "superadmin" || user?.role === "general_admin" ? [
-          { path: "/user-management", label: "User Management", icon: User },
+          { path: "/unified-user-management", label: "User Management", icon: User },
           { path: "/session-management", label: "Session Management", icon: Monitor }
         ] : []),
 
@@ -148,7 +148,7 @@ export function Sidebar() {
             </button>
           </div>
         </div>
-        
+
         {!isCollapsed && (
           <div className="p-3 border-b border-slate-700">
             <div className="flex items-center space-x-3">
@@ -299,7 +299,7 @@ export function Sidebar() {
           </button>
         </div>
       </div>
-      
+
       {!isCollapsed && (
         <div className="p-3 border-b border-slate-700">
           <div className="flex items-center space-x-3">
@@ -351,7 +351,7 @@ export function Sidebar() {
         {navGroups.map((group) => {
           const isExpanded = expandedGroups.includes(group.label);
           const GroupIcon = group.icon;
-          
+
           return (
             <div key={group.label} className="space-y-1">
               <button
@@ -370,7 +370,7 @@ export function Sidebar() {
                     <ChevronRight className="w-4 h-4" />
                 )}
               </button>
-              
+
               {(isExpanded || isCollapsed) && (
                 <div className={`space-y-1 ${isCollapsed ? '' : 'ml-2'}`}>
                   {group.items.map((item) => {

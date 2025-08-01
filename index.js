@@ -133,17 +133,17 @@ app.post('/api/auth/logout', (req, res) => {
 const authRoutes = require('./routes/auth');
 const stableAuthRoutes = require('./routes/stableAuth');
 const userRoutes = require('./routes/users');
-const userManagementRoutes = require('./routes/userManagement');
+import userManagementRoutes from './routes/userManagement.js';
+import roleManagementRoutes from './routes/roleManagement.js';
 const sessionManagementRoutes = require('./routes/sessionManagement');
-const roleManagementRoutes = require('./routes/roleManagement');
 
 // Auth routes
 app.use('/api/auth', authRoutes);
 app.use('/api/stable-auth', stableAuthRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/user-management', userManagementRoutes);
+app.use('/api/admin', userManagementRoutes);
+app.use('/api/admin/role-management', roleManagementRoutes);
 app.use('/api/session-management', sessionManagementRoutes);
-app.use('/api/role-management', roleManagementRoutes);
 
 // Serve the React app for all other routes
 app.get('*', (req, res) => {
