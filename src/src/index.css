@@ -1,0 +1,784 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* WebView Performance Optimizations for Mobile APK */
+@media (max-width: 768px) {
+  /* Enable hardware acceleration for mobile WebView */
+  * {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+  
+  /* Optimize scrolling for WebView */
+  html, body {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+  }
+  
+  /* Performance optimizations for contact list virtualization */
+  .contact-item {
+    will-change: transform;
+    contain: layout style paint;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+  
+  /* Memory-efficient animations for WebView */
+  .contact-item:hover {
+    -webkit-transform: translateZ(0) scale(1.02);
+    transform: translateZ(0) scale(1.02);
+  }
+  
+  /* Reduce animation load in WebView */
+  @media (prefers-reduced-motion: reduce) {
+    .contact-item {
+      transition: none;
+    }
+  }
+}
+
+/* WebView-specific optimizations */
+.webview-optimized {
+  /* Disable text selection for better performance */
+  -webkit-user-select: none;
+  user-select: none;
+  
+  /* Enhanced touch response */
+  -webkit-tap-highlight-color: transparent;
+  tap-highlight-color: transparent;
+  
+  /* Improved rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* CSS Variables for consistent theming */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222.2 84% 4.9%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222.2 84% 4.9%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+  --radius: 0.5rem;
+}
+
+/* Hide scrollbars for mobile announcement modal */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar { 
+  display: none;  /* Safari and Chrome */
+}
+
+/* Playful Loading Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes wiggle {
+  0%, 7% {
+    transform: rotateZ(0);
+  }
+  15% {
+    transform: rotateZ(-15deg);
+  }
+  20% {
+    transform: rotateZ(10deg);
+  }
+  25% {
+    transform: rotateZ(-10deg);
+  }
+  30% {
+    transform: rotateZ(6deg);
+  }
+  35% {
+    transform: rotateZ(-4deg);
+  }
+  40%, 100% {
+    transform: rotateZ(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.6);
+  }
+}
+
+/* Scrolling announcement animation */
+@keyframes scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll 15s linear infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.8s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.5s ease-out forwards;
+}
+
+.animate-wiggle {
+  animation: wiggle 1s ease-in-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Loading states for buttons and interactions */
+.loading-btn {
+  position: relative;
+  pointer-events: none;
+}
+
+.loading-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: inherit;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Staggered animations for lists */
+.stagger-animation > * {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: slideUp 0.6s ease-out forwards;
+}
+
+.stagger-animation > *:nth-child(1) { animation-delay: 0.1s; }
+.stagger-animation > *:nth-child(2) { animation-delay: 0.2s; }
+.stagger-animation > *:nth-child(3) { animation-delay: 0.3s; }
+.stagger-animation > *:nth-child(4) { animation-delay: 0.4s; }
+.stagger-animation > *:nth-child(5) { animation-delay: 0.5s; }
+.stagger-animation > *:nth-child(6) { animation-delay: 0.6s; }
+.stagger-animation > *:nth-child(7) { animation-delay: 0.7s; }
+.stagger-animation > *:nth-child(8) { animation-delay: 0.8s; }
+
+/* Hide scrollbars while maintaining functionality */
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Unified Horizontal KPI Scroller - Works for both Employee and Admin */
+.kpi-horizontal-scroll {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  
+  /* Enhanced touch support */
+  -webkit-overflow-scrolling: touch !important;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  
+  /* Ensure proper flex behavior */
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0.5rem; /* 8px spacing */
+  padding-bottom: 0.5rem; /* 8px bottom padding */
+}
+
+.kpi-horizontal-scroll::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+.kpi-horizontal-scroll::-webkit-scrollbar-track {
+  display: none !important;
+}
+
+.kpi-horizontal-scroll::-webkit-scrollbar-thumb {
+  display: none !important;
+}
+
+/* Individual KPI panel within scroller */
+.kpi-scroll-item {
+  flex: 0 0 auto; /* Don't grow or shrink */
+  scroll-snap-align: start;
+  min-width: 80px; /* Minimum width for touch targets */
+}
+
+/* Smooth transitions for mobile interactions */
+.mobile-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-scale-tap:active {
+  transform: scale(0.98);
+}
+
+.mobile-bounce:active {
+  animation: bounce 0.3s ease-in-out;
+}
+
+/* Mobile scrolling improvements */
+* {
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Prevent bounce on mobile */
+html, body {
+  overscroll-behavior: none !important;
+  -webkit-overflow-scrolling: touch !important;
+  overflow-x: hidden !important;
+}
+
+/* Force mobile touch scrolling */
+@media (max-width: 768px) {
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch !important;
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    min-height: 100px !important;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain !important;
+  }
+}
+
+/* Ensure proper scrolling on mobile containers */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  scroll-behavior: smooth !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  position: relative !important;
+  touch-action: pan-y !important;
+}
+
+/* Enhanced mobile scrolling for employee directory */
+@media (max-width: 768px) {
+  .mobile-scroll {
+    transform: translateZ(0) !important;
+    will-change: scroll-position !important;
+    overflow-y: scroll !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    touch-action: pan-y !important;
+    scroll-behavior: smooth !important;
+  }
+  
+  /* Fix for all mobile containers */
+  .mobile-container {
+    height: 100vh !important;
+    overflow: hidden !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+  
+  /* Scrollable content areas */
+  .mobile-content {
+    height: calc(100vh - 140px) !important;
+    overflow-y: scroll !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+  }
+}
+
+/* COMPREHENSIVE MOBILE SCROLLING SOLUTION */
+.mobile-scroll {
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  scroll-behavior: smooth !important;
+  height: 100% !important;
+  /* Hide scrollbars */
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.mobile-scroll::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Enhanced scrollbar hiding for all browsers */
+.scrollbar-hide {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch !important;
+  overflow-y: scroll !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Force scrolling on mobile containers */
+.mobile-content-scroll {
+  height: 100% !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  scroll-behavior: smooth !important;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.mobile-content-scroll::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Reduced bottom padding for admin interfaces with shorter dual navigation */
+.mobile-admin-content {
+  padding-bottom: 80px !important; /* Reduced from 140px for shorter dual nav */
+}
+
+.mobile-admin-content-scroll {
+  height: 100% !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  scroll-behavior: smooth !important;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  padding-bottom: 80px !important; /* Compact dual navigation spacing */
+}
+
+.mobile-admin-content-scroll::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+:root {
+  /* Light theme (default) */
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(222, 84%, 5%);
+  --muted: hsl(210, 40%, 96%);
+  --muted-foreground: hsl(215, 16%, 47%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(222, 84%, 5%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(222, 84%, 5%);
+  --border: hsl(214, 32%, 91%);
+  --input: hsl(214, 32%, 91%);
+  --primary: hsl(266, 85%, 58%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(210, 40%, 96%);
+  --secondary-foreground: hsl(222, 84%, 5%);
+  --accent: hsl(210, 40%, 96%);
+  --accent-foreground: hsl(222, 84%, 5%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(266, 85%, 58%);
+  --radius: 0.5rem;
+  --success: hsl(142, 71%, 45%);
+  --warning: hsl(43, 96%, 56%);
+  --error: hsl(0, 84%, 60%);
+  --chart-1: hsl(266, 85%, 58%);
+  --chart-2: hsl(280, 65%, 60%);
+  --chart-3: hsl(220, 70%, 50%);
+  --chart-4: hsl(300, 85%, 58%);
+  --chart-5: hsl(250, 75%, 55%);
+}
+
+.dark {
+  --background: hsl(220, 27%, 8%);
+  --foreground: hsl(210, 40%, 98%);
+  --muted: hsl(220, 27%, 12%);
+  --muted-foreground: hsl(215, 20%, 65%);
+  --popover: hsl(220, 33%, 10%);
+  --popover-foreground: hsl(210, 40%, 98%);
+  --card: hsl(220, 33%, 10%);
+  --card-foreground: hsl(210, 40%, 98%);
+  --border: hsl(220, 27%, 16%);
+  --input: hsl(220, 27%, 16%);
+  --primary: hsl(266, 85%, 58%);
+  --primary-foreground: hsl(220, 27%, 8%);
+  --secondary: hsl(220, 27%, 12%);
+  --secondary-foreground: hsl(210, 40%, 98%);
+  --accent: hsl(266, 85%, 58%);
+  --accent-foreground: hsl(220, 27%, 8%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(266, 85%, 58%);
+  --radius: 0.5rem;
+  --success: hsl(142, 71%, 45%);
+  --warning: hsl(43, 96%, 56%);
+  --error: hsl(0, 84%, 60%);
+  --chart-1: hsl(266, 85%, 58%);
+  --chart-2: hsl(280, 65%, 60%);
+  --chart-3: hsl(220, 70%, 50%);
+  --chart-4: hsl(300, 85%, 58%);
+  --chart-5: hsl(250, 75%, 55%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .avatar-circle {
+    @apply inline-flex items-center justify-center rounded-full text-white font-semibold;
+  }
+  
+  .avatar-sm {
+    @apply w-8 h-8 text-xs;
+  }
+  
+  .avatar-md {
+    @apply w-10 h-10 text-sm;
+  }
+  
+  .avatar-lg {
+    @apply w-16 h-16 text-lg;
+  }
+  
+  .status-indicator {
+    @apply absolute bottom-0 right-0 w-2 h-2 rounded-full border-2 border-background;
+  }
+  
+  .gradient-purple {
+    background: linear-gradient(135deg, hsl(266, 85%, 58%) 0%, hsl(280, 65%, 60%) 100%);
+  }
+  
+  .gradient-blue-purple {
+    background: linear-gradient(135deg, hsl(220, 70%, 50%) 0%, hsl(266, 85%, 58%) 100%);
+  }
+  
+  .gradient-dark-purple {
+    background: linear-gradient(135deg, hsl(220, 27%, 8%) 0%, hsl(266, 85%, 58%) 100%);
+  }
+  
+  .card-hover-effect {
+    transition: all 0.3s ease;
+    border: 1px solid hsl(var(--border));
+    backdrop-filter: blur(10px);
+  }
+  
+  .card-hover-effect:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
+    border-color: hsl(var(--primary));
+  }
+  
+  /* Custom scrollbar for desktop dashboard */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #1A1B3E;
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #7C3AED;
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #9333EA;
+  }
+
+  .chart-container {
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid hsl(var(--border));
+    backdrop-filter: blur(10px);
+  }
+  
+  .kpi-card {
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+    border: 1px solid hsl(var(--border));
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+  }
+  
+  .kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(139, 92, 246, 0.2);
+    border-color: hsl(var(--primary));
+  }
+  
+  .metric-card {
+    background: linear-gradient(135deg, var(--color-from) 0%, var(--color-to) 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    color: white;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .metric-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  }
+  
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transform: rotate(45deg);
+    transition: all 0.5s ease;
+    opacity: 0;
+  }
+  
+  .metric-card:hover::before {
+    animation: shimmer 0.8s ease-in-out;
+    opacity: 1;
+  }
+  
+  @keyframes shimmer {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) rotate(45deg); }
+  }
+  
+  .neon-border {
+    border: 1px solid hsl(var(--primary));
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(217, 32%, 17%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(215, 20%, 65%);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(210, 40%, 98%);
+}
+
+/* Enhanced mobile scrolling with hardware acceleration */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: none !important;
+  scroll-behavior: smooth !important;
+  transform: translateZ(0) !important;
+  backface-visibility: hidden !important;
+  will-change: scroll-position !important;
+}
+
+/* Mobile content scroll - optimized for mobile interfaces */
+.mobile-content-scroll {
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  scroll-behavior: smooth !important;
+  transform: translateZ(0) !important;
+  backface-visibility: hidden !important;
+}
+
+/* Mobile admin content scroll - specific for admin interfaces */
+.mobile-admin-content-scroll {
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  scroll-behavior: smooth !important;
+  padding-bottom: 12rem !important;
+}
+
+/* Hide scrollbars across all browsers - ENHANCED */
+.scrollbar-hide {
+  -ms-overflow-style: none !important;  /* Internet Explorer 10+ */
+  scrollbar-width: none !important;  /* Firefox */
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none !important;  /* Safari and Chrome */
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.scrollbar-hide::-webkit-scrollbar-track {
+  display: none !important;
+}
+
+.scrollbar-hide::-webkit-scrollbar-thumb {
+  display: none !important;
+}
+
+/* Mobile dashboard specific scrollbar hiding */
+.mobile-dashboard-scroll {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+}
+
+.mobile-dashboard-scroll::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+}
+
+.mobile-dashboard-scroll::-webkit-scrollbar-track {
+  display: none !important;
+  background: transparent !important;
+}
+
+.mobile-dashboard-scroll::-webkit-scrollbar-thumb {
+  display: none !important;
+  background: transparent !important;
+}
+
+
+
+/* Animation utilities */
+@keyframes pulse-success {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-success {
+  animation: pulse-success 2s infinite;
+}
+
+/* Alert blink animation for status box */
+@keyframes alert-blink {
+  0%, 50% { border-color: hsl(0, 84%, 60%); }
+  51%, 100% { border-color: transparent; }
+}
+
+.alert-blink {
+  animation: alert-blink 1.5s infinite;
+}
+
+

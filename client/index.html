@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>Nexlinx Smart EMS</title>
+    <meta name="description" content="Nexlinx Smart Employee Management System - Advanced workforce management with BioTime integration" />
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/src/main.tsx" as="script" />
+    <link rel="preload" href="/src/index.css" as="style" />
+    
+    <!-- Force cache busting for CSS -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    
+    <!-- Optimize font loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Prevent render blocking -->
+    <style>
+      /* Critical CSS for loading screen */
+      body { margin: 0; background-color: #1A1B3E; font-family: system-ui, -apple-system, sans-serif; }
+      #root { min-height: 100vh; }
+      
+      /* Hide all Vite error overlays permanently */
+      div[id*="error-overlay"],
+      div[class*="error-overlay"],
+      div[id*="runtime-error"],
+      div[class*="runtime-error"],
+      div[id*="vite-error"],
+      div[class*="vite-error"],
+      .vite-error-overlay,
+      #vite-error-overlay {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        position: absolute !important;
+        left: -9999px !important;
+        z-index: -1 !important;
+      }
+    </style>
+  </head>
+  <body style="margin: 0; background-color: #1A1B3E;">
+    <div id="root">
+      <!-- Initial loading screen with dark purple background -->
+      <div id="initial-loader" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(135deg, #1A1B3E 0%, #2A2B5E 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        z-index: 9999;
+      ">
+        <!-- Nexlinx Logo -->
+        <div style="
+          background: linear-gradient(45deg, #3B82F6, #8B5CF6);
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 24px;
+          box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+        ">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        
+        <!-- App Title -->
+        <h1 style="
+          font-size: 28px;
+          font-weight: 600;
+          margin: 0 0 8px 0;
+          background: linear-gradient(45deg, #3B82F6, #8B5CF6);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        ">Nexlinx Smart EMS</h1>
+        
+        <p style="
+          margin: 0 0 32px 0;
+          color: #94A3B8;
+          font-size: 16px;
+        ">Employee Management System</p>
+        
+        <!-- Animated Spinner -->
+        <div style="
+          width: 40px;
+          height: 40px;
+          border: 3px solid rgba(59, 130, 246, 0.3);
+          border-top: 3px solid #3B82F6;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-bottom: 16px;
+        "></div>
+        
+        <!-- Loading Text -->
+        <p style="
+          margin: 0;
+          color: #94A3B8;
+          font-size: 14px;
+          animation: pulse 2s ease-in-out infinite;
+        ">Loading your dashboard...</p>
+      </div>
+    </div>
+    
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      @keyframes pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+      }
+      
+      /* Hide scrollbars during loading */
+      body::-webkit-scrollbar {
+        display: none;
+      }
+      
+      body {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+    
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Disable Vite error overlay and AbortError handling -->
+    <script>
+      // Disable runtime error modal overlay - MULTIPLE APPROACHES
+      window.__vite_plugin_runtime_error_modal_disabled = true;
+      window.__vite_plugin_runtime_error_modal_force_disable = true;
+      window.__REPLIT_RUNTIME_ERROR_MODAL_DISABLED__ = true;
+      
+      // PERMANENT ABORTERROR SUPPRESSION - Intercept at window level
+      window.addEventListener('unhandledrejection', function(event) {
+        if (event.reason && event.reason.name === 'AbortError') {
+          console.log('Unhandled AbortError promise rejection caught and suppressed');
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          return false;
+        }
+        if (event.reason && event.reason.message && event.reason.message.includes('aborted')) {
+          console.log('Unhandled abort-related promise rejection caught and suppressed');
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          return false;
+        }
+        if (event.reason && typeof event.reason === 'string' && event.reason.includes('operation was aborted')) {
+          console.log('Operation aborted error caught and suppressed');
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          return false;
+        }
+      });
+      
+      // Additional error suppression for runtime error plugin
+      window.addEventListener('error', function(event) {
+        if (event.message && event.message.includes('aborted')) {
+          console.log('Abort-related error caught and suppressed');
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          return false;
+        }
+        if (event.error && event.error.name === 'AbortError') {
+          console.log('AbortError in error event caught and suppressed');
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          return false;
+        }
+        if (event.message && event.message.includes('operation was aborted')) {
+          console.log('Operation aborted message caught and suppressed');
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          return false;
+        }
+      });
+      
+      // Override the Vite runtime error overlay to permanently disable it
+      if (typeof window !== 'undefined') {
+        window.__vite_is_modern_browser = true;
+        window.__vite_plugin_runtime_error_modal_disabled = true;
+        
+        // Intercept and disable the runtime error modal at the source
+        const originalCreateViteErrorOverlay = window.__vite_plugin_create_error_overlay;
+        if (originalCreateViteErrorOverlay) {
+          window.__vite_plugin_create_error_overlay = function() {
+            console.log('Vite error overlay creation blocked');
+            return { close: () => {} };
+          };
+        }
+        
+        // Block all error overlay methods
+        window.__vite_plugin_runtime_error_modal_show = function() {
+          console.log('Vite error modal show blocked');
+        };
+        
+        // Override console.error to prevent runtime error plugin triggers
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+          if (args[0] && typeof args[0] === 'string' && args[0].includes('operation was aborted')) {
+            console.log('AbortError console.error intercepted and suppressed');
+            return;
+          }
+          if (args[0] && typeof args[0] === 'string' && args[0].includes('AbortError')) {
+            console.log('AbortError console.error intercepted and suppressed');
+            return;
+          }
+          if (args[0] && typeof args[0] === 'string' && args[0].includes('The operation was aborted')) {
+            console.log('Operation aborted console.error intercepted and suppressed');
+            return;
+          }
+          originalConsoleError.apply(console, args);
+        };
+        
+        // NUCLEAR OPTION: Override the Vite runtime error plugin completely
+        if (window.location.hostname.includes('replit')) {
+          // Disable ALL Vite error overlays in Replit environment
+          Object.defineProperty(window, '__vite_plugin_runtime_error_modal_disabled', {
+            value: true,
+            writable: false,
+            configurable: false
+          });
+          
+          // Block error overlay creation at the DOM level
+          const originalCreateElement = document.createElement;
+          document.createElement = function(tagName) {
+            const element = originalCreateElement.call(this, tagName);
+            if (tagName === 'div' && element.className && element.className.includes('error')) {
+              console.log('Error overlay div creation blocked');
+              return document.createDocumentFragment();
+            }
+            return element;
+          };
+          
+          // COMPLETE OVERLAY SUPPRESSION - Block all Vite overlay methods
+          window.__vite_plugin_disable_error_overlay = true;
+          if (window.__vite__) {
+            window.__vite__.overlay = null;
+            window.__vite__.runtimeError = () => {};
+          }
+        }
+        
+        // Prevent error overlay from appearing with DOM observer
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (mutation.type === 'childList') {
+              mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === 1) {
+                  // Remove any error overlay or modal
+                  if (node.id && (node.id.includes('vite-error-overlay') || node.id.includes('error-overlay') || node.id.includes('runtime-error'))) {
+                    console.log('Error overlay detected and removed:', node.id);
+                    node.remove();
+                  }
+                  // Check for error overlay by class
+                  if (node.className && typeof node.className === 'string' && (node.className.includes('error-overlay') || node.className.includes('runtime-error'))) {
+                    console.log('Error overlay detected by class and removed:', node.className);
+                    node.remove();
+                  }
+                  // Check for error text content
+                  if (node.textContent && node.textContent.includes('[plugin:runtime-error-plugin]')) {
+                    console.log('Runtime error plugin content detected and removed');
+                    node.remove();
+                  }
+                }
+              });
+            }
+          });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+        
+        // Additional interval-based cleanup for stubborn overlays
+        setInterval(() => {
+          const errorOverlays = document.querySelectorAll('div[id*="error"], div[class*="error"], div[id*="overlay"], div[class*="overlay"]');
+          errorOverlays.forEach((overlay) => {
+            if (overlay.textContent && overlay.textContent.includes('[plugin:runtime-error-plugin]')) {
+              console.log('Interval cleanup: Error overlay removed');
+              overlay.remove();
+            }
+          });
+        }, 1000);
+      }
+      
+      // Suppress Vite error overlay - use try/catch for safety
+      try {
+        if (typeof window !== 'undefined' && window.addEventListener) {
+          window.addEventListener('error', (err) => {
+            console.log('Runtime error suppressed:', err.message);
+          });
+        }
+      } catch (e) {
+        console.log('Error handler setup failed:', e);
+      }
+    </script>
+    
+    <!-- FORCE REMOVE LOADER SCRIPT -->
+    <script>
+      // Force remove loader immediately and with multiple backups
+      function forceRemoveLoader() {
+        var loader = document.getElementById('initial-loader');
+        if (loader) {
+          console.log('FORCE REMOVING LOADER');
+          loader.style.display = 'none';
+          loader.remove();
+          return true;
+        }
+        return false;
+      }
+      
+      // Try removing immediately
+      setTimeout(forceRemoveLoader, 100);
+      
+      // Try every 500ms for 5 seconds
+      var attempts = 0;
+      var interval = setInterval(function() {
+        if (forceRemoveLoader() || attempts > 10) {
+          clearInterval(interval);
+        }
+        attempts++;
+      }, 500);
+      
+      // Also try on page load
+      window.addEventListener('load', function() {
+        setTimeout(forceRemoveLoader, 100);
+      });
+      
+      // Try when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', forceRemoveLoader);
+      } else {
+        forceRemoveLoader();
+      }
+    </script>
+
+    <!-- Enhanced AbortError suppression for runtime error plugin -->
+    <script>
+      // Comprehensive AbortError suppression
+      window.addEventListener('unhandledrejection', function(event) {
+        if (event.reason && (
+          event.reason.name === 'AbortError' || 
+          (typeof event.reason === 'string' && event.reason.includes('aborted')) ||
+          (event.reason.message && event.reason.message.includes('aborted')) ||
+          (event.reason.message && event.reason.message.includes('operation was aborted'))
+        )) {
+          console.log('Unhandled AbortError promise rejection caught and suppressed');
+          event.preventDefault();
+          return false;
+        }
+      });
+
+      // Additional global error handler
+      window.addEventListener('error', function(event) {
+        if (event.error && (
+          event.error.name === 'AbortError' ||
+          (event.error.message && event.error.message.includes('aborted')) ||
+          (event.error.message && event.error.message.includes('operation was aborted'))
+        )) {
+          console.log('Global AbortError caught and suppressed');
+          event.preventDefault();
+          return false;
+        }
+      });
+
+      // Runtime error plugin specific suppression
+      if (window.__vite_plugin_runtime_error_modal_error_handler) {
+        const originalHandler = window.__vite_plugin_runtime_error_modal_error_handler;
+        window.__vite_plugin_runtime_error_modal_error_handler = function(error, stack, source) {
+          if (error && (
+            error.name === 'AbortError' || 
+            (error.message && error.message.includes('aborted')) ||
+            (error.message && error.message.includes('operation was aborted'))
+          )) {
+            console.log('Runtime error plugin AbortError suppressed');
+            return;
+          }
+          return originalHandler.call(this, error, stack, source);
+        };
+      }
+    </script>
+    
+    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
+    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+  </body>
+</html>

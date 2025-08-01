@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Nexlinx EMS",
+    "slug": "nexlinx-ems",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./attached_assets/nexlinx_transparent_logo.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./attached_assets/nexlinx_transparent_logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A1B3E"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nexlinx.ems"
+    },
+    "android": {
+      "package": "com.nexlinx.ems",
+      "adaptiveIcon": {
+        "foregroundImage": "./attached_assets/nexlinx_transparent_logo.png",
+        "backgroundColor": "#1A1B3E"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./attached_assets/nexlinx_transparent_logo.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "fb6c134c-4730-4b22-945c-a8a825346d0e"
+      },
+      "apiUrl": "https://nex-ems.replit.app"
+    },
+    "plugins": [
+      "expo-location",
+      "expo-camera"
+    ]
+  }
+}
