@@ -2546,4 +2546,29 @@ export class DatabaseStorage implements IStorage {
     limit?: number;
     entityType?: string;
   }) {
-The code has been updated to use proper Drizzle select syntax in getUserByUsername function.
+    const page = params?.page || 1;
+    const limit = params?.limit || 50;
+    const offset = (page - 1) * limit;
+
+    let whereConditions: any[] = [];
+
+    if (params?.entityType) {
+      whereConditions.push(eq(auditLogs.entityType, params.entityType));
+    }
+
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+    const [logs, [{ total }]] = await Promise.all([
+      db.select()
+        .from(auditLogs)
+        .where(whereClause)
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(limit)
+        .offset(offset),
+      db.select({ total: count() })
+        .from(auditLogs)
+        .where(whereClause)
+    ]);
+
+    return { logs, total };
+  }
