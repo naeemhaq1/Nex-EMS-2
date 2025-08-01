@@ -1,56 +1,39 @@
+import { format, addHours } from 'date-fns';
 
-// Pakistan Standard Time utilities
+// Pakistan timezone is UTC+5
+const PKT_OFFSET = 5;
+
 export const getCurrentPKTTime = (): Date => {
   const now = new Date();
   const utc = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
-  const pkt = new Date(utc.getTime() + (5 * 3600000)); // UTC+5
-  return pkt;
+  return addHours(utc, PKT_OFFSET);
+};
+
+export const formatPKTTime = (date: Date, formatString: string = 'yyyy-MM-dd HH:mm:ss'): string => {
+  const pktTime = getCurrentPKTTime();
+  return format(pktTime, formatString);
 };
 
 export const formatMobileDate = (date: Date): string => {
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
+  return formatPKTTime(date, 'MMM dd, yyyy');
 };
 
 export const formatMobileTime = (date: Date): string => {
-  return date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
+  return formatPKTTime(date, 'HH:mm');
 };
 
-export const formatDateTime = (date: Date): string => {
-  return date.toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
+export const formatMobileDateTime = (date: Date): string => {
+  return formatPKTTime(date, 'MMM dd, HH:mm');
 };
 
-export const isPKTWorkingHours = (date: Date = getCurrentPKTTime()): boolean => {
-  const hour = date.getHours();
-  return hour >= 9 && hour <= 17;
+export const getPKTTimestamp = (): string => {
+  return getCurrentPKTTime().toISOString();
 };
 
-export const getRelativeTime = (date: Date): string => {
-  const now = getCurrentPKTTime();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
+export const convertToPKT = (utcDate: Date): Date => {
+  return addHours(utcDate, PKT_OFFSET);
+};
+
+export const convertToUTC = (pktDate: Date): Date => {
+  return addHours(pktDate, -PKT_OFFSET);
 };
