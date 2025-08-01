@@ -12,30 +12,40 @@ router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Username and password required'
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Username and password are required' 
       });
     }
 
     const result = await authService.login(username, password);
 
-    if (result.success && result.token) {
-      // Set HTTP-only cookie
+    if (result.success) {
+      // Set HTTP-only cookie for token
       res.cookie('auth_token', result.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
       });
-    }
 
-    res.json(result);
+      res.json({
+        success: true,
+        user: result.user
+      });
+    } else {
+      res.status(401).json({
+        success: false,
+        error: result.error,
+        requiresPasswordChange: result.requiresPasswordChange,
+        userId: result.userId
+      });
+    }
   } catch (error) {
-    console.error('Login route error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error'
+    console.error('Login endpoint error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
     });
   }
 });
@@ -54,6 +64,7 @@ router.get('/user', authenticateToken, (req, res) => {
  * Logout endpoint
  */
 router.post('/logout', (req, res) => {
+  // Clear the auth cookie
   res.clearCookie('auth_token');
   res.json({ success: true, message: 'Logged out successfully' });
 });

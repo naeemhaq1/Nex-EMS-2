@@ -13,6 +13,7 @@ import whatsappRoutes from "./routes/whatsapp";
 import deviceRoutes from "./routes/devices";
 import settingsRoutes from "./routes/settings";
 import healthRoutes from "./routes/health";
+import { requireAuth, requireAdmin } from "./middleware/auth";
 
 const app = express();
 

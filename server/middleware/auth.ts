@@ -224,6 +224,14 @@ export const requireManager = requireRole('manager');
 export const requireSupervisor = requireRole('supervisor');
 
 /**
+ * Session middleware placeholder for backward compatibility
+ */
+export const sessionMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  // Using JWT-based auth instead of sessions
+  next();
+};
+
+/**
  * Dev mode auto-login middleware (development only)
  */
 export const devAutoLogin = async (req: Request, res: Response, next: NextFunction) => {

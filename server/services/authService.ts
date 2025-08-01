@@ -1,4 +1,3 @@
-
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { sql } from "../db";
@@ -69,49 +68,69 @@ export class AuthService {
    */
   async login(username: string, password: string): Promise<AuthResult> {
     try {
-      // Get user from database
-      const trimmedUsername = username.trim();
+      console.log(`[Auth] Login attempt for username: ${username}`);
+
       const users = await sql`
-        SELECT * FROM users 
-        WHERE username = ${trimmedUsername} AND "isActive" = true
+        SELECT id, username, password, role, "employeeId", department, designation, "isActive", "requiresPasswordChange"
+        FROM users 
+        WHERE username = ${username} AND "isActive" = true
       `;
 
       if (users.length === 0) {
-        return { success: false, error: "Invalid username or password" };
+        console.log(`[Auth] User not found: ${username}`);
+        return { success: false, error: 'Invalid username or password' };
       }
 
-      const user = users[0] as User;
+      const user = users[0];
+      console.log(`[Auth] User found: ${user.username}, role: ${user.role}`);
 
-      // Verify password
+      // Check password
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
-        return { success: false, error: "Invalid username or password" };
+        console.log(`[Auth] Invalid password for user: ${username}`);
+        return { success: false, error: 'Invalid username or password' };
       }
 
       // Check if password change is required
-      if (user.isTemporaryPassword) {
+      if (user.requiresPasswordChange) {
+        console.log(`[Auth] Password change required for user: ${username}`);
         return { 
           success: false, 
-          error: "Password change required", 
-          requiresPasswordChange: true
+          error: 'Password change required',
+          requiresPasswordChange: true,
+          userId: user.id
         };
       }
 
-      // Remove password from user object
-      const { password: _, ...userWithoutPassword } = user;
-
       // Generate tokens
-      const { accessToken, refreshToken } = this.generateTokens(userWithoutPassword);
+      const token = generateToken(user);
+      const refreshToken = generateRefreshToken(user);
 
-      return { 
-        success: true, 
-        user: userWithoutPassword, 
-        token: accessToken,
-        refreshToken 
+      // Store refresh token and update last login
+      await sql`
+        UPDATE users 
+        SET "refreshToken" = ${refreshToken}, "lastLogin" = NOW()
+        WHERE id = ${user.id}
+      `;
+
+      console.log(`[Auth] Login successful for user: ${username}`);
+
+      return {
+        success: true,
+        user: {
+          userId: user.id,
+          username: user.username,
+          role: user.role,
+          employeeId: user.employeeId,
+          department: user.department,
+          designation: user.designation
+        },
+        token,
+        refreshToken
       };
     } catch (error) {
-      console.error("Login error:", error);
-      return { success: false, error: "Login failed" };
+      console.error('[Auth] Login error:', error);
+      return { success: false, error: 'Login failed' };
     }
   }
 

@@ -2,7 +2,7 @@ import { db } from '../db';
 import { attendanceRecords, employeeRecords, exclusions } from '@shared/schema';
 import { eq, and, gte, lte, isNotNull, isNull, sql } from 'drizzle-orm';
 import { format, startOfDay, endOfDay } from 'date-fns';
-import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const PAKISTAN_TZ = 'Asia/Karachi';
 
@@ -36,9 +36,10 @@ export interface EmployeeAttendanceDetail {
  */
 export function getPakistanDateBoundaries(date: Date) {
   const pakistanDate = formatInTimeZone(date, PAKISTAN_TZ, 'yyyy-MM-dd');
-  const dayStart = zonedTimeToUtc(`${pakistanDate} 00:00:00`, PAKISTAN_TZ);
-  const dayEnd = zonedTimeToUtc(`${pakistanDate} 23:59:59`, PAKISTAN_TZ);
-  
+  // Using utcToZonedTime instead of zonedTimeToUtc for proper timezone conversion
+  const dayStart = new Date(new Date(pakistanDate).setHours(0, 0, 0, 0));
+  const dayEnd = new Date(new Date(pakistanDate).setHours(23, 59, 59, 999));
+
   return {
     dayStart,
     dayEnd,
@@ -57,7 +58,7 @@ export async function calculateAttendanceMetrics(targetDate: Date): Promise<Atte
     .select({ count: sql<number>`count(*)` })
     .from(employeeRecords)
     .where(eq(employeeRecords.isActive, true));
-  
+
   const totalEmployees = totalEmployeesResult[0]?.count || 0;
 
   // Get NonBio employees (exclusions)
@@ -69,7 +70,7 @@ export async function calculateAttendanceMetrics(targetDate: Date): Promise<Atte
       eq(employeeRecords.isActive, true),
       eq(employeeRecords.nonBio, true)
     ));
-  
+
   const totalNonBio = nonBioResult[0]?.count || 0;
 
   // Get punch-in records for the day (punch-in determines the attendance date)
@@ -81,7 +82,7 @@ export async function calculateAttendanceMetrics(targetDate: Date): Promise<Atte
       lte(attendanceRecords.checkIn, dayEnd),
       isNotNull(attendanceRecords.checkIn)
     ));
-  
+
   const totalPunchIn = punchInResult[0]?.count || 0;
 
   // Get complete attendance (punch-in and punch-out, with punch-out after punch-in)
@@ -95,7 +96,7 @@ export async function calculateAttendanceMetrics(targetDate: Date): Promise<Atte
       isNotNull(attendanceRecords.checkOut),
       sql`${attendanceRecords.checkOut} > ${attendanceRecords.checkIn}`
     ));
-  
+
   const totalCompleteAttendance = completeAttendanceResult[0]?.count || 0;
 
   // Get missed punches (forced checkout by system/admin)
@@ -108,7 +109,7 @@ export async function calculateAttendanceMetrics(targetDate: Date): Promise<Atte
       isNotNull(attendanceRecords.checkIn),
       isNotNull(attendanceRecords.forcedCheckoutBy)
     ));
-  
+
   const totalMissedPunches = missedPunchesResult[0]?.count || 0;
 
   // Calculate metrics using the specified formula
@@ -217,7 +218,7 @@ export async function getYesterdayAttendanceMetrics(): Promise<AttendanceMetrics
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  
+
   return await calculateAttendanceMetrics(yesterday);
 }
 
