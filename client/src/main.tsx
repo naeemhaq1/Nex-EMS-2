@@ -7,7 +7,15 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 // Polyfill for BigInt if not available
 if (typeof BigInt === 'undefined') {
   (window as any).BigInt = function(value: any) {
-    return parseInt(value);
+    if (value == null || value === '' || value === undefined) {
+      return 0;
+    }
+    const stringValue = String(value).trim();
+    if (stringValue === '') return 0;
+    const cleanValue = stringValue.replace(/[^-0-9]/g, '');
+    if (cleanValue === '' || cleanValue === '-') return 0;
+    const parsed = parseInt(cleanValue, 10);
+    return isNaN(parsed) ? 0 : parsed;
   };
 }
 
