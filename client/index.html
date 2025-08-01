@@ -1,6 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- ULTRA-CRITICAL: BigInt polyfill MUST be first thing loaded -->
+    <script>
+      // Emergency BigInt polyfill - BEFORE ANYTHING ELSE
+      (function() {
+        'use strict';
+        
+        function safeBigIntPolyfill(value) {
+          try {
+            if (value === null || value === undefined || value === '') return 0;
+            if (typeof value === 'boolean') return value ? 1 : 0;
+            if (typeof value === 'number') return Math.floor(value);
+            
+            const str = String(value).trim();
+            if (str === '' || str === 'undefined' || str === 'null') return 0;
+            
+            const cleaned = str.replace(/[^-0-9]/g, '');
+            if (cleaned === '' || cleaned === '-') return 0;
+            
+            const parsed = parseInt(cleaned, 10);
+            return isNaN(parsed) ? 0 : parsed;
+          } catch (e) {
+            console.log('BigInt polyfill error caught:', e);
+            return 0;
+          }
+        }
+        
+        // Apply to all possible scopes immediately
+        if (typeof BigInt === 'undefined') {
+          window.BigInt = safeBigIntPolyfill;
+          globalThis.BigInt = safeBigIntPolyfill;
+        }
+        
+        // Always define bigint alias
+        window.bigint = window.BigInt || safeBigIntPolyfill;
+        globalThis.bigint = window.BigInt || safeBigIntPolyfill;
+        
+        // Ensure global object exists
+        window.global = window.global || window;
+        window.global.BigInt = window.BigInt;
+        window.global.bigint = window.bigint;
+        
+        console.log('Ultra-early BigInt setup complete:', {
+          BigInt: typeof window.BigInt,
+          bigint: typeof window.bigint
+        });
+      })();
+    </script>
+    
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>Nexlinx Smart EMS</title>
@@ -142,60 +190,16 @@
     
     <!-- Disable Vite error overlay and AbortError handling -->
     <script>
-      // CRITICAL: Early global variable definitions - MUST BE FIRST
-      window.global = window.global || window;
+      // Globals setup (BigInt already handled above)
       window.__WS_TOKEN__ = window.__WS_TOKEN__ || 'development_token';
       window.global.__WS_TOKEN__ = window.__WS_TOKEN__;
       globalThis.__WS_TOKEN__ = window.__WS_TOKEN__;
       
-      // CRITICAL BIGINT POLYFILL - Must be second to prevent undefined errors
-      if (typeof BigInt === 'undefined') {
-        const bigIntPolyfill = function(value) {
-          // Handle null, undefined, empty string cases
-          if (value == null || value === '' || value === undefined) {
-            return 0;
-          }
-          
-          // Convert to string first to handle all input types
-          const stringValue = String(value).trim();
-          
-          // Handle empty string after trim
-          if (stringValue === '') {
-            return 0;
-          }
-          
-          // Handle boolean values
-          if (stringValue === 'true') return 1;
-          if (stringValue === 'false') return 0;
-          
-          // Handle numeric strings - remove any non-numeric characters except minus
-          const cleanValue = stringValue.replace(/[^-0-9]/g, '');
-          
-          // If nothing left after cleaning, return 0
-          if (cleanValue === '' || cleanValue === '-') {
-            return 0;
-          }
-          
-          // Parse the cleaned value
-          const parsed = parseInt(cleanValue, 10);
-          return isNaN(parsed) ? 0 : parsed;
-        };
-        
-        // Assign to all possible global scopes
-        window.BigInt = bigIntPolyfill;
-        window.global.BigInt = bigIntPolyfill;
-        globalThis.BigInt = bigIntPolyfill;
-        
-        // For modules
-        if (typeof module !== 'undefined' && module.exports) {
-          module.exports.BigInt = bigIntPolyfill;
-        }
-      }
-      
-      // CRITICAL: Define bigint alias AFTER BigInt is guaranteed to exist
-      window.bigint = window.BigInt;
-      window.global.bigint = window.BigInt;
-      globalThis.bigint = window.BigInt;
+      // Verify BigInt setup from head
+      console.log('Post-head BigInt verification:', {
+        BigInt: typeof window.BigInt,
+        bigint: typeof window.bigint
+      });
       
       // Disable runtime error modal overlay - MULTIPLE APPROACHES
       window.__vite_plugin_runtime_error_modal_disabled = true;
@@ -289,28 +293,8 @@
           originalConsoleError.apply(console, args);
         };
         
-        // Add BigInt polyfill for environments that don't support it
-        if (typeof window.BigInt === 'undefined') {
-          window.BigInt = function(value) {
-            if (value == null || value === '' || value === undefined) {
-              return 0;
-            }
-            const stringValue = String(value).trim();
-            if (stringValue === '') return 0;
-            const cleanValue = stringValue.replace(/[^-0-9]/g, '');
-            if (cleanValue === '' || cleanValue === '-') return 0;
-            const parsed = parseInt(cleanValue, 10);
-            return isNaN(parsed) ? 0 : parsed;
-          };
-        }
-        
-        // Robust bigint alias
-        if (typeof window.bigint === 'undefined') {
-          window.bigint = window.BigInt;
-        }
-        
-        // Globals already defined above - just ensure consistency
-        console.log('Global variables verified:', {
+        // Final verification (BigInt already setup in head)
+        console.log('Final global variables verification:', {
           bigint: typeof window.bigint,
           BigInt: typeof window.BigInt,
           __WS_TOKEN__: typeof window.__WS_TOKEN__

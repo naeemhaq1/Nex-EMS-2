@@ -52,9 +52,10 @@ export default defineConfig({
     'import.meta.env.WS_TOKEN': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
     'window.__WS_TOKEN__': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
     'globalThis.__WS_TOKEN__': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
-    BigInt: 'globalThis.BigInt',
-    bigint: 'globalThis.BigInt',
-    'window.bigint': 'globalThis.BigInt',
+    BigInt: '(typeof BigInt !== "undefined" ? BigInt : function(v) { try { if (v == null || v === "") return 0; const s = String(v).trim(); if (s === "") return 0; const c = s.replace(/[^-0-9]/g, ""); if (c === "" || c === "-") return 0; const p = parseInt(c, 10); return isNaN(p) ? 0 : p; } catch(e) { return 0; } })',
+    bigint: '(typeof BigInt !== "undefined" ? BigInt : function(v) { try { if (v == null || v === "") return 0; const s = String(v).trim(); if (s === "") return 0; const c = s.replace(/[^-0-9]/g, ""); if (c === "" || c === "-") return 0; const p = parseInt(c, 10); return isNaN(p) ? 0 : p; } catch(e) { return 0; } })',
+    'window.bigint': '(typeof BigInt !== "undefined" ? BigInt : function(v) { try { if (v == null || v === "") return 0; const s = String(v).trim(); if (s === "") return 0; const c = s.replace(/[^-0-9]/g, ""); if (c === "" || c === "-") return 0; const p = parseInt(c, 10); return isNaN(p) ? 0 : p; } catch(e) { return 0; } })',
+    'globalThis.bigint': '(typeof BigInt !== "undefined" ? BigInt : function(v) { try { if (v == null || v === "") return 0; const s = String(v).trim(); if (s === "") return 0; const c = s.replace(/[^-0-9]/g, ""); if (c === "" || c === "-") return 0; const p = parseInt(c, 10); return isNaN(p) ? 0 : p; } catch(e) { return 0; } })',
   },
   optimizeDeps: {
     include: ["react", "react-dom"],
