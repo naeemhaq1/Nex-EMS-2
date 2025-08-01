@@ -15,7 +15,7 @@ export async function apiRequest(
   }
 ): Promise<any> {
   const { url, method = "GET", data } = options;
-  
+
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -24,18 +24,18 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
-  
+
   // For 204 No Content responses, don't try to parse JSON
   if (res.status === 204) {
     return null;
   }
-  
+
   // Check if response has JSON content
   const contentType = res.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
     return await res.json();
   }
-  
+
   // For other responses, try to parse as JSON (fallback)
   try {
     return await res.json();

@@ -1,4 +1,3 @@
-
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,7 +45,6 @@ export default function AppRoutes() {
   );
 }
 <line_number>1</line_number>
-import React from 'react';
 import { Switch, Route } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMobile } from '@/hooks/use-mobile';
