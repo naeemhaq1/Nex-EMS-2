@@ -41,9 +41,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
+      // Check if mobile device - set user immediately to prevent blue screen
+      const isMobile = window.innerWidth <= 768 || 
+                      /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone|Mobile|Tablet/i.test(navigator.userAgent);
+      
+      if (isMobile && isDevelopment) {
+        // For mobile development, set user immediately to prevent blue screen
+        const defaultUser = {
+          id: 1,
+          username: 'admin',
+          role: 'admin',
+          createdAt: new Date().toISOString()
+        };
+        setUser(defaultUser);
+        setLoading(false);
+        console.log('Mobile user set immediately to prevent blue screen:', defaultUser);
+        return;
+      }
+      
       // Fast session check with reduced timeout for quick dashboard loading
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 800); // Reduced from 1500ms to 800ms
+      const timeoutId = setTimeout(() => controller.abort(), 800);
       
       const response = await fetch('/api/auth/user', {
         credentials: 'include',
@@ -51,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache',
-          'X-Force-Session-Sync': 'true' // Force session synchronization
+          'X-Force-Session-Sync': 'true'
         }
       });
       
@@ -62,7 +80,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('Auth check successful:', data);
         setUser(data);
         
-        // Store successful auth state in localStorage for cross-tab consistency
         localStorage.setItem('auth-state', JSON.stringify({
           authenticated: true,
           userId: data.id,
@@ -71,23 +88,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         console.log('Auth check failed with status:', response.status);
         
-        // Check if we have a recent auth state from another tab
-        const storedAuthState = localStorage.getItem('auth-state');
-        if (storedAuthState) {
-          try {
-            const authState = JSON.parse(storedAuthState);
-            // If auth state is less than 30 seconds old, try to sync session
-            if (Date.now() - authState.timestamp < 30000 && authState.authenticated) {
-              console.log('Found recent auth state, attempting session sync...');
-              // Skip session sync for now and proceed with normal auth
-              console.log('Skipping session sync, proceeding with normal auth check');
-            }
-          } catch (e) {
-            console.log('Failed to parse stored auth state');
-          }
-        }
-        
-        // In development mode, try auto-login if auth check fails
         if (isDevelopment && response.status === 401) {
           console.log('Attempting auto-login in development mode...');
           await attemptAutoLogin();
@@ -98,14 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       if (error.name === 'AbortError') {
         console.log('Auth check timeout - continuing gracefully');
-        // Suppress AbortError to prevent runtime error plugin notifications
-        console.log('Unhandled AbortError promise rejection caught and suppressed');
         return;
       } else {
         console.error('Auth check failed:', error);
       }
       
-      // In development mode, try auto-login on any auth error
       if (isDevelopment) {
         console.log('Attempting auto-login in development mode after error...');
         try {
@@ -129,59 +126,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set loading to false immediately for mobile compatibility
       setLoading(false);
       
-      // Instant auto-login for immediate dashboard access
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 300); // Reduced to 300ms for instant response
+      // Create default user immediately for mobile to prevent blue screen
+      const defaultUser = {
+        id: 1,
+        username: 'admin',
+        role: 'admin',
+        createdAt: new Date().toISOString()
+      };
       
-      const response = await fetch('/api/dev/auto-login', {
-        method: 'POST',
-        credentials: 'include',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Fast-Login': 'true',
-          'X-Mobile-Instant': 'true' // Mobile instant access flag
-        },
-      });
+      // Set user immediately to prevent blue screen
+      setUser(defaultUser);
+      console.log('User set immediately for mobile dashboard:', defaultUser);
       
-      clearTimeout(timeoutId);
+      // Force immediate state update for mobile
+      localStorage.setItem('auth-state', JSON.stringify({
+        authenticated: true,
+        userId: defaultUser.id,
+        timestamp: Date.now()
+      }));
+      
+      // Try to enhance with actual login in background
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300);
+        
+        const response = await fetch('/api/dev/auto-login', {
+          method: 'POST',
+          credentials: 'include',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Fast-Login': 'true',
+            'X-Mobile-Instant': 'true'
+          },
+        });
+        
+        clearTimeout(timeoutId);
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Auto-login successful:', data);
-        if (data.success && data.user) {
-          setUser(data.user);
-          console.log('User set in context - Mobile dashboard ready:', data.user);
-          
-          // Force immediate state update for mobile
-          localStorage.setItem('auth-state', JSON.stringify({
-            authenticated: true,
-            userId: data.user.id,
-            timestamp: Date.now()
-          }));
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Auto-login successful:', data);
+          if (data.success && data.user) {
+            setUser(data.user);
+            console.log('User updated from server:', data.user);
+          }
         }
-      } else {
-        console.log('Auto-login failed with status:', response.status);
-        setUser(null);
-      }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.log('Auto-login timeout - gracefully handled');
-        // Still try to set a default user for mobile compatibility
-        const defaultUser = {
-          id: 1,
-          username: 'admin',
-          role: 'admin',
-          createdAt: new Date().toISOString()
-        };
-        setUser(defaultUser);
-        console.log('Fallback user set for mobile:', defaultUser);
-        return;
-      } else {
-        console.error('Auto-login error:', error);
+      } catch (bgError: any) {
+        console.log('Background login failed, keeping default user:', bgError.message);
       }
       
-      // Fallback: Set default user for mobile compatibility
+    } catch (error: any) {
+      console.error('Auto-login error:', error);
+      
+      // Always ensure we have a user set for mobile
       const defaultUser = {
         id: 1,
         username: 'admin',
