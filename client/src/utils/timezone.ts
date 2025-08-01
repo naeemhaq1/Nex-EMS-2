@@ -100,3 +100,5 @@ export const formatTime12h = (date: Date): string => {
     minute: '2-digit'
   });
 };
+
+export { formatTime12h as default };
