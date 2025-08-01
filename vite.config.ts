@@ -15,6 +15,11 @@ export default defineConfig({
     },
   },
   root: path.resolve(__dirname, "client"),
+  server: {
+    fs: {
+      allow: ['..', '.']
+    }
+  },
   build: {
     outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
