@@ -19,6 +19,10 @@ const HOST = process.env.HOST || '0.0.0.0';
 // Enable trust proxy for production
 app.set('trust proxy', true);
 
+// Basic middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
 // Serve static files from client build
 app.use(express.static(path.join(__dirname, 'client', 'dist')));
 

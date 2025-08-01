@@ -14,7 +14,7 @@ deploymentTarget = "gce"
 ignorePorts = false
 
 [workflows]
-runButton = "Start Nexlinx EMS"
+runButton = "Start NEXLINX EMS"
 
 [[workflows.workflow]]
 name = "Start Nexlinx EMS"
@@ -28,6 +28,40 @@ args = "npm install"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Start NEXLINX EMS"
+author = 42660592
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run build"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm start"
+
+[[workflows.workflow]]
+name = "Start NEXLINX EMS"
+author = 42660592
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run build"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm start"
 
 [[ports]]
 localPort = 5000
