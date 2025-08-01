@@ -6,9 +6,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Layout } from "@/components/Layout";
-import { useEffect } from "react";
+import { useEffect, Suspense, lazy } from "react";
 import { shouldRedirectToMobile, shouldRedirectToDesktop } from "@/utils/deviceDetection";
 import { registerServiceWorker } from "@/utils/serviceWorker";
+import LoadingSpinner from "@/components/ui/horizontal-spinner";
 
 // Global error handler to prevent runtime error plugin from persisting AbortErrors
 window.addEventListener('error', (event) => {
@@ -43,7 +44,9 @@ import Settings from "@/pages/Settings";
 import ServiceHealthDashboard from "@/pages/ServiceHealthDashboard";
 import NotificationManagement from "@/pages/NotificationManagement";
 import ShellTerminal from "@/pages/ShellTerminal";
-import Login from "@/pages/Login";
+// Lazy load components for faster initial load
+const Login = lazy(() => import("@/pages/Login"));
+const MobileRouter = lazy(() => import("@/pages/mobile/MobileRouter"));
 import NotFound from "@/pages/not-found";
 import DepartmentGroups from "@/pages/DepartmentGroups";
 import DepartmentFieldManagement from "@/pages/admin/DepartmentFieldManagement";
@@ -71,7 +74,6 @@ import ImportExportTest from "@/pages/ImportExportTest";
 import { ThreeTierServiceMonitor } from "@/pages/mobile/ThreeTierServiceMonitor";
 
 // Mobile imports
-import MobileRouter from "@/pages/mobile/MobileRouter";
 import MobileStyleDashboard from "@/components/MobileStyleDashboard";
 import LoadingDemo from "@/pages/mobile/LoadingDemo";
 import DesktopEmployeeDashboard from "@/pages/DesktopEmployeeDashboard";
@@ -87,6 +89,11 @@ import TrackTrace from "@/pages/TrackTrace";
 import GoogleMapsVerification from "@/pages/GoogleMapsVerification";
 import MonthlyReport from "@/pages/MonthlyReport";
 import MonthlyReportTable from "@/pages/MonthlyReportTable";
+
+queryClient.defaultOptions.queries.staleTime = 10 * 60 * 1000; // 10 minutes (increased for better caching)
+queryClient.defaultOptions.queries.gcTime = 20 * 60 * 1000; // 20 minutes (increased for better caching)
+queryClient.defaultOptions.queries.refetchOnWindowFocus = false; // Reduce unnecessary refetches
+queryClient.defaultOptions.queries.refetchOnMount = false; // Reduce initial API calls
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -207,13 +214,21 @@ function AppRoutes() {
 
   // Show login if not authenticated or on login route
   if (!user || location === '/login') {
-    return <Login />;
+    return (
+        <Suspense fallback={<LoadingSpinner />}>
+          <Login />
+        </Suspense>
+    );
   }
 
   // Handle mobile routes first to prevent flashing
   const isMobileRoute = location.startsWith('/mobile');
   if (isMobileRoute) {
-    return <MobileRouter />;
+    return (
+        <Suspense fallback={<LoadingSpinner />}>
+          <MobileRouter />
+        </Suspense>
+    );
   }
 
   // Allow both mobile and desktop interfaces based on user choice

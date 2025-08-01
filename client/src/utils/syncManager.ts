@@ -54,7 +54,7 @@ class SyncManager {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        
+
         // Create sync queue store
         if (!db.objectStoreNames.contains('syncQueue')) {
           const store = db.createObjectStore('syncQueue', { keyPath: 'id' });
@@ -207,7 +207,7 @@ class SyncManager {
 
     try {
       const pendingItems = await this.getPendingItems();
-      
+
       if (pendingItems.length === 0) {
         console.log('🔄 Sync Manager: No pending items to sync');
         return;
@@ -224,14 +224,14 @@ class SyncManager {
 
       // Process in batches
       const batches = this.chunkArray(sortedItems, this.batchSize);
-      
+
       for (const batch of batches) {
         await this.processBatch(batch);
       }
 
       await this.updateSyncStats();
       this.notifyListeners();
-      
+
       console.log('🔄 Sync Manager: Sync operation completed');
 
     } catch (error) {
@@ -313,10 +313,10 @@ class SyncManager {
 
     } catch (error) {
       console.error(`🔄 Sync Manager: Failed to sync ${item.type}:`, error);
-      
+
       // Handle retry logic
       const newRetryCount = item.retryCount + 1;
-      
+
       if (newRetryCount >= this.maxRetries) {
         // Max retries reached - mark as failed
         await this.updateItemStatus(item.id, 'failed', newRetryCount);
@@ -344,7 +344,7 @@ class SyncManager {
           if (retryCount !== undefined) {
             item.retryCount = retryCount;
           }
-          
+
           const updateRequest = store.put(item);
           updateRequest.onsuccess = () => resolve();
           updateRequest.onerror = () => reject(updateRequest.error);
@@ -402,7 +402,7 @@ class SyncManager {
    */
   private async updateSyncStats(): Promise<void> {
     const stats = await this.getSyncStats();
-    
+
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(['syncStats'], 'readwrite');
       const store = transaction.objectStore('syncStats');
@@ -502,7 +502,7 @@ class SyncManager {
    */
   async cleanup(olderThanDays: number = 7): Promise<void> {
     const cutoffTime = Date.now() - (olderThanDays * 24 * 60 * 60 * 1000);
-    
+
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(['syncQueue'], 'readwrite');
       const store = transaction.objectStore('syncQueue');
@@ -534,14 +534,30 @@ class SyncManager {
       clearInterval(this.syncInterval);
       this.syncInterval = null;
     }
-    
+
     if (this.db) {
       this.db.close();
       this.db = null;
     }
-    
+
     this.listeners = [];
     console.log('🔄 Sync Manager: Destroyed');
+  }
+    // Start periodic sync with delayed initial sync
+  startPeriodicSync() {
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+    }
+
+    // Delay first sync to allow app to fully load
+    setTimeout(() => {
+      this.syncPendingData();
+
+      // Then sync every 60 seconds (reduced frequency for better performance)
+      this.syncInterval = setInterval(() => {
+        this.syncPendingData();
+      }, 60000);
+    }, 5000); // Wait 5 seconds before first sync
   }
 }
 

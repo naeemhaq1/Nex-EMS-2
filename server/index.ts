@@ -239,47 +239,56 @@ app.use((req, res, next) => {
       // OPTIMIZED STARTUP: Initialize services asynchronously for faster boot
       console.log('🚀 FAST STARTUP: Initializing core services asynchronously...');
 
-      // Start critical services in parallel for faster startup
-      const startupPromises = [
-        // Initialize Port Manager (lightweight)
-        import('./initialize-port-manager').then(({ initializePortManager }) => {
-          console.log('🔧 Port Manager initializing...');
-          return initializePortManager();
-        }),
+      // ULTRA-FAST STARTUP: Only initialize absolutely critical services
+      console.log('⚡ ULTRA-FAST STARTUP: Initializing only critical services...');
+      
+      // Initialize only Port Manager immediately (required for requests)
+      const criticalPromise = import('./initialize-port-manager').then(({ initializePortManager }) => {
+        console.log('🔧 Port Manager initializing...');
+        return initializePortManager();
+      });
 
-        // Initialize Dependency Manager (background)
-        import('./services/dependencyManager').then(async ({ dependencyManager }) => {
-          console.log('🔧 Dependency Manager initializing...');
-          // Reduced logging for faster startup
-          dependencyManager.on('serviceError', (serviceName, error) => {
-            console.error(`[Dependency] ❌ ${serviceName}:`, error.message);
-          });
-          return dependencyManager.startServices();
-        }),
-
-        // Initialize WhatsApp services (background)
-        Promise.all([
-          import('./services/whatsappAPIMonitorService'),
-          import('./services/whatsappCoreMonitorService'), 
-          import('./services/whatsappChatbotMonitorService')
-        ]).then(async ([apiMonitor, coreMonitor, chatbotMonitor]) => {
-          console.log('🔧 WhatsApp services initializing...');
-          // Start WhatsApp services in parallel
-          return Promise.all([
-            apiMonitor.whatsappAPIMonitorService.start(),
-            coreMonitor.whatsappCoreMonitorService.start(),
-            chatbotMonitor.whatsappChatbotMonitorService.start()
-          ]);
-        }).catch(error => {
-          console.error('❌ WhatsApp services startup failed:', error.message);
-        })
-      ];
-
-      // Wait for critical services with timeout for faster startup
+      // Wait only for critical service with very short timeout
       await Promise.race([
-        Promise.all(startupPromises),
-        new Promise(resolve => setTimeout(resolve, 5000)) // 5 second timeout
+        criticalPromise,
+        new Promise(resolve => setTimeout(resolve, 2000)) // 2 second timeout
       ]);
+
+      // Defer all other services to run in background after server starts
+      setTimeout(async () => {
+        console.log('⏳ Background services starting...');
+        try {
+          // Initialize non-critical services in background
+          const backgroundServices = [
+            import('./services/dependencyManager').then(async ({ dependencyManager }) => {
+              dependencyManager.on('serviceError', (serviceName, error) => {
+                console.error(`[Dependency] ❌ ${serviceName}:`, error.message);
+              });
+              return dependencyManager.startServices();
+            }),
+            
+            // WhatsApp services (completely deferred)
+            Promise.all([
+              import('./services/whatsappAPIMonitorService'),
+              import('./services/whatsappCoreMonitorService'), 
+              import('./services/whatsappChatbotMonitorService')
+            ]).then(async ([apiMonitor, coreMonitor, chatbotMonitor]) => {
+              return Promise.all([
+                apiMonitor.whatsappAPIMonitorService.start(),
+                coreMonitor.whatsappCoreMonitorService.start(),
+                chatbotMonitor.whatsappChatbotMonitorService.start()
+              ]);
+            }).catch(error => {
+              console.error('❌ WhatsApp services startup failed:', error.message);
+            })
+          ];
+
+          await Promise.allSettled(backgroundServices);
+          console.log('✅ Background services initialization complete');
+        } catch (error) {
+          console.error('⚠️ Some background services failed to start:', error.message);
+        }
+      }, 1000); // Start background services 1 second after server is ready
 
       log('✅ FAST STARTUP: Core services initialized (others continuing in background)');
       console.log('🚀 APPLICATION READY: Services continue initializing in background for optimal performance');
