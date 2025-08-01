@@ -1,21 +1,30 @@
+
+import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
+import { Loader2 } from 'lucide-react';
 
 // Lazy load components
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const MobileEmployeeDashboard = lazy(() => import('./pages/mobile/MobileEmployeeDashboard'));
+const MobileEmployeeDashboardWithAdmin = React.lazy(() => import('./pages/mobile/MobileEmployeeDashboardWithAdmin'));
+const MobileAdminDashboard = React.lazy(() => import('./pages/mobile/MobileAdminDashboard'));
+const DesktopEmployeeDashboard = React.lazy(() => import('./pages/DesktopEmployeeDashboard'));
+const DesktopAdminDashboard = React.lazy(() => import('./pages/DesktopAdminDashboard'));
 
-const AppRoutes = () => {
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="text-center">
+      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+      <p className="text-sm text-gray-600">Loading...</p>
+    </div>
+  </div>
+);
+
+const AppRoutes: React.FC = () => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!user) {
@@ -27,17 +36,36 @@ const AppRoutes = () => {
     );
   }
 
+  const isMobile = window.innerWidth <= 768;
+  const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    }>
+    <Suspense fallback={<LoadingSpinner />}>
       <Routes>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/mobile/dashboard" element={<MobileEmployeeDashboard />} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/login" element={<Navigate to="/" replace />} />
+        
+        {/* Mobile Routes */}
+        {isMobile && (
+          <>
+            <Route path="/" element={<MobileEmployeeDashboardWithAdmin />} />
+            {isAdmin && (
+              <Route path="/admin/*" element={<MobileAdminDashboard />} />
+            )}
+          </>
+        )}
+        
+        {/* Desktop Routes */}
+        {!isMobile && (
+          <>
+            <Route path="/" element={isAdmin ? <DesktopAdminDashboard /> : <DesktopEmployeeDashboard />} />
+            {isAdmin && (
+              <Route path="/admin/*" element={<DesktopAdminDashboard />} />
+            )}
+          </>
+        )}
+        
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   );
