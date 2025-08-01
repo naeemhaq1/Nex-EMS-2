@@ -1,3 +1,4 @@
+
 import React, { Suspense } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -12,16 +13,6 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       retry: 1,
-      queryFn: async ({ queryKey }) => {
-        const url = Array.isArray(queryKey) ? queryKey[0] : queryKey;
-        const response = await fetch(url as string, {
-          credentials: 'include',
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      },
     },
   },
 });
@@ -29,18 +20,24 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ThemeProvider>
-          <TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <AuthProvider>
             <BrowserRouter>
               <div className="min-h-screen bg-background text-foreground">
-                <AppRoutes />
+                <Suspense fallback={
+                  <div className="flex items-center justify-center min-h-screen">
+                    <div className="text-lg">Loading...</div>
+                  </div>
+                }>
+                  <AppRoutes />
+                </Suspense>
                 <Toaster />
               </div>
             </BrowserRouter>
-          </TooltipProvider>
-        </ThemeProvider>
-      </AuthProvider>
+          </AuthProvider>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

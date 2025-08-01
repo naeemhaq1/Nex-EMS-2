@@ -2,23 +2,18 @@
 import React from 'react';
 
 interface HorizontalSpinnerProps {
-  size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-function HorizontalSpinner({ size = 'md', className = '' }: HorizontalSpinnerProps) {
-  const sizeClasses = {
-    sm: 'h-4 w-4',
-    md: 'h-6 w-6', 
-    lg: 'h-8 w-8'
-  };
-
+function HorizontalSpinner({ className = '' }: HorizontalSpinnerProps) {
   return (
-    <div className={`inline-flex items-center justify-center ${className}`}>
-      <div className={`animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 ${sizeClasses[size]}`}></div>
+    <div className={`flex items-center justify-center space-x-1 ${className}`}>
+      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
     </div>
   );
 }
 
-export { HorizontalSpinner };
 export default HorizontalSpinner;
+export { HorizontalSpinner };
