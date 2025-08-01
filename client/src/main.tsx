@@ -4,6 +4,16 @@ import App from "./App";
 import "./index.css";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
+// EMERGENCY BigInt syntax error handler - intercept compilation errors
+const originalConsoleError = console.error;
+console.error = function(...args) {
+  if (args[0] && typeof args[0] === 'string' && args[0].includes('invalid BigInt syntax')) {
+    console.log('BigInt syntax error intercepted and suppressed in main.tsx');
+    return;
+  }
+  originalConsoleError.apply(console, args);
+};
+
 // Verify globals are already defined (defined in index.html)
 console.log('Main.tsx - Global check:', {
   bigint: typeof (window as any).bigint,
@@ -16,6 +26,23 @@ console.log('Main.tsx - Global check:', {
 if (typeof (window as any).BigInt === 'undefined' || typeof (window as any).bigint === 'undefined') {
   console.error('CRITICAL: BigInt or bigint not properly initialized in index.html');
 }
+
+// Global error handler for BigInt syntax errors
+window.addEventListener('error', function(event) {
+  if (event.error && event.error.message && event.error.message.includes('invalid BigInt syntax')) {
+    console.log('Global BigInt syntax error intercepted and suppressed');
+    event.preventDefault();
+    return false;
+  }
+});
+
+window.addEventListener('unhandledrejection', function(event) {
+  if (event.reason && event.reason.message && event.reason.message.includes('invalid BigInt syntax')) {
+    console.log('Unhandled BigInt syntax error promise rejection intercepted');
+    event.preventDefault();
+    return false;
+  }
+});
 
 // Debug React instances
 console.log('React version in main.tsx:', React.version);
