@@ -94,6 +94,10 @@ if (process.env.NODE_ENV !== 'production') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Apply session middleware globally before any routes
+import { sessionMiddleware } from "./middleware/auth";
+app.use(sessionMiddleware);
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

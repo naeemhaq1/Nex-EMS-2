@@ -157,122 +157,90 @@ router.delete('/:id', requireSuperAdmin, async (req, res) => {
 });
 
 // Login endpoint
-router.post("/login", async (req, res) => {
-  const { username, password } = req.body;
+router.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    console.log('Login attempt for username:', username);
 
-  // Development mode auto-login bypass
-  if (process.env.NODE_ENV === 'development' && username === 'dev' && password === 'dev') {
-    console.log('🔧 Development mode auto-login activated');
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password are required" });
+    }
 
-    // Create a temporary dev session
-    req.session.userId = 'dev-user';
-    req.session.usernum = 1;
-    req.session.username = 'dev';
-    req.session.role = 'superadmin';
-    req.session.employeeId = 'DEV001';
-    req.session.realName = 'Development User';
+    if (!req.session) {
+      return res.status(500).json({ error: 'Session middleware not configured' });
+    }
+
+    // Use storage service to verify user
+    const user = await storage.verifyUser(username, password);
+    if (!user) {
+      console.log('Invalid credentials for username:', username);
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    console.log('User authenticated:', user.username);
+
+    // Get role permissions
+    const rolePermissions = await storage.getRolePermissionByName(user.role);
+    if (!rolePermissions) {
+      console.log('No role permissions found for role:', user.role);
+      return res.status(403).json({ error: "Role permissions not found" });
+    }
+
+    console.log('Role permissions found:', rolePermissions);
+
+    // Set session data
+    req.session.userId = user.id.toString();
+    req.session.usernum = user.id;
+    req.session.username = user.username;
+    req.session.role = user.role;
+    req.session.employeeId = user.employeeId;
+    req.session.realName = user.realName;
+    req.session.userAgent = req.get('User-Agent') || '';
+    req.session.ipAddress = req.ip || '';
+    req.session.loginTime = new Date().toISOString();
+    req.session.location = user.location || '';
     req.session.permissions = {
-      canCreateUsers: true,
-      canDeleteUsers: true,
-      canDeleteData: true,
-      canAccessFinancialData: true,
-      canManageSystem: true,
-      canManageTeams: true,
-      canChangeDesignations: true,
-      accessLevel: 10
+      canCreateUsers: rolePermissions.canCreateUsers,
+      canDeleteUsers: rolePermissions.canDeleteUsers,
+      canDeleteData: rolePermissions.canDeleteData,
+      canAccessFinancialData: rolePermissions.canAccessFinancialData,
+      canManageSystem: rolePermissions.canManageSystem,
+      canManageTeams: rolePermissions.canManageTeams,
+      canChangeDesignations: rolePermissions.canChangeDesignations,
+      accessLevel: rolePermissions.accessLevel,
     };
 
-    return res.json({
+    console.log('Session data set, saving session...');
+
+    // Force session save and wait for it
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          reject(err);
+        } else {
+          console.log('Session saved successfully');
+          resolve();
+        }
+      });
+    });
+
+    res.json({
       success: true,
       user: {
-        id: 'dev-user',
-        username: 'dev',
-        role: 'superadmin',
-        firstName: 'Development',
-        lastName: 'User',
-        email: 'dev@nexlinx.com',
-        department: 'IT',
-        designation: 'Developer'
-      }
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        employeeId: user.employeeId,
+        realName: user.realName,
+        permissions: req.session.permissions,
+      },
+      message: "Login successful"
     });
-  }
 
-  try {
-    // Find user with username - add proper error handling
-    let user;
-    try {
-      const result = await storage.getUserByUsername(username);
-      user = result;
-    } catch (dbError) {
-      console.error('Database query error in main login:', dbError);
-      return res.status(500).json({ success: false, error: "Database connection error" });
-    }
-
-    if (!user) {
-      return res.status(401).json({ success: false, error: "Invalid credentials" });
-    }
-
-    const passwordMatch = await bcrypt.compare(password, user.password);
-
-    if (!passwordMatch) {
-      return res.status(401).json({ success: false, error: "Invalid credentials" });
-    }
-
-      // Set session data
-      req.session.userId = user.id.toString();
-      req.session.usernum = user.id;
-      req.session.username = user.username;
-      req.session.role = user.role;
-      req.session.employeeId = user.employeeId;
-      req.session.realName = user.realName;
-      req.session.userAgent = req.get('User-Agent');
-      req.session.ipAddress = req.ip;
-      req.session.loginTime = new Date().toISOString();
-
-      // Get permissions
-      try {
-        const rolePermissions = await storage.getRolePermissionByName(user.role);
-        if (rolePermissions) {
-          req.session.permissions = {
-            canCreateUsers: rolePermissions.canCreateUsers,
-            canDeleteUsers: rolePermissions.canDeleteUsers,
-            canDeleteData: rolePermissions.canDeleteData,
-            canAccessFinancialData: rolePermissions.canAccessFinancialData,
-            canManageSystem: rolePermissions.canManageSystem,
-            canManageTeams: rolePermissions.canManageTeams,
-            canChangeDesignations: rolePermissions.canChangeDesignations,
-            accessLevel: rolePermissions.accessLevel
-          };
-        }
-      } catch (permError) {
-        console.warn('Could not load role permissions:', permError);
-      }
-
-      // Save session
-      await new Promise((resolve, reject) => {
-        req.session.save((err) => {
-          if (err) reject(err);
-          else resolve(true);
-        });
-      });
-
-      return res.json({ 
-        success: true, 
-        user: {
-          id: user.id,
-          username: user.username,
-          role: user.role,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          department: user.department,
-          designation: user.designation
-        },
-        message: 'Login successful' 
-      });
   } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Internal server error", details: error.message });
   }
 });
 
@@ -423,6 +391,75 @@ router.post('/dev/auto-login', async (req, res) => {
   } catch (error) {
     console.error('Dev auto-login error:', error);
     res.status(500).json({ success: false, message: 'Auto-login failed: ' + error.message });
+  }
+});
+
+// DEV ENVIRONMENT: Auto-login as dev/dev
+router.post('/dev', async (req, res) => {
+  try {
+    console.log('DEV auto-login attempt');
+    console.log('Session exists:', !!req.session);
+    console.log('Session ID:', req.sessionID);
+
+    if (!req.session) {
+      return res.status(500).json({ error: 'Session middleware not configured' });
+    }
+
+    // Create dev session
+    req.session.userId = 'dev';
+    req.session.usernum = 9999;
+    req.session.username = 'dev';
+    req.session.role = 'superadmin';
+    req.session.realName = 'Developer';
+    req.session.employeeId = 'DEV001';
+    req.session.userAgent = req.get('User-Agent') || '';
+    req.session.ipAddress = req.ip || '';
+    req.session.loginTime = new Date().toISOString();
+    req.session.location = 'Development Environment';
+    req.session.permissions = {
+      canCreateUsers: true,
+      canDeleteUsers: true,
+      canDeleteData: true,
+      canAccessFinancialData: true,
+      canManageSystem: true,
+      canManageTeams: true,
+      canChangeDesignations: true,
+      accessLevel: 10
+    };
+
+    console.log('Session properties set, saving...');
+
+    // Force session save and wait for it
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          reject(err);
+        } else {
+          console.log('Session saved successfully');
+          resolve();
+        }
+      });
+    });
+
+    console.log('Final session state - userId:', req.session.userId, 'usernum:', req.session.usernum);
+
+    res.json({
+      success: true,
+      user: {
+        userId: req.session.userId,
+        usernum: req.session.usernum,
+        username: req.session.username,
+        role: req.session.role,
+        realName: req.session.realName,
+        employeeId: req.session.employeeId,
+        permissions: req.session.permissions
+      },
+      message: 'DEV auto-login successful'
+    });
+  } catch (error) {
+    console.error('DEV auto-login error:', error);
+    res.status(500).json({ error: 'DEV auto-login failed', details: error.message });
   }
 });
 
