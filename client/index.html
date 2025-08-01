@@ -144,15 +144,23 @@
     <script>
       // CRITICAL BIGINT POLYFILL - Must be first to prevent undefined errors
       if (typeof BigInt === 'undefined') {
-        window.BigInt = function(value) {
+        const bigIntPolyfill = function(value) {
           if (typeof value === 'string') {
             return parseInt(value, 10);
           }
           return parseInt(value);
         };
-        // Add BigInt to global scope for modules
+        
+        // Assign to all possible global scopes
+        window.BigInt = bigIntPolyfill;
         window.global = window.global || window;
-        window.global.BigInt = window.BigInt;
+        window.global.BigInt = bigIntPolyfill;
+        globalThis.BigInt = bigIntPolyfill;
+        
+        // For modules
+        if (typeof module !== 'undefined' && module.exports) {
+          module.exports.BigInt = bigIntPolyfill;
+        }
       }
       
       // Disable runtime error modal overlay - MULTIPLE APPROACHES

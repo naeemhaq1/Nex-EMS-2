@@ -32,19 +32,25 @@ export default defineConfig({
   },
   server: {
     host: "0.0.0.0",
-    allowedHosts: true,
+    port: 5173,
+    strictPort: false,
     hmr: {
-      clientPort: process.env.HMR_PORT || 443,
+      port: 5173,
+      host: "0.0.0.0",
+      clientPort: 443,
     },
     fs: {
       strict: false,
-      allow: ['..'],
+      allow: ['..', '.'],
     },
+    origin: process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : undefined,
   },
   define: {
     global: 'globalThis',
-    'process.env.WS_TOKEN': JSON.stringify(process.env.WS_TOKEN || 'fallback_token'),
-    __WS_TOKEN__: JSON.stringify(process.env.WS_TOKEN || 'fallback_token'),
+    'process.env.WS_TOKEN': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
+    '__WS_TOKEN__': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
+    'import.meta.env.WS_TOKEN': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
+    BigInt: 'globalThis.BigInt',
   },
   optimizeDeps: {
     include: ["react", "react-dom"],
