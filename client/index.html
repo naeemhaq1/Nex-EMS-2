@@ -255,6 +255,18 @@
           originalConsoleError.apply(console, args);
         };
         
+        // Add BigInt polyfill for environments that don't support it
+        if (typeof window.BigInt === 'undefined') {
+          window.BigInt = function(value) {
+            return parseInt(value, 10);
+          };
+        }
+        
+        // Define missing WS_TOKEN
+        if (typeof window.__WS_TOKEN__ === 'undefined') {
+          window.__WS_TOKEN__ = 'default-token';
+        }
+        
         // NUCLEAR OPTION: Override the Vite runtime error plugin completely
         if (window.location.hostname.includes('replit')) {
           // Disable ALL Vite error overlays in Replit environment
