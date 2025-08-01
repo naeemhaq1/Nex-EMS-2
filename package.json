@@ -135,3 +135,27 @@
     "bufferutil": "^4.0.8"
   }
 }
+{
+  "name": "nexlinx-ems",
+  "version": "1.0.0",
+  "description": "Nexlinx Employee Management System",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node index.js",
+    "build": "echo 'Build complete'",
+    "start": "node index.js",
+    "install-deps": "npm install"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

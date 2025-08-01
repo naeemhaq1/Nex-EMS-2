@@ -107,3 +107,54 @@ sudo chown -R $USER:$USER .
 - **Three-tier Architecture**: Scalable microservice design
 
 This is a complete, production-ready application that will run immediately after proper database setup.
+# Nexlinx EMS - Fresh Installation
+
+## Status: Clean Installation Ready
+
+This is a fresh, clean installation of the Nexlinx Employee Management System.
+
+## Quick Start
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Start the development server:
+```bash
+npm run dev
+```
+
+3. Access the application:
+- Main server: http://localhost:5000
+- Health check: http://localhost:5000/health
+
+## Next Steps
+
+1. Configure your database connection in `.env`
+2. Set up your authentication system
+3. Add your business logic and routes
+4. Configure frontend components
+
+## Port Configuration
+
+- Development: Port 5000 (default)
+- Production: Port 5000 (Replit optimized)
+- Host: 0.0.0.0 (external access enabled)
+
+## Features to Implement
+
+- [ ] Database setup and migrations
+- [ ] Authentication system
+- [ ] Employee management
+- [ ] Attendance tracking  
+- [ ] Mobile interface
+- [ ] Reporting system
+- [ ] WhatsApp integration (optional)
+
+## Development Commands
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm start` - Start production server
+- `npm run install-deps` - Install all dependencies
