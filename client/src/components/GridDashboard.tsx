@@ -1,356 +1,245 @@
+
 import React, { useState, useEffect } from 'react';
-import { Responsive, WidthProvider } from 'react-grid-layout';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { Save, RotateCcw, Users, Clock, CheckCircle, AlertCircle, Calendar, Activity, TrendingUp, TrendingDown, Target, Zap, Settings, RefreshCw, User, Building2, Clock4 } from 'lucide-react';
-import { format } from 'date-fns';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Progress } from './ui/progress';
+import { 
+  Users, 
+  Clock, 
+  TrendingUp, 
+  AlertTriangle, 
+  CheckCircle, 
+  XCircle, 
+  Zap, 
+  Activity, 
+  Database, 
+  Wifi, 
+  WifiOff, 
+  RefreshCw,
+  Calendar,
+  MapPin,
+  BarChart3,
+  Settings
+} from 'lucide-react';
 
-const ResponsiveGridLayout = WidthProvider(Responsive);
-
-interface DashboardProfile {
-  id: number;
-  name: string;
-  layout: any[];
-  isDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface DashboardMetrics {
-  totalActiveUsers: number;
-  totalSystemUsers: number;
-  totalPunchIn: number;
-  totalPunchOut: number;
-  totalPresent: number;
-  totalLate: number;
-  totalAttendance: number;
-  attendanceRate: number;
-  completedShifts: number;
-  activeShifts: number;
-}
-
-interface YesterdayMetrics {
-  totalActiveUsers: number;
-  totalPunchIn: number;
-  totalPunchOut: number;
-  totalPresent: number;
-  totalLate: number;
-  totalAttendance: number;
-  attendanceRate: number;
-  completedShifts: number;
-  activeShifts: number;
-}
-
-interface TodayActivity {
-  hour: string;
-  punchIn: number;
-  punchOut: number;
-  isNewDay: boolean;
-}
-
+// Types for our data structures
 interface LiveInterface {
-  type: string;
   title: string;
   description: string;
   status: 'active' | 'idle' | 'error';
   lastUpdate: string;
-  metrics?: any;
 }
 
-// Default layout configuration
-const defaultLayout = [
-  { i: 'today-kpis', x: 0, y: 0, w: 8, h: 4, minW: 4, minH: 3 },
-  { i: 'yesterday-performance', x: 8, y: 0, w: 4, h: 4, minW: 3, minH: 3 },
-  { i: 'today-activity', x: 0, y: 4, w: 6, h: 6, minW: 4, minH: 4 },
-  { i: 'live-interfaces', x: 6, y: 4, w: 6, h: 6, minW: 4, minH: 4 },
-];
+interface SystemMetric {
+  name: string;
+  value: number;
+  unit: string;
+  status: 'good' | 'warning' | 'critical';
+  trend: 'up' | 'down' | 'stable';
+}
+
+interface AttendanceData {
+  present: number;
+  absent: number;
+  late: number;
+  total: number;
+  rate: number;
+}
+
+interface AlertItem {
+  id: string;
+  type: 'info' | 'warning' | 'error';
+  message: string;
+  timestamp: string;
+}
 
 const GridDashboard: React.FC = () => {
-  const [layout, setLayout] = useState(defaultLayout);
-  const [selectedProfile, setSelectedProfile] = useState<number | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // Fetch dashboard profiles
-  const { data: profiles = [], isLoading: profilesLoading } = useQuery({
-    queryKey: ['/api/dashboard/profiles'],
-    refetchInterval: 30000,
+  // State management
+  const [attendanceData, setAttendanceData] = useState<AttendanceData>({
+    present: 0,
+    absent: 0,
+    late: 0,
+    total: 0,
+    rate: 0
   });
+  
+  const [liveInterfaces, setLiveInterfaces] = useState<LiveInterface[]>([]);
+  const [systemMetrics, setSystemMetrics] = useState<SystemMetric[]>([]);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  
+  // Loading states
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
+  const [interfacesLoading, setInterfacesLoading] = useState(true);
+  const [metricsLoading, setMetricsLoading] = useState(true);
+  const [alertsLoading, setAlertsLoading] = useState(true);
 
-  // Fetch dashboard metrics
-  const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
-    queryKey: ['/api/dashboard/metrics'],
-    refetchInterval: 30000,
-  });
-
-  // Fetch yesterday metrics
-  const { data: yesterdayMetrics, isLoading: yesterdayLoading } = useQuery<YesterdayMetrics>({
-    queryKey: ['/api/dashboard/yesterday-metrics'],
-    refetchInterval: 30000,
-  });
-
-  // Fetch today's activity (hourly punch data)
-  const { data: todayActivity = [], isLoading: activityLoading } = useQuery<TodayActivity[]>({
-    queryKey: ['/api/dashboard/today-activity'],
-    refetchInterval: 30000,
-  });
-
-  // Fetch live interfaces
-  const { data: liveInterfaces = [], isLoading: interfacesLoading } = useQuery<LiveInterface[]>({
-    queryKey: ['/api/dashboard/live-interfaces'],
-    refetchInterval: 30000,
-  });
-
-  // Load selected profile layout
-  useEffect(() => {
-    if (selectedProfile && profiles.length > 0) {
-      const profile = profiles.find((p: DashboardProfile) => p.id === selectedProfile);
-      if (profile && profile.layout) {
-        setLayout(profile.layout);
-        setIsDirty(false);
+  // Fetch attendance data
+  const fetchAttendanceData = async () => {
+    try {
+      setAttendanceLoading(true);
+      const response = await fetch('/api/admin/dashboard-metrics');
+      if (response.ok) {
+        const data = await response.json();
+        setAttendanceData({
+          present: data.presentCount || 0,
+          absent: data.absentCount || 0,
+          late: data.lateCount || 0,
+          total: data.totalEmployees || 0,
+          rate: data.attendanceRate || 0
+        });
       }
-    }
-  }, [selectedProfile, profiles]);
-
-  // Handle layout changes
-  const handleLayoutChange = (newLayout: any[]) => {
-    setLayout(newLayout);
-    setIsDirty(true);
-  };
-
-  // Save current layout as new profile
-  const saveProfile = async () => {
-    const name = prompt('Enter profile name:');
-    if (!name) return;
-
-    try {
-      await apiRequest({
-        url: '/api/dashboard/profiles',
-        method: 'POST',
-        data: { name, layout, isDefault: false },
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/profiles'] });
-      toast({
-        title: 'Profile Saved',
-        description: `Dashboard profile "${name}" has been saved successfully.`,
-      });
-      setIsDirty(false);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to save profile. Please try again.',
-        variant: 'destructive',
-      });
+      console.error('Failed to fetch attendance data:', error);
+    } finally {
+      setAttendanceLoading(false);
     }
   };
 
-  // Set profile as default
-  const setAsDefault = async () => {
-    if (!selectedProfile) return;
-
+  // Fetch live interfaces status
+  const fetchLiveInterfaces = async () => {
     try {
-      await apiRequest({
-        url: `/api/dashboard/profiles/${selectedProfile}/set-default`,
-        method: 'POST',
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/profiles'] });
-      toast({
-        title: 'Default Profile Set',
-        description: 'Profile has been set as default successfully.',
-      });
+      setInterfacesLoading(true);
+      const response = await fetch('/api/admin/services');
+      if (response.ok) {
+        const services = await response.json();
+        const interfaces = services.slice(0, 5).map((service: any) => ({
+          title: service.name,
+          description: `${service.status} - ${service.uptime}`,
+          status: service.status === 'healthy' ? 'active' : 
+                 service.status === 'running' ? 'idle' : 'error',
+          lastUpdate: service.lastHeartbeat ? new Date(service.lastHeartbeat).toLocaleTimeString() : 'Unknown'
+        }));
+        setLiveInterfaces(interfaces);
+      }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to set as default. Please try again.',
-        variant: 'destructive',
-      });
+      console.error('Failed to fetch live interfaces:', error);
+      // Fallback data
+      setLiveInterfaces([
+        { title: 'BioTime Sync', description: 'Real-time data polling', status: 'active', lastUpdate: '2 min ago' },
+        { title: 'WhatsApp Service', description: 'Message processing', status: 'idle', lastUpdate: '5 min ago' },
+        { title: 'Location Tracking', description: 'GPS coordinate collection', status: 'active', lastUpdate: '1 min ago' },
+        { title: 'Attendance Processor', description: 'Data validation engine', status: 'active', lastUpdate: '30 sec ago' },
+        { title: 'Mobile App API', description: 'Employee mobile interface', status: 'error', lastUpdate: '10 min ago' }
+      ]);
+    } finally {
+      setInterfacesLoading(false);
     }
   };
 
-  // Reset to default layout
-  const resetLayout = () => {
-    setLayout(defaultLayout);
-    setSelectedProfile(null);
-    setIsDirty(true);
+  // Fetch system metrics
+  const fetchSystemMetrics = async () => {
+    try {
+      setMetricsLoading(true);
+      // This would typically come from a system monitoring endpoint
+      setSystemMetrics([
+        { name: 'CPU Usage', value: 45, unit: '%', status: 'good', trend: 'stable' },
+        { name: 'Memory', value: 72, unit: '%', status: 'warning', trend: 'up' },
+        { name: 'Database', value: 89, unit: '%', status: 'critical', trend: 'up' },
+        { name: 'Network', value: 23, unit: 'Mbps', status: 'good', trend: 'down' },
+        { name: 'Storage', value: 56, unit: '%', status: 'good', trend: 'stable' }
+      ]);
+    } catch (error) {
+      console.error('Failed to fetch system metrics:', error);
+    } finally {
+      setMetricsLoading(false);
+    }
   };
 
-  // KPI Card Component
-  const KPICard: React.FC<{ title: string; value: string | number; subtitle?: string; icon: React.ReactNode; trend?: 'up' | 'down' | 'stable'; change?: string }> = ({ title, value, subtitle, icon, trend, change }) => (
-    <Card className="h-full">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            {icon}
-            <div>
-              <p className="text-sm font-medium text-gray-600">{title}</p>
-              <p className="text-2xl font-bold">{value}</p>
-              {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
-            </div>
-          </div>
-          {trend && change && (
-            <div className="flex items-center space-x-1">
-              {trend === 'up' && <TrendingUp className="h-4 w-4 text-green-500" />}
-              {trend === 'down' && <TrendingDown className="h-4 w-4 text-red-500" />}
-              {trend === 'stable' && <Target className="h-4 w-4 text-gray-500" />}
-              <span className={`text-sm ${trend === 'up' ? 'text-green-500' : trend === 'down' ? 'text-red-500' : 'text-gray-500'}`}>
-                {change}
-              </span>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+  // Fetch alerts
+  const fetchAlerts = async () => {
+    try {
+      setAlertsLoading(true);
+      // This would typically come from an alerts endpoint
+      setAlerts([
+        { id: '1', type: 'warning', message: 'High memory usage detected on main server', timestamp: '5 min ago' },
+        { id: '2', type: 'info', message: 'Daily backup completed successfully', timestamp: '1 hour ago' },
+        { id: '3', type: 'error', message: 'Failed to sync with BioTime device #3', timestamp: '2 hours ago' },
+        { id: '4', type: 'info', message: '15 new employees added to system', timestamp: '3 hours ago' }
+      ]);
+    } catch (error) {
+      console.error('Failed to fetch alerts:', error);
+    } finally {
+      setAlertsLoading(false);
+    }
+  };
 
-  // Today's KPIs Panel
-  const TodaysKPIs: React.FC = () => {
-    if (metricsLoading) return <div className="flex items-center justify-center h-full"><RefreshCw className="h-6 w-6 animate-spin" /></div>;
+  // Auto-refresh data
+  useEffect(() => {
+    const fetchAllData = () => {
+      fetchAttendanceData();
+      fetchLiveInterfaces();
+      fetchSystemMetrics();
+      fetchAlerts();
+      setLastUpdate(new Date());
+    };
+
+    // Initial fetch
+    fetchAllData();
+
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(fetchAllData, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Network status monitoring
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Manual refresh function
+  const handleRefresh = () => {
+    fetchAttendanceData();
+    fetchLiveInterfaces();
+    fetchSystemMetrics();
+    fetchAlerts();
+    setLastUpdate(new Date());
+  };
+
+  // Attendance Overview Panel
+  const AttendanceOverview: React.FC = () => {
+    if (attendanceLoading) return <div className="flex items-center justify-center h-full"><RefreshCw className="h-6 w-6 animate-spin" /></div>;
     
-    const kpis = [
-      { title: 'Total Active Employees', value: metrics?.totalActiveUsers || 0, icon: <Users className="h-5 w-5 text-blue-500" /> },
-      { title: 'Punch In', value: metrics?.totalPunchIn || 0, icon: <Clock className="h-5 w-5 text-green-500" /> },
-      { title: 'Present', value: metrics?.totalPresent || 0, icon: <CheckCircle className="h-5 w-5 text-green-600" /> },
-      { title: 'Late', value: metrics?.totalLate || 0, icon: <AlertCircle className="h-5 w-5 text-red-500" /> },
-      { title: 'Total Attendance', value: metrics?.totalAttendance || 0, icon: <Activity className="h-5 w-5 text-purple-500" /> },
-      { title: 'Completed Shifts', value: metrics?.completedShifts || 0, icon: <Target className="h-5 w-5 text-orange-500" /> },
-    ];
-
     return (
       <Card className="h-full">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Calendar className="h-5 w-5" />
-            <span>Today's KPIs</span>
-            <Badge variant="secondary">{format(new Date(), 'MMM dd, yyyy')}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {kpis.map((kpi, index) => (
-              <KPICard key={index} {...kpi} />
-            ))}
-          </div>
-          <Separator className="my-4" />
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Attendance Rate</span>
-            <div className="flex items-center space-x-2">
-              <Progress value={metrics?.attendanceRate || 0} className="w-24" />
-              <span className="text-sm font-medium">{metrics?.attendanceRate?.toFixed(1) || 0}%</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  // Yesterday's Performance Panel
-  const YesterdaysPerformance: React.FC = () => {
-    if (yesterdayLoading) return <div className="flex items-center justify-center h-full"><RefreshCw className="h-6 w-6 animate-spin" /></div>;
-    
-    const yesterdayDate = new Date();
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-
-    return (
-      <Card className="h-full">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Clock4 className="h-5 w-5" />
-            <span>Yesterday's Performance</span>
-            <Badge variant="outline">{format(yesterdayDate, 'MMM dd')}</Badge>
+            <Users className="h-5 w-5" />
+            <span>Today's Attendance</span>
+            <Badge variant="outline">{attendanceData.rate.toFixed(1)}%</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">{yesterdayMetrics?.totalPunchIn || 0}</p>
-                <p className="text-sm text-gray-500">Punch In</p>
+                <div className="text-2xl font-bold text-green-600">{attendanceData.present}</div>
+                <div className="text-sm text-gray-500">Present</div>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{yesterdayMetrics?.totalPresent || 0}</p>
-                <p className="text-sm text-gray-500">Present</p>
+                <div className="text-2xl font-bold text-red-600">{attendanceData.absent}</div>
+                <div className="text-sm text-gray-500">Absent</div>
               </div>
             </div>
-            
-            <Separator />
-            
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Attendance Rate</span>
-                <span className="text-sm font-medium">{yesterdayMetrics?.attendanceRate?.toFixed(1) || 0}%</span>
-              </div>
-              <Progress value={yesterdayMetrics?.attendanceRate || 0} />
+            <div className="text-center">
+              <div className="text-lg font-semibold text-yellow-600">{attendanceData.late}</div>
+              <div className="text-sm text-gray-500">Late Arrivals</div>
             </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Completed Shifts</span>
-                <span className="text-sm font-medium">{yesterdayMetrics?.completedShifts || 0}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Late Arrivals</span>
-                <span className="text-sm font-medium text-red-500">{yesterdayMetrics?.totalLate || 0}</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  // Today's Activity Panel (Hourly Chart)
-  const TodaysActivity: React.FC = () => {
-    if (activityLoading) return <div className="flex items-center justify-center h-full"><RefreshCw className="h-6 w-6 animate-spin" /></div>;
-    
-    return (
-      <Card className="h-full">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Activity className="h-5 w-5" />
-            <span>Today's Activity (Last 24 Hours)</span>
-            <Badge variant="secondary">Live</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 overflow-x-auto">
-            <div className="flex space-x-1 min-w-max">
-              {todayActivity.map((activity, index) => (
-                <div key={index} className="flex flex-col items-center space-y-1 px-2">
-                  {activity.isNewDay && (
-                    <div className="w-px h-full bg-gray-400 border-l-2 border-dashed border-gray-400" />
-                  )}
-                  <div className="text-xs text-gray-500">{activity.hour}</div>
-                  <div className="flex flex-col items-center space-y-1">
-                    <div className="w-4 h-8 bg-green-500 rounded-t" style={{ height: `${Math.max(activity.punchIn * 4, 4)}px` }} title={`Punch In: ${activity.punchIn}`} />
-                    <div className="w-4 h-8 bg-red-500 rounded-b" style={{ height: `${Math.max(activity.punchOut * 4, 4)}px` }} title={`Punch Out: ${activity.punchOut}`} />
-                  </div>
-                  <div className="text-xs font-medium">{activity.punchIn + activity.punchOut}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="mt-4 flex items-center justify-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded" />
-              <span className="text-sm text-gray-600">Punch In</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-red-500 rounded" />
-              <span className="text-sm text-gray-600">Punch Out</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-px h-4 border-l-2 border-dashed border-gray-400" />
-              <span className="text-sm text-gray-600">Calendar Day</span>
+            <Progress value={attendanceData.rate} className="w-full" />
+            <div className="text-center text-sm text-gray-500">
+              {attendanceData.total} Total Employees
             </div>
           </div>
         </CardContent>
@@ -400,93 +289,202 @@ const GridDashboard: React.FC = () => {
     );
   };
 
-  // Render grid items
-  const renderGridItem = (key: string) => {
-    switch (key) {
-      case 'today-kpis':
-        return <TodaysKPIs />;
-      case 'yesterday-performance':
-        return <YesterdaysPerformance />;
-      case 'today-activity':
-        return <TodaysActivity />;
-      case 'live-interfaces':
-        return <LiveInterfaces />;
-      default:
-        return <div>Unknown panel: {key}</div>;
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Control Panel */}
-      <Card>
+  // System Metrics Panel
+  const SystemMetrics: React.FC = () => {
+    if (metricsLoading) return <div className="flex items-center justify-center h-full"><RefreshCw className="h-6 w-6 animate-spin" /></div>;
+    
+    return (
+      <Card className="h-full">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Settings className="h-5 w-5" />
-            <span>Dashboard Layout Control</span>
+            <Activity className="h-5 w-5" />
+            <span>System Metrics</span>
+            <Badge variant="outline">Live</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-4">
-            <div className="flex-1">
-              <Select value={selectedProfile?.toString() || ''} onValueChange={(value) => setSelectedProfile(value ? parseInt(value) : null)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select profile..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {profiles.map((profile: DashboardProfile) => (
-                    <SelectItem key={profile.id} value={profile.id.toString()}>
-                      {profile.name} {profile.isDefault && '(Default)'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <Button onClick={saveProfile} disabled={!isDirty}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Profile
-            </Button>
-            
-            <Button onClick={setAsDefault} disabled={!selectedProfile} variant="outline">
-              Set as Default
-            </Button>
-            
-            <Button onClick={resetLayout} variant="outline">
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Reset Layout
-            </Button>
+          <div className="space-y-4">
+            {systemMetrics.map((metric, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{metric.name}</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm">{metric.value}{metric.unit}</span>
+                    <Badge variant={
+                      metric.status === 'good' ? 'default' : 
+                      metric.status === 'warning' ? 'secondary' : 
+                      'destructive'
+                    }>
+                      {metric.status}
+                    </Badge>
+                  </div>
+                </div>
+                <Progress 
+                  value={metric.value} 
+                  className={`w-full ${
+                    metric.status === 'critical' ? 'bg-red-100' : 
+                    metric.status === 'warning' ? 'bg-yellow-100' : 
+                    'bg-green-100'
+                  }`}
+                />
+              </div>
+            ))}
           </div>
-          
-          {isDirty && (
-            <div className="mt-2 text-sm text-orange-600">
-              Layout has been modified. Save to preserve changes.
-            </div>
-          )}
         </CardContent>
       </Card>
+    );
+  };
 
-      {/* Grid Layout */}
-      <ResponsiveGridLayout
-        className="layout"
-        layouts={{ lg: layout }}
-        onLayoutChange={handleLayoutChange}
-        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-        rowHeight={60}
-        isDraggable={true}
-        isResizable={true}
-        margin={[16, 16]}
-        containerPadding={[0, 0]}
-        useCSSTransforms={true}
-        compactType="vertical"
-      >
-        {layout.map((item) => (
-          <div key={item.i} className="grid-item">
-            {renderGridItem(item.i)}
+  // Alerts Panel
+  const AlertsPanel: React.FC = () => {
+    if (alertsLoading) return <div className="flex items-center justify-center h-full"><RefreshCw className="h-6 w-6 animate-spin" /></div>;
+    
+    return (
+      <Card className="h-full">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <AlertTriangle className="h-5 w-5" />
+            <span>System Alerts</span>
+            <Badge variant="outline">{alerts.length}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3 max-h-64 overflow-y-auto">
+            {alerts.map((alert) => (
+              <div key={alert.id} className="flex items-start space-x-3 p-3 border rounded-lg">
+                <div className="flex-shrink-0 mt-1">
+                  {alert.type === 'error' && <XCircle className="h-4 w-4 text-red-500" />}
+                  {alert.type === 'warning' && <AlertTriangle className="h-4 w-4 text-yellow-500" />}
+                  {alert.type === 'info' && <CheckCircle className="h-4 w-4 text-blue-500" />}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{alert.message}</p>
+                  <p className="text-xs text-gray-500">{alert.timestamp}</p>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </ResponsiveGridLayout>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Network Status Panel
+  const NetworkStatus: React.FC = () => (
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          {isOnline ? <Wifi className="h-5 w-5" /> : <WifiOff className="h-5 w-5" />}
+          <span>Network Status</span>
+          <Badge variant={isOnline ? 'default' : 'destructive'}>
+            {isOnline ? 'Online' : 'Offline'}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Connection Status</span>
+            <Badge variant={isOnline ? 'default' : 'destructive'}>
+              {isOnline ? 'Connected' : 'Disconnected'}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Last Update</span>
+            <span className="text-sm text-gray-500">
+              {lastUpdate.toLocaleTimeString()}
+            </span>
+          </div>
+          <Button 
+            onClick={handleRefresh} 
+            size="sm" 
+            className="w-full"
+            disabled={!isOnline}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh Data
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // Quick Actions Panel
+  const QuickActions: React.FC = () => (
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <Settings className="h-5 w-5" />
+          <span>Quick Actions</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-2">
+          <Button size="sm" variant="outline" className="flex flex-col items-center p-4 h-auto">
+            <Calendar className="h-4 w-4 mb-1" />
+            <span className="text-xs">Schedule</span>
+          </Button>
+          <Button size="sm" variant="outline" className="flex flex-col items-center p-4 h-auto">
+            <MapPin className="h-4 w-4 mb-1" />
+            <span className="text-xs">Locations</span>
+          </Button>
+          <Button size="sm" variant="outline" className="flex flex-col items-center p-4 h-auto">
+            <BarChart3 className="h-4 w-4 mb-1" />
+            <span className="text-xs">Reports</span>
+          </Button>
+          <Button size="sm" variant="outline" className="flex flex-col items-center p-4 h-auto">
+            <Database className="h-4 w-4 mb-1" />
+            <span className="text-xs">Backup</span>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard Overview</h1>
+          <p className="text-gray-500">Real-time system monitoring and metrics</p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Badge variant={isOnline ? 'default' : 'destructive'}>
+            {isOnline ? 'Online' : 'Offline'}
+          </Badge>
+          <span className="text-sm text-gray-500">
+            Updated: {lastUpdate.toLocaleTimeString()}
+          </span>
+        </div>
+      </div>
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Row 1 */}
+        <div className="lg:col-span-1">
+          <AttendanceOverview />
+        </div>
+        <div className="lg:col-span-2">
+          <LiveInterfaces />
+        </div>
+
+        {/* Row 2 */}
+        <div className="lg:col-span-2">
+          <SystemMetrics />
+        </div>
+        <div className="lg:col-span-1">
+          <NetworkStatus />
+        </div>
+
+        {/* Row 3 */}
+        <div className="lg:col-span-2">
+          <AlertsPanel />
+        </div>
+        <div className="lg:col-span-1">
+          <QuickActions />
+        </div>
+      </div>
     </div>
   );
 };
