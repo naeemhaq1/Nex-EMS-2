@@ -25,7 +25,7 @@ function preloadCriticalResources() {
       credentials: 'include'
     }).catch(() => {}); // Silent fail for prefetch
   });
-  
+
   // Preload critical CSS
   const cssLink = document.createElement("link");
   cssLink.rel = "preload";
@@ -56,16 +56,16 @@ function AppWithLoader() {
     // Immediate loader hiding for faster perceived performance
     console.log('React mounted, hiding loader immediately');
     hideInitialLoader();
-    
+
     // Pre-initialize critical app components
     const preInitTimer = setTimeout(() => {
       // Pre-warm critical routes and contexts
       console.log('Pre-warming critical components');
     }, 50);
-    
+
     return () => clearTimeout(preInitTimer);
   }, []);
-  
+
   return <App />;
 }
 

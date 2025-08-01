@@ -62,32 +62,35 @@ app.set('trust proxy', true);
 // Add CORS and host handling middleware to prevent Vite blocking
 const isProduction = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === '1';
 
-// CORS configuration
-const corsOptions = {
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
     const allowedOrigins = [
+      'http://localhost:3000',
       'http://localhost:5000',
-      'http://localhost:5173',
-      'http://127.0.0.1:5000',
-      'http://127.0.0.1:5173',
-      process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null,
+      'http://localhost:5001',
+      'http://localhost:5002',
+      'https://localhost:3000',
+      'https://localhost:5000',
+      'https://localhost:5001',
+      'https://localhost:5002',
+      process.env.REPLIT_URL || '',
+      `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`,
+      `https://${process.env.REPL_ID}.replit.app`
     ].filter(Boolean);
 
-    if (!origin || allowedOrigins.includes(origin) || origin?.includes('replit.dev')) {
+    // In production, be more permissive with CORS for deployment
+    if (isProduction || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
-      console.log('Error: Not allowed by CORS');
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
+  credentials: true
+}));
 
 app.use((req, res, next) => {
   // Allow all hosts - prevents Vite host blocking
@@ -218,7 +221,7 @@ app.use((req, res, next) => {
   const { portConfig } = await import('./config/portConfig');
   const port = portConfig.getFrontendPort();
   const host = portConfig.getHost();
-
+  
   console.log(`🔧 PORT CONFIGURATION: ${portConfig.getDisplayInfo()}`);
   console.log(`🔧 Server will run on ${host}:${port}`);
 
@@ -238,7 +241,7 @@ app.use((req, res, next) => {
 
       // ULTRA-FAST STARTUP: Only initialize absolutely critical services
       console.log('⚡ ULTRA-FAST STARTUP: Initializing only critical services...');
-
+      
       // Initialize only Port Manager immediately (required for requests)
       const criticalPromise = import('./initialize-port-manager').then(({ initializePortManager }) => {
         console.log('🔧 Port Manager initializing...');
@@ -263,7 +266,7 @@ app.use((req, res, next) => {
               });
               return dependencyManager.startServices();
             }),
-
+            
             // WhatsApp services (completely deferred)
             Promise.all([
               import('./services/whatsappAPIMonitorService'),

@@ -1,112 +1,116 @@
-import React, { Suspense } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { useQuery } from 'react-query';
 
-// Lazy load components
+import React, { Suspense } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMobile } from '@/hooks/use-mobile';
+
+// Lazy load components for better performance
 const Login = React.lazy(() => import('@/pages/Login'));
 const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
-const MobileRouter = React.lazy(() => import('@/pages/mobile/MobileRouter'));
-const NotFound = React.lazy(() => import('@/pages/not-found'));
+const MobileRouter = React.lazy(() => import('@/components/MobileRouter'));
 
-// Loading component
-const LoadingSpinner = () => (
+// Loading fallback component
+const LoadingFallback = () => (
   <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
   </div>
 );
 
-const AppRoutes: React.FC = () => {
+export default function AppRoutes() {
   const { user, loading } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
+  const isMobile = useMobile();
 
-  // Check if device is mobile
-  const isMobile = React.useMemo(() => {
-    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-    const isMobileUA = /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone|Mobile|Tablet|Opera Mini|IEMobile/i.test(userAgent);
-    const isMobileWidth = window.innerWidth <= 768;
-    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-
-    return isMobileUA || isMobileWidth || isTouchDevice;
-  }, []);
-
-  const setLocation = (path: string) => {
-    navigate(path, { replace: true });
-  };
-
-  // Enhanced mobile device detection and redirect
-  React.useEffect(() => {
-    const checkForMobileRedirect = () => {
-      if (!user || loading) return false;
-
-      // Force mobile redirect for common mobile user agents
-      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-      const isMobileUA = /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone|Mobile|Tablet|Opera Mini|IEMobile/i.test(userAgent);
-      const isMobileWidth = window.innerWidth <= 768;
-      const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-      const hasOrientation = typeof window.orientation !== 'undefined';
-
-      // Be more aggressive with mobile detection
-      const isMobile = isMobileUA || isMobileWidth || (isTouchDevice && hasOrientation);
-
-      // Force redirect if mobile detected and not already on mobile route
-      if (isMobile && !location.pathname.startsWith('/mobile')) {
-        console.log('Mobile device detected, forcing redirect to mobile interface');
-        if (user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'general_admin') {
-          setLocation('/mobile/admin/dashboard');
-        } else {
-          setLocation('/mobile/employee/dashboard');
-        }
-        return true;
-      }
-      return false;
-    };
-
-    checkForMobileRedirect();
-  }, [user, loading, location, setLocation]);
-
+  if (loading) {
+    return <LoadingFallback />;
+  }
 
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense fallback={<LoadingFallback />}>
       <Routes>
-        {/* Public routes */}
         <Route 
           path="/login" 
-          element={!user ? <Login /> : <Navigate to={isMobile ? "/mobile" : "/dashboard"} replace />} 
+          element={!user ? <Login /> : <Navigate to="/" replace />} 
         />
-
-        {/* Protected routes */}
         <Route 
-          path="/dashboard" 
-          element={user ? <Dashboard /> : <Navigate to="/login" replace />} 
-        />
-
-        {/* Mobile routes */}
-        <Route 
-          path="/mobile/*" 
-          element={user ? <MobileRouter /> : <Navigate to="/login" replace />} 
-        />
-
-        {/* Root redirect with mobile detection */}
-        <Route 
-          path="/" 
+          path="/*" 
           element={
-            <Navigate 
-              to={
-                user 
-                  ? (isMobile ? "/mobile" : "/dashboard")
-                  : "/login"
-              } 
-              replace 
-            />
+            user ? (
+              isMobile ? <MobileRouter /> : <Dashboard />
+            ) : (
+              <Navigate to="/login" replace />
+            )
           } 
         />
-
-        {/* 404 page */}
-        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
+  );
+}
+<line_number>1</line_number>
+import React from 'react';
+import { Switch, Route } from 'wouter';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMobile } from '@/hooks/use-mobile';
+
+// Desktop Components
+import Layout from '@/components/Layout';
+import DesktopEmployeeDashboard from '@/pages/DesktopEmployeeDashboard';
+import DesktopAdminDashboard from '@/pages/DesktopAdminDashboard';
+import Dashboard from '@/pages/Dashboard';
+import Login from '@/pages/Login';
+import AttendanceRecords from '@/pages/AttendanceRecords';
+import EmployeeDirectory from '@/pages/EmployeeDirectory';
+import EmployeeProfile from '@/pages/EmployeeProfile';
+
+// Mobile Components
+import MobileLayout from '@/components/MobileLayout';
+import MobileRouter from '@/components/MobileRouter';
+
+// Other Components
+import NotFound from '@/pages/not-found';
+
+const AppRoutes: React.FC = () => {
+  const { user, loading } = useAuth();
+  const isMobile = useMobile();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#1A1B3E] flex items-center justify-center">
+        <div className="text-white text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login />;
+  }
+
+  // Mobile routing
+  if (isMobile) {
+    return (
+      <MobileLayout>
+        <MobileRouter />
+      </MobileLayout>
+    );
+  }
+
+  // Desktop routing
+  const isAdmin = ['admin', 'superadmin', 'general_admin', 'manager'].includes(user.role || '');
+
+  return (
+    <Layout>
+      <Switch>
+        <Route path="/" component={() => isAdmin ? <DesktopAdminDashboard /> : <DesktopEmployeeDashboard />} />
+        <Route path="/dashboard" component={() => isAdmin ? <DesktopAdminDashboard /> : <DesktopEmployeeDashboard />} />
+        <Route path="/desktop/admin/dashboard" component={DesktopAdminDashboard} />
+        <Route path="/desktop/employee/dashboard" component={DesktopEmployeeDashboard} />
+        <Route path="/admin/dashboard" component={DesktopAdminDashboard} />
+        <Route path="/employee/dashboard" component={DesktopEmployeeDashboard} />
+        <Route path="/attendance" component={AttendanceRecords} />
+        <Route path="/employees" component={EmployeeDirectory} />
+        <Route path="/employee/:id" component={EmployeeProfile} />
+        <Route component={NotFound} />
+      </Switch>
+    </Layout>
   );
 };
 

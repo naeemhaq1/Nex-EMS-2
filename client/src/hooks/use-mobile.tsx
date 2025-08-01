@@ -31,3 +31,7 @@ export function useIsMobile() {
 
   return !!isMobile
 }
+
+// Export both named and default exports for compatibility
+export const useMobile = useIsMobile;
+export default useIsMobile;
