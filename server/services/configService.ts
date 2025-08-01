@@ -38,7 +38,7 @@ class ConfigService {
       await this.ensureSettingsTableExists();
 
       // Load all settings from database
-      const settings = await db.execute(sql`SELECT key, value FROM system_settings`);
+      const settings = await db.execute(`SELECT key, value FROM system_settings`);
       
       for (const setting of settings.rows) {
         const { key, value } = setting as { key: string; value: string };
@@ -62,7 +62,7 @@ class ConfigService {
    */
   private async ensureSettingsTableExists(): Promise<void> {
     try {
-      await db.execute(sql`
+      await db.execute(`
         CREATE TABLE IF NOT EXISTS system_settings (
           key VARCHAR(255) PRIMARY KEY,
           value TEXT NOT NULL,
@@ -165,15 +165,15 @@ class ConfigService {
    */
   async setSetting(key: string, value: any, description?: string, category: string = 'general'): Promise<void> {
     try {
-      await db.execute(sql`
+      await db.execute(`
         INSERT INTO system_settings (key, value, description, category, updated_at) 
-        VALUES (${key}, ${JSON.stringify(value)}, ${description || ''}, ${category}, CURRENT_TIMESTAMP)
+        VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
         ON CONFLICT (key) DO UPDATE SET 
           value = EXCLUDED.value,
           description = COALESCE(EXCLUDED.description, system_settings.description),
           category = EXCLUDED.category,
           updated_at = CURRENT_TIMESTAMP
-      `);
+      `, [key, JSON.stringify(value), description || '', category]);
 
       // Update cache
       this.configCache.set(key, value);
@@ -205,7 +205,7 @@ class ConfigService {
    */
   async getAllSettings(): Promise<any[]> {
     try {
-      const settings = await db.execute(sql`
+      const settings = await db.execute(`
         SELECT key, value, description, category, updated_at 
         FROM system_settings 
         ORDER BY category, key

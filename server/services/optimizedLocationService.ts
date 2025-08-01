@@ -315,7 +315,7 @@ export class OptimizedLocationService extends EventEmitter {
         WHERE active = true
       `);
 
-      for (const zone of (zones as any).rows || []) {
+      for (const zone of zones.rows || []) {
         this.geofenceZones.set(zone.id, {
           id: zone.id,
           name: zone.name,
