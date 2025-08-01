@@ -130,12 +130,12 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 // Import routes
-const authRoutes = require('./routes/auth');
-const stableAuthRoutes = require('./routes/stableAuth');
-const userRoutes = require('./routes/users');
+import authRoutes from './routes/auth.js';
+import stableAuthRoutes from './routes/stableAuth.js';
+import userRoutes from './routes/users.js';
 import userManagementRoutes from './routes/userManagement.js';
 import roleManagementRoutes from './routes/roleManagement.js';
-const sessionManagementRoutes = require('./routes/sessionManagement');
+import sessionManagementRoutes from './routes/sessionManagement.js';
 
 // Auth routes
 app.use('/api/auth', authRoutes);
