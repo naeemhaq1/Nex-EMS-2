@@ -36,11 +36,15 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
 args = "npm run build"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node index.js"
+args = "npm start"
 
 [[workflows.workflow]]
 name = "Start NEXLINX EMS"
@@ -63,10 +67,6 @@ args = "npm start"
 name = "Fresh Start"
 author = 42660592
 mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm install"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
