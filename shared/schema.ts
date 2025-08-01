@@ -2655,11 +2655,56 @@ export const insertScoringRuleSchema = createInsertSchema(scoringRules).omit({
   updatedAt: true,
 });
 
-export const insertEmployeeScoreSchema = createInsertSchema(employeeScores).omit({
-  id: true,
-  calculatedAt: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertBadgeSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  icon: z.string(),
+  color: z.string(),
+  category: z.string(),
+  requirement: z.number(),
+  requirementType: z.string(),
+  points: z.number().default(0),
+  sortOrder: z.number().default(0),
+  isActive: z.boolean().default(true),
+});
+
+export const insertEmployeeBadgeSchema = z.object({
+  employeeId: z.number(),
+  badgeId: z.number(),
+  progress: z.number().default(0),
+});
+
+export const insertAttendanceStreakSchema = z.object({
+  employeeId: z.number(),
+  currentStreak: z.number().default(0),
+  longestStreak: z.number().default(0),
+  lastAttendanceDate: z.date().optional(),
+  streakStartDate: z.date().optional(),
+  totalPoints: z.number().default(0),
+  level: z.number().default(1),
+});
+
+export const insertGamificationEventSchema = z.object({
+  employeeId: z.number(),
+  eventType: z.string(),
+  points: z.number().default(0),
+  description: z.string(),
+  metadata: z.any().optional(),
+});
+
+export const insertEmployeeScoreSchema = z.object({
+  employeeId: z.number(),
+  employeeCode: z.string(),
+  month: z.string(),
+  attendancePoints: z.number().default(0),
+  punctualityPoints: z.number().default(0),
+  performancePoints: z.number().default(0),
+  streakBonus: z.number().default(0),
+  overtimeBonus: z.number().default(0),
+  locationBonus: z.number().default(0),
+  totalPoints: z.number().default(0),
+  rank: z.number().optional(),
+  percentile: z.number().optional(),
 });
 
 export const insertScoringAuditTrailSchema = createInsertSchema(scoringAuditTrail).omit({
