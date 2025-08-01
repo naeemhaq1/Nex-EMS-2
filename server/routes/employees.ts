@@ -336,3 +336,19 @@ export async function getEmployeeStatus(req: Request, res: Response) {
     res.status(500).json({ error: 'Failed to fetch employee status' });
   }
 }
+
+// Create router and add routes
+import express from 'express';
+const router = express.Router();
+
+router.get('/', getEmployees);
+router.get('/all', getAllEmployees);
+router.get('/departments', getEmployeeDepartments);
+router.get('/groups', getEmployeeGroups);
+router.get('/status', getEmployeeStatus);
+router.get('/:id', getEmployee);
+router.get('/:id/attendance', getEmployeeAttendance);
+router.post('/', createEmployee);
+router.put('/:id', updateEmployee);
+
+export default router;
