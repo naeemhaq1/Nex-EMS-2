@@ -134,7 +134,7 @@ const authRoutes = require('./routes/auth');
 const stableAuthRoutes = require('./routes/stableAuth');
 const userRoutes = require('./routes/users');
 import userManagementRoutes from './routes/userManagement.ts';
-import roleManagementRoutes from './routes/roleManagement.js';
+import roleManagementRoutes from './routes/roleManagement.ts';
 const sessionManagementRoutes = require('./routes/sessionManagement');
 
 // Auth routes
