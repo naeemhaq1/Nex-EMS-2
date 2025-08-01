@@ -19,16 +19,16 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ThemeProvider>
-          <TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <AuthProvider>
             <div className="min-h-screen bg-background text-foreground">
               <AppRoutes />
               <Toaster />
             </div>
-          </TooltipProvider>
-        </ThemeProvider>
-      </AuthProvider>
+          </AuthProvider>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
