@@ -1,62 +1,31 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { Toaster } from './components/ui/toaster';
-
-// Pages
+import { useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
 import MobileRouter from './components/MobileRouter';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
-});
+function App() {
+  const { user, loading } = useAuth();
 
-function AppRoutes() {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
       </div>
     );
   }
 
-  if (!user) {
-    return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    );
-  }
-
   return (
-    <Routes>
-      <Route path="/login" element={<Navigate to="/" replace />} />
-      <Route path="/*" element={<MobileRouter />} />
-    </Routes>
-  );
-}
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <div className="App">
-            <AppRoutes />
-            <Toaster />
-          </div>
-        </Router>
-      </AuthProvider>
-    </QueryClientProvider>
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/login" element={!user ? <Login /> : <Navigate to="/" replace />} />
+          <Route path="/mobile/*" element={user ? <MobileRouter /> : <Navigate to="/login" replace />} />
+          <Route path="/*" element={user ? <Dashboard /> : <Navigate to="/login" replace />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
