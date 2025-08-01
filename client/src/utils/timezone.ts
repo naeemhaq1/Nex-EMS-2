@@ -106,3 +106,11 @@ export function getCurrentPKTTime(): Date {
   const now = new Date();
   return toPakistanTime(now);
 }
+
+export function formatTime12h(date: Date): string {
+  return date.toLocaleTimeString('en-US', {
+    hour12: true,
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
