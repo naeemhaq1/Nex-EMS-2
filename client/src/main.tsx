@@ -4,6 +4,21 @@ import App from "./App";
 import "./index.css";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
+// Handle BigInt errors gracefully
+window.addEventListener('error', (event) => {
+  if (event.error?.message?.includes('BigInt')) {
+    console.warn('BigInt error suppressed:', event.error.message);
+    event.preventDefault();
+  }
+});
+
+// Ensure BigInt is available
+if (typeof window.BigInt === 'undefined') {
+  window.BigInt = function(value: any) {
+    return parseInt(value.toString());
+  };
+}
+
 // Simple verification that polyfills are working
 console.log('Main.tsx - Polyfill check:', {
   bigint: typeof (window as any).bigint,

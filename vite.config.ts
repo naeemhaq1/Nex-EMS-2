@@ -60,6 +60,6 @@ export default defineConfig({
     'globalThis.__WS_TOKEN__': JSON.stringify(process.env.WS_TOKEN || 'development_token'),
   },
   optimizeDeps: {
-    include: ["react", "react-dom"],
+    include: ["react", "react-dom", 'drizzle-orm', 'drizzle-orm/pg-core'],
   },
 });

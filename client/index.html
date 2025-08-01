@@ -6,7 +6,7 @@
       // Universal BigInt polyfill for compatibility
       (function() {
         'use strict';
-        
+
         // Simple safe number conversion
         function safeNumber(value) {
           if (value == null || value === '') return 0;
@@ -14,51 +14,51 @@
           const num = parseInt(String(value).replace(/[^-0-9]/g, ''), 10);
           return isNaN(num) ? 0 : num;
         }
-        
+
         // Set up BigInt polyfill everywhere
         const polyfill = safeNumber;
-        
+
         if (typeof BigInt === 'undefined') {
           window.BigInt = polyfill;
           globalThis.BigInt = polyfill;
         }
-        
+
         window.bigint = polyfill;
         globalThis.bigint = polyfill;
-        
+
         // Ensure global exists
         window.global = window.global || window;
         window.global.BigInt = polyfill;
         window.global.bigint = polyfill;
-        
+
         console.log('BigInt polyfill ready:', typeof window.BigInt);
       })();
     </script>
-    
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>Nexlinx Smart EMS</title>
     <meta name="description" content="Nexlinx Smart Employee Management System - Advanced workforce management with BioTime integration" />
-    
+
     <!-- Preload critical resources -->
     <link rel="preload" href="/src/main.tsx" as="script" />
     <link rel="preload" href="/src/index.css" as="style" />
-    
+
     <!-- Force cache busting for CSS -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    
+
     <!-- Optimize font loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    
+
     <!-- Prevent render blocking -->
     <style>
       /* Critical CSS for loading screen */
       body { margin: 0; background-color: #1A1B3E; font-family: system-ui, -apple-system, sans-serif; }
       #root { min-height: 100vh; }
-      
+
       /* Hide all Vite error overlays permanently */
       div[id*="error-overlay"],
       div[class*="error-overlay"],
@@ -111,7 +111,7 @@
             <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
         </div>
-        
+
         <!-- App Title -->
         <h1 style="
           font-size: 28px;
@@ -122,13 +122,13 @@
           -webkit-text-fill-color: transparent;
           background-clip: text;
         ">Nexlinx Smart EMS</h1>
-        
+
         <p style="
           margin: 0 0 32px 0;
           color: #94A3B8;
           font-size: 16px;
         ">Employee Management System</p>
-        
+
         <!-- Animated Spinner -->
         <div style="
           width: 40px;
@@ -139,7 +139,7 @@
           animation: spin 1s linear infinite;
           margin-bottom: 16px;
         "></div>
-        
+
         <!-- Loading Text -->
         <p style="
           margin: 0;
@@ -149,49 +149,49 @@
         ">Loading your dashboard...</p>
       </div>
     </div>
-    
+
     <style>
       @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
-      
+
       @keyframes pulse {
         0%, 100% { opacity: 0.6; }
         50% { opacity: 1; }
       }
-      
+
       /* Hide scrollbars during loading */
       body::-webkit-scrollbar {
         display: none;
       }
-      
+
       body {
         -ms-overflow-style: none;
         scrollbar-width: none;
       }
     </style>
-    
+
     <script type="module" src="/src/main.tsx"></script>
-    
+
     <!-- Disable Vite error overlay and AbortError handling -->
     <script>
       // Globals setup (BigInt already handled above)
       window.__WS_TOKEN__ = window.__WS_TOKEN__ || 'development_token';
       window.global.__WS_TOKEN__ = window.__WS_TOKEN__;
       globalThis.__WS_TOKEN__ = window.__WS_TOKEN__;
-      
+
       // Verify BigInt setup from head
       console.log('Post-head BigInt verification:', {
         BigInt: typeof window.BigInt,
         bigint: typeof window.bigint
       });
-      
+
       // Disable runtime error modal overlay - MULTIPLE APPROACHES
       window.__vite_plugin_runtime_error_modal_disabled = true;
       window.__vite_plugin_runtime_error_modal_force_disable = true;
       window.__REPLIT_RUNTIME_ERROR_MODAL_DISABLED__ = true;
-      
+
       // PERMANENT ABORTERROR SUPPRESSION - Intercept at window level
       window.addEventListener('unhandledrejection', function(event) {
         if (event.reason && event.reason.name === 'AbortError') {
@@ -216,7 +216,7 @@
           return false;
         }
       });
-      
+
       // Additional error suppression for runtime error plugin
       window.addEventListener('error', function(event) {
         if (event.message && event.message.includes('aborted')) {
@@ -241,12 +241,12 @@
           return false;
         }
       });
-      
+
       // Override the Vite runtime error overlay to permanently disable it
       if (typeof window !== 'undefined') {
         window.__vite_is_modern_browser = true;
         window.__vite_plugin_runtime_error_modal_disabled = true;
-        
+
         // Intercept and disable the runtime error modal at the source
         const originalCreateViteErrorOverlay = window.__vite_plugin_create_error_overlay;
         if (originalCreateViteErrorOverlay) {
@@ -255,12 +255,12 @@
             return { close: () => {} };
           };
         }
-        
+
         // Block all error overlay methods
         window.__vite_plugin_runtime_error_modal_show = function() {
           console.log('Vite error modal show blocked');
         };
-        
+
         // Override console.error to prevent runtime error plugin triggers
         const originalConsoleError = console.error;
         console.error = function(...args) {
@@ -278,14 +278,14 @@
           }
           originalConsoleError.apply(console, args);
         };
-        
+
         // Final verification (BigInt already setup in head)
         console.log('Final global variables verification:', {
           bigint: typeof window.bigint,
           BigInt: typeof window.BigInt,
           __WS_TOKEN__: typeof window.__WS_TOKEN__
         });
-        
+
         // Prevent Vite WebSocket errors in Replit
         if (window.location.hostname.includes('replit')) {
           const originalWebSocket = window.WebSocket;
@@ -304,7 +304,7 @@
             }
           };
         }
-        
+
         // NUCLEAR OPTION: Override the Vite runtime error plugin completely
         if (window.location.hostname.includes('replit')) {
           // Disable ALL Vite error overlays in Replit environment
@@ -313,7 +313,7 @@
             writable: false,
             configurable: false
           });
-          
+
           // Block error overlay creation at the DOM level
           const originalCreateElement = document.createElement;
           document.createElement = function(tagName) {
@@ -324,7 +324,7 @@
             }
             return element;
           };
-          
+
           // COMPLETE OVERLAY SUPPRESSION - Block all Vite overlay methods
           window.__vite_plugin_disable_error_overlay = true;
           if (window.__vite__) {
@@ -332,7 +332,7 @@
             window.__vite__.runtimeError = () => {};
           }
         }
-        
+
         // Prevent error overlay from appearing with DOM observer
         const observer = new MutationObserver((mutations) => {
           mutations.forEach((mutation) => {
@@ -360,7 +360,7 @@
           });
         });
         observer.observe(document.body, { childList: true, subtree: true });
-        
+
         // Additional interval-based cleanup for stubborn overlays
         setInterval(() => {
           const errorOverlays = document.querySelectorAll('div[id*="error"], div[class*="error"], div[id*="overlay"], div[class*="overlay"]');
@@ -372,7 +372,7 @@
           });
         }, 1000);
       }
-      
+
       // Suppress Vite error overlay - use try/catch for safety
       try {
         if (typeof window !== 'undefined' && window.addEventListener) {
@@ -384,7 +384,7 @@
         console.log('Error handler setup failed:', e);
       }
     </script>
-    
+
     <!-- FORCE REMOVE LOADER SCRIPT -->
     <script>
       // Force remove loader immediately and with multiple backups
@@ -398,10 +398,10 @@
         }
         return false;
       }
-      
+
       // Try removing immediately
       setTimeout(forceRemoveLoader, 100);
-      
+
       // Try every 500ms for 5 seconds
       var attempts = 0;
       var interval = setInterval(function() {
@@ -410,12 +410,12 @@
         }
         attempts++;
       }, 500);
-      
+
       // Also try on page load
       window.addEventListener('load', function() {
         setTimeout(forceRemoveLoader, 100);
       });
-      
+
       // Try when DOM is ready
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', forceRemoveLoader);
@@ -469,7 +469,7 @@
         };
       }
     </script>
-    
+
     <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
   </body>
