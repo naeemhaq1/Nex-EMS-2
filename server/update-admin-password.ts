@@ -8,7 +8,7 @@ async function updateAdminPassword() {
     console.log("Updating admin password...");
     
     // Hash the new password
-    const newPassword = "Nexlinx123#";
+    const newPassword = "M00nbuggy#";
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     
     // Update the admin user's password
@@ -24,7 +24,7 @@ async function updateAdminPassword() {
     if (result.length > 0) {
       console.log("✓ Admin password updated successfully");
       console.log("  Username: admin");
-      console.log("  New Password: Nexlinx123#");
+      console.log("  New Password: M00nbuggy#");
     } else {
       console.log("✗ Admin user not found");
     }
