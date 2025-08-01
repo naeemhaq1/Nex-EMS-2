@@ -269,13 +269,15 @@ export default function UnifiedUserManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#1A1B3E] via-[#2A2B5E] to-[#1A1B3E] p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">User Management System</h1>
-            <p className="text-gray-300">Manage users, roles, and sessions from one interface</p>
+            <h1 className="text-3xl font-bold text-white mb-2 bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
+              User Management System
+            </h1>
+            <p className="text-gray-300">Manage users, roles, and sessions from one unified interface</p>
           </div>
           <Button
             onClick={() => {
@@ -284,7 +286,7 @@ export default function UnifiedUserManagement() {
               queryClient.invalidateQueries({ queryKey: ['/api/admin/role-management/statistics'] });
             }}
             variant="outline"
-            className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+            className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 bg-[#2A2B5E]/50 backdrop-blur-sm"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh All
@@ -321,30 +323,30 @@ export default function UnifiedUserManagement() {
             </CardContent>
           </Card>
 
-          <Card className="bg-green-900/30 border-green-500/30 backdrop-blur-sm">
+          <Card className="bg-cyan-900/30 border-cyan-500/30 backdrop-blur-sm">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-300 text-sm">Available Roles</p>
+                  <p className="text-cyan-300 text-sm">Available Roles</p>
                   <p className="text-2xl font-bold text-white">
                     {roles.length}
                   </p>
                 </div>
-                <Award className="w-8 h-8 text-green-400" />
+                <Award className="w-8 h-8 text-cyan-400" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-orange-900/30 border-orange-500/30 backdrop-blur-sm">
+          <Card className="bg-indigo-900/30 border-indigo-500/30 backdrop-blur-sm">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-orange-300 text-sm">Active Sessions</p>
+                  <p className="text-indigo-300 text-sm">Active Sessions</p>
                   <p className="text-2xl font-bold text-white">
                     {sessionsData.length}
                   </p>
                 </div>
-                <Monitor className="w-8 h-8 text-orange-400" />
+                <Monitor className="w-8 h-8 text-indigo-400" />
               </div>
             </CardContent>
           </Card>
@@ -352,24 +354,24 @@ export default function UnifiedUserManagement() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-gray-900/50 border-gray-700">
+          <TabsList className="bg-[#2A2B5E]/80 border-purple-500/30">
             <TabsTrigger 
               value="users" 
-              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-300"
             >
               <Users className="w-4 h-4 mr-2" />
               User Management
             </TabsTrigger>
             <TabsTrigger 
               value="roles" 
-              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-gray-300"
             >
               <Shield className="w-4 h-4 mr-2" />
               Role Management
             </TabsTrigger>
             <TabsTrigger 
               value="sessions" 
-              className="data-[state=active]:bg-green-600 data-[state=active]:text-white"
+              className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
             >
               <Monitor className="w-4 h-4 mr-2" />
               Session Management
@@ -378,7 +380,7 @@ export default function UnifiedUserManagement() {
 
           {/* User Management Tab */}
           <TabsContent value="users" className="space-y-6">
-            <Card className="bg-gray-900/50 border-gray-700 backdrop-blur-sm">
+            <Card className="bg-[#2A2B5E]/50 border-purple-500/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Users className="w-5 h-5" />
@@ -394,17 +396,17 @@ export default function UnifiedUserManagement() {
                       placeholder="Search users (username, name, employee code)..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400"
+                      className="pl-10 bg-[#1A1B3E]/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20"
                     />
                   </div>
                   <Select value={selectedRole} onValueChange={setSelectedRole}>
-                    <SelectTrigger className="w-48 bg-gray-800/50 border-gray-600 text-white">
+                    <SelectTrigger className="w-48 bg-[#1A1B3E]/50 border-cyan-500/30 text-white">
                       <SelectValue placeholder="Filter by role" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-600">
+                    <SelectContent className="bg-[#2A2B5E] border-cyan-500/30">
                       <SelectItem value="">All Roles</SelectItem>
                       {roles.map((role) => (
-                        <SelectItem key={role.id} value={role.id}>
+                        <SelectItem key={role.id} value={role.id} className="text-white">
                           {role.name}
                         </SelectItem>
                       ))}
@@ -416,7 +418,7 @@ export default function UnifiedUserManagement() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-gray-700">
+                      <TableRow className="border-purple-500/30">
                         <TableHead className="text-gray-300">User</TableHead>
                         <TableHead className="text-gray-300">Role</TableHead>
                         <TableHead className="text-gray-300">Department</TableHead>
@@ -440,7 +442,7 @@ export default function UnifiedUserManagement() {
                         </TableRow>
                       ) : (
                         filteredUsers.map((user: UserRecord) => (
-                          <TableRow key={user.id} className="border-gray-700">
+                          <TableRow key={user.id} className="border-purple-500/30">
                             <TableCell>
                               <div>
                                 <div className="font-medium text-white">
@@ -473,11 +475,11 @@ export default function UnifiedUserManagement() {
                             <TableCell>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="text-gray-400">
+                                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-[#1A1B3E]/50">
                                     <MoreVertical className="w-4 h-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="bg-gray-800 border-gray-600">
+                                <DropdownMenuContent className="bg-[#2A2B5E] border-cyan-500/30">
                                   {canManageRoles && (
                                     <DropdownMenuItem 
                                       onClick={() => {
@@ -485,13 +487,13 @@ export default function UnifiedUserManagement() {
                                         setNewRole(user.role);
                                         setShowRoleDialog(true);
                                       }}
-                                      className="text-white hover:bg-gray-700"
+                                      className="text-white hover:bg-[#1A1B3E]/50"
                                     >
                                       <Edit className="w-4 h-4 mr-2" />
                                       Change Role
                                     </DropdownMenuItem>
                                   )}
-                                  <DropdownMenuItem className="text-white hover:bg-gray-700">
+                                  <DropdownMenuItem className="text-white hover:bg-[#1A1B3E]/50">
                                     <Eye className="w-4 h-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
@@ -513,7 +515,7 @@ export default function UnifiedUserManagement() {
             {/* Role Statistics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {roleStats?.statistics?.map((stat: RoleStatistics) => (
-                <Card key={stat.roleId} className="bg-gray-900/50 border-gray-700 backdrop-blur-sm">
+                <Card key={stat.roleId} className="bg-[#2A2B5E]/50 border-blue-500/30 backdrop-blur-sm">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <Badge className={getRoleBadgeColor(stat.roleId)}>
@@ -541,7 +543,7 @@ export default function UnifiedUserManagement() {
             </div>
 
             {/* Role Details */}
-            <Card className="bg-gray-900/50 border-gray-700 backdrop-blur-sm">
+            <Card className="bg-[#2A2B5E]/50 border-blue-500/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Shield className="w-5 h-5" />
@@ -551,7 +553,7 @@ export default function UnifiedUserManagement() {
               <CardContent>
                 <div className="space-y-4">
                   {roles.map((role) => (
-                    <div key={role.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-600">
+                    <div key={role.id} className="p-4 bg-[#1A1B3E]/50 rounded-lg border border-purple-500/30">
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
@@ -596,7 +598,7 @@ export default function UnifiedUserManagement() {
 
           {/* Session Management Tab */}
           <TabsContent value="sessions" className="space-y-6">
-            <Card className="bg-gray-900/50 border-gray-700 backdrop-blur-sm">
+            <Card className="bg-[#2A2B5E]/50 border-cyan-500/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Monitor className="w-5 h-5" />
@@ -611,7 +613,7 @@ export default function UnifiedUserManagement() {
                     placeholder="Search sessions (username, name, IP, role)..."
                     value={sessionSearchTerm}
                     onChange={(e) => setSessionSearchTerm(e.target.value)}
-                    className="pl-10 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400"
+                    className="pl-10 bg-[#1A1B3E]/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20"
                   />
                 </div>
 
@@ -619,7 +621,7 @@ export default function UnifiedUserManagement() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-gray-700">
+                      <TableRow className="border-cyan-500/30">
                         <TableHead className="text-gray-300">User</TableHead>
                         <TableHead className="text-gray-300">Role</TableHead>
                         <TableHead className="text-gray-300">Device</TableHead>
@@ -644,7 +646,7 @@ export default function UnifiedUserManagement() {
                         </TableRow>
                       ) : (
                         filteredSessions.map((session: SessionRecord) => (
-                          <TableRow key={session.id} className="border-gray-700">
+                          <TableRow key={session.id} className="border-cyan-500/30">
                             <TableCell>
                               <div>
                                 <div className="font-medium text-white">
@@ -708,13 +710,13 @@ export default function UnifiedUserManagement() {
 
         {/* Role Assignment Dialog */}
         <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
-          <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
+          <DialogContent className="bg-[#2A2B5E] border-purple-500/30 text-white max-w-md">
             <DialogHeader>
               <DialogTitle>Change User Role</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               {selectedUser && (
-                <div className="p-3 bg-gray-800/50 rounded-lg">
+                <div className="p-3 bg-[#1A1B3E]/50 rounded-lg">
                   <div className="font-medium">
                     {selectedUser.employee ? 
                       `${selectedUser.employee.firstName} ${selectedUser.employee.lastName}` : 
@@ -730,14 +732,14 @@ export default function UnifiedUserManagement() {
               <div>
                 <Label htmlFor="role">New Role</Label>
                 <Select value={newRole} onValueChange={setNewRole}>
-                  <SelectTrigger className="bg-gray-800 border-gray-600">
+                  <SelectTrigger className="bg-[#1A1B3E] border-cyan-500/30">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectContent className="bg-[#2A2B5E] border-cyan-500/30">
                     {roles
                       .filter(role => assignableRoles.includes(role.id))
                       .map((role) => (
-                        <SelectItem key={role.id} value={role.id}>
+                        <SelectItem key={role.id} value={role.id} className="text-white">
                           <div className="flex items-center gap-2">
                             <Badge className={getRoleBadgeColor(role.id)}>
                               {role.name}
@@ -754,7 +756,7 @@ export default function UnifiedUserManagement() {
                 <Button 
                   onClick={handleAssignRole}
                   disabled={assignRoleMutation.isPending || !newRole}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
                 >
                   {assignRoleMutation.isPending ? "Assigning..." : "Assign Role"}
                 </Button>
@@ -764,7 +766,7 @@ export default function UnifiedUserManagement() {
                     setShowRoleDialog(false);
                     setSelectedUser(null);
                   }}
-                  className="flex-1 border-gray-600"
+                  className="flex-1 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
                 >
                   Cancel
                 </Button>

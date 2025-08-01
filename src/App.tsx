@@ -59,11 +59,8 @@ import DailyMetrics from "@/pages/DailyMetrics";
 
 import ScoringSystem from "@/pages/ScoringSystem";
 import WhatsAppStunningConsole from "@/pages/WhatsAppStunningConsole";
-import RoleManagement from "@/pages/RoleManagement";
-import ComprehensiveUserManagement from "@/components/ComprehensiveUserManagement";
-import SessionManagement from "@/pages/SessionManagement";
 import ManagerAssignment from "@/pages/ManagerAssignment";
-import UnifiedUserManagement from './pages/UnifiedUserManagement';
+import UnifiedUserManagement from '@/pages/UnifiedUserManagement';
 
 
 import PollingInterface from "@/pages/PollingInterface";
