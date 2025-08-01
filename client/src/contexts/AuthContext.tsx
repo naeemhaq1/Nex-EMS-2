@@ -1,12 +1,10 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
-  id: number;
+  userId: number;
   username: string;
   role: string;
   employeeId?: string;
-  firstName?: string;
-  lastName?: string;
   department?: string;
   designation?: string;
 }
@@ -21,7 +19,6 @@ interface AuthContextType {
   logout: () => void;
   loading: boolean;
   token: string | null;
-  refreshToken: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,21 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState<string | null>(() => 
-    localStorage.getItem('accessToken')
-  );
-
-  // Auto-refresh token before expiry
-  useEffect(() => {
-    if (token) {
-      // Refresh token every 10 minutes (tokens expire in 15 minutes)
-      const interval = setInterval(() => {
-        refreshToken();
-      }, 10 * 60 * 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [token]);
+  const [token, setToken] = useState<string | null>(null);
 
   // Check authentication on mount
   useEffect(() => {
@@ -52,98 +35,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const storedToken = localStorage.getItem('accessToken');
-
-      if (!storedToken) {
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch('/api/auth/user', {
-        headers: {
-          'Authorization': `Bearer ${storedToken}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await fetch('/api/users/user', {
+        credentials: 'include'
       });
 
       if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-        setToken(storedToken);
-      } else {
-        // Token might be expired, try to refresh
-        const refreshSuccess = await refreshToken();
-        if (!refreshSuccess) {
-          // Refresh failed, clear auth state
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          setToken(null);
-          setUser(null);
+        const data = await response.json();
+        if (data.success) {
+          setUser(data.user);
+          setToken('authenticated'); // Token is in httpOnly cookie
         }
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      setToken(null);
-      setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const refreshToken = async (): Promise<boolean> => {
-    try {
-      const storedRefreshToken = localStorage.getItem('refreshToken');
-
-      if (!storedRefreshToken) {
-        return false;
-      }
-
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ refreshToken: storedRefreshToken })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        if (data.success) {
-          localStorage.setItem('accessToken', data.token);
-          localStorage.setItem('refreshToken', data.refreshToken);
-          setToken(data.token);
-          setUser(data.user);
-          return true;
-        }
-      }
-
-      return false;
-    } catch (error) {
-      console.error('Token refresh failed:', error);
-      return false;
-    }
-  };
-
   const login = async (username: string, password: string) => {
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/users/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({ username, password })
       });
 
       const data = await response.json();
 
       if (data.success) {
-        localStorage.setItem('accessToken', data.token);
-        localStorage.setItem('refreshToken', data.refreshToken);
-        setToken(data.token);
         setUser(data.user);
+        setToken('authenticated');
         return { success: true };
       } else {
         return { 
@@ -158,16 +83,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+  const logout = async () => {
+    try {
+      await fetch('/api/users/logout', { 
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+
     setToken(null);
     setUser(null);
-
-    // Call logout endpoint to handle any server-side cleanup
-    fetch('/api/auth/logout', { method: 'POST' }).catch(console.error);
-
-    // Redirect to login
     window.location.href = '/login';
   };
 
@@ -177,8 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login, 
       logout, 
       loading, 
-      token,
-      refreshToken 
+      token
     }}>
       {children}
     </AuthContext.Provider>

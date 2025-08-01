@@ -1,10 +1,12 @@
-import { Router } from "express";
-import { authService } from "../services/auth";
-import { authenticateToken, requireAdmin, requireSuperAdmin } from '../middleware/jwtAuth';
+import { Router } from 'express';
+import { authService } from '../services/auth';
+import { authenticateToken, devAutoLogin } from '../middleware/jwtAuth';
 
 const router = Router();
 
-// Login endpoint
+/**
+ * Login endpoint
+ */
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -12,14 +14,14 @@ router.post('/login', async (req, res) => {
     if (!username || !password) {
       return res.status(400).json({
         success: false,
-        error: "Missing username or password"
+        error: 'Username and password required'
       });
     }
 
     const result = await authService.login(username, password);
 
     if (result.success && result.token) {
-      // Set HTTP-only cookie for web clients
+      // Set HTTP-only cookie
       res.cookie('auth_token', result.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -33,12 +35,14 @@ router.post('/login', async (req, res) => {
     console.error('Login route error:', error);
     res.status(500).json({
       success: false,
-      error: "Internal server error"
+      error: 'Internal server error'
     });
   }
 });
 
-// Get current user
+/**
+ * Get current user
+ */
 router.get('/user', authenticateToken, (req, res) => {
   res.json({
     success: true,
@@ -46,16 +50,22 @@ router.get('/user', authenticateToken, (req, res) => {
   });
 });
 
-// Logout endpoint
+/**
+ * Logout endpoint
+ */
 router.post('/logout', (req, res) => {
   res.clearCookie('auth_token');
-  res.json({ success: true, message: "Logged out successfully" });
+  res.json({ success: true, message: 'Logged out successfully' });
 });
 
-// Dev mode auto-login (development only)
+/**
+ * Dev auto-login (development only)
+ */
 router.post('/dev', devAutoLogin);
 
-// Token verification endpoint
+/**
+ * Token verification
+ */
 router.post('/verify-token', async (req, res) => {
   try {
     const { token } = req.body;
@@ -63,7 +73,7 @@ router.post('/verify-token', async (req, res) => {
     if (!token) {
       return res.status(400).json({
         success: false,
-        error: "Token required"
+        error: 'Token required'
       });
     }
 
@@ -73,56 +83,14 @@ router.post('/verify-token', async (req, res) => {
     console.error('Token verification error:', error);
     res.status(500).json({
       success: false,
-      error: "Internal server error"
+      error: 'Internal server error'
     });
   }
 });
 
-// Password reset endpoints
-router.post('/reset-password-request', async (req, res) => {
-  try {
-    const { username, mobileNumber } = req.body;
-
-    if (!username || !mobileNumber) {
-      return res.status(400).json({
-        success: false,
-        error: "Username and mobile number required"
-      });
-    }
-
-    const result = await authService.initiatePasswordReset(username, mobileNumber);
-    res.json(result);
-  } catch (error) {
-    console.error('Password reset request error:', error);
-    res.status(500).json({
-      success: false,
-      error: "Internal server error"
-    });
-  }
-});
-
-router.post('/reset-password', async (req, res) => {
-  try {
-    const { token, newPassword } = req.body;
-
-    if (!token || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        error: "Token and new password required"
-      });
-    }
-
-    const result = await authService.resetPassword(token, newPassword);
-    res.json(result);
-  } catch (error) {
-    console.error('Password reset error:', error);
-    res.status(500).json({
-      success: false,
-      error: "Internal server error"
-    });
-  }
-});
-
+/**
+ * Change password
+ */
 router.post('/change-password', authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -130,17 +98,22 @@ router.post('/change-password', authenticateToken, async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
-        error: "Current password and new password required"
+        error: 'Current password and new password required'
       });
     }
 
-    const result = await authService.changePassword(req.user!.id, currentPassword, newPassword);
+    const result = await authService.changePassword(
+      req.user!.userId, 
+      currentPassword, 
+      newPassword
+    );
+
     res.json(result);
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({
       success: false,
-      error: "Internal server error"
+      error: 'Internal server error'
     });
   }
 });
