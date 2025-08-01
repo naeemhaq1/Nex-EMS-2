@@ -62,10 +62,17 @@ app.set('trust proxy', true);
 // Add CORS and host handling middleware to prevent Vite blocking
 const isProduction = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === '1';
 
-// CORS configuration - Allow all origins in development
+// CORS configuration
 const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    // In development, allow all origins including the Replit preview URL
+    const allowedOrigins = [
+      'http://localhost:5000',
+      'http://localhost:5173',
+      'http://127.0.0.1:5000',
+      'http://127.0.0.1:5173',
+      process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null,
+    ].filter(Boolean);
+
     if (!origin || allowedOrigins.includes(origin) || origin?.includes('replit.dev')) {
       callback(null, true);
     } else {

@@ -32,11 +32,11 @@ export default function Dashboard() {
 }
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, Clock, Calendar, TrendingUp } from 'lucide-react';
 
-const Dashboard: React.FC = () => {
+const DashboardComponent: React.FC = () => {
   const { user } = useAuth();
 
   const stats = [
@@ -181,4 +181,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default Dashboard;
+export default DashboardComponent;
