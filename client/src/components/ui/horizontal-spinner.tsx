@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface HorizontalSpinnerProps {
@@ -19,5 +20,4 @@ export function HorizontalSpinner({ size = 'md', className = '' }: HorizontalSpi
   );
 }
 
-// Default export for compatibility
 export default HorizontalSpinner;

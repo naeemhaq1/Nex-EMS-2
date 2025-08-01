@@ -32,5 +32,6 @@ export function useIsMobile() {
   return !!isMobile
 }
 
-// Export alias for compatibility
-export const useMobile = useIsMobile
+// Export both named and default exports for compatibility
+export const useMobile = useIsMobile;
+export { useIsMobile as default };
