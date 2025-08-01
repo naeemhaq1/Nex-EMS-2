@@ -1,62 +1,68 @@
 
-/**
- * Nexlinx EMS Main Entry Point
- * Starts the complete application with all services
- */
+// NEXLINX EMS - Main Server Entry Point
+// Production-ready Node.js server with proper port configuration
 
-import { spawn } from 'child_process';
-import { fileURLToPath } from 'url';
-import path from 'path';
+const path = require('path');
+const express = require('express');
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Load environment variables from port config
+require('dotenv').config({ path: '.env.port-config' });
 
-console.log('🚀 Starting Nexlinx EMS...');
-console.log('📍 Working directory:', __dirname);
+console.log('[NEXLINX] Starting NEXLINX EMS Server...');
+console.log('[NEXLINX] Port Mode:', process.env.PORT_MODE || 'single-port');
+console.log('[NEXLINX] Main Port:', process.env.PORT || '5000');
 
-// Start the main application
-const serverProcess = spawn('npm', ['run', 'dev'], {
-  stdio: 'inherit',
-  shell: true,
-  cwd: __dirname,
-  env: {
-    ...process.env,
-    NODE_ENV: 'development',
-    PORT: '5000',
-    HOST: '0.0.0.0'
-  }
+const app = express();
+const PORT = parseInt(process.env.PORT || '5000');
+const HOST = process.env.HOST || '0.0.0.0';
+
+// Enable trust proxy for production
+app.set('trust proxy', true);
+
+// Serve static files from client build
+app.use(express.static(path.join(__dirname, 'client', 'dist')));
+
+// API routes placeholder
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    mode: process.env.PORT_MODE || 'single-port',
+    port: PORT
+  });
 });
 
-serverProcess.on('error', (error) => {
-  console.error('❌ Failed to start Nexlinx EMS:', error);
-  process.exit(1);
+// Serve React app for all other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
 });
 
-serverProcess.on('close', (code) => {
-  console.log(`📋 Nexlinx EMS process exited with code ${code}`);
-  if (code !== 0) {
-    process.exit(code);
-  }
+// Error handling
+app.use((err, req, res, next) => {
+  console.error('[NEXLINX] Server Error:', err.message);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
-// Handle graceful shutdown
-const gracefulShutdown = (signal) => {
-  console.log(`\n🛑 Received ${signal}. Shutting down Nexlinx EMS gracefully...`);
-  if (serverProcess && !serverProcess.killed) {
-    serverProcess.kill('SIGTERM');
-    setTimeout(() => {
-      if (!serverProcess.killed) {
-        console.log('🔥 Force killing process...');
-        serverProcess.kill('SIGKILL');
-      }
-    }, 5000);
-  }
-  process.exit(0);
-};
+// Start server
+const server = app.listen(PORT, HOST, () => {
+  console.log(`[NEXLINX] Server running on http://${HOST}:${PORT}`);
+  console.log(`[NEXLINX] Mode: ${process.env.PORT_MODE || 'single-port'}`);
+  console.log(`[NEXLINX] Environment: ${process.env.NODE_ENV || 'development'}`);
+});
 
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGQUIT', () => gracefulShutdown('SIGQUIT'));
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('[NEXLINX] Received SIGTERM, shutting down gracefully');
+  server.close(() => {
+    console.log('[NEXLINX] Server closed');
+    process.exit(0);
+  });
+});
 
-console.log('✅ Nexlinx EMS startup script running');
-console.log('🌐 Application will be available at: https://your-repl-name.replit.app');
-console.log('📊 Services will be available at: http://0.0.0.0:5001 & http://0.0.0.0:5002');
+process.on('SIGINT', () => {
+  console.log('[NEXLINX] Received SIGINT, shutting down gracefully');
+  server.close(() => {
+    console.log('[NEXLINX] Server closed');
+    process.exit(0);
+  });
+});
