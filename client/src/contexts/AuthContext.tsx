@@ -1,111 +1,50 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { api } from '@/lib/api';
 
 interface User {
-  userId: number;
+  id: string;
   username: string;
   role: string;
   employeeId?: string;
+  firstName?: string;
+  lastName?: string;
   department?: string;
   designation?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => Promise<{ 
-    success: boolean; 
-    error?: string; 
-    requiresPasswordChange?: boolean;
-  }>;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
-  loading: boolean;
-  token: string | null;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Check authentication on mount
-  useEffect(() => {
-    checkAuth();
+  const checkAuth = React.useCallback(async () => {
+    try {
+      const response = await api.get('/auth/me');
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      }
+    } catch (error) {
+      console.log('Auth check failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const checkAuth = async () => {
-    try {
-      const response = await fetch('/api/users/user', {
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setUser(data.user);
-          setToken('authenticated'); // Token is in httpOnly cookie
-        }
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = async (username: string, password: string) => {
-    try {
-      const response = await fetch('/api/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ username, password })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setUser(data.user);
-        setToken('authenticated');
-        return { success: true };
-      } else {
-        return { 
-          success: false, 
-          error: data.error,
-          requiresPasswordChange: data.requiresPasswordChange
-        };
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: 'Network error' };
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await fetch('/api/users/logout', { 
-        method: 'POST',
-        credentials: 'include'
-      });
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-
-    setToken(null);
-    setUser(null);
-    window.location.href = '/login';
-  };
+  React.useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      login, 
-      logout, 
-      loading, 
-      token
-    }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
@@ -113,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
