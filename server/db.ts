@@ -36,19 +36,20 @@ export const pool = {
       // Use the sql function directly with proper parameter handling
       let result;
       if (params && params.length > 0) {
-        // For parameterized queries, construct properly
-        const query = sql(text, ...params);
-        result = await query;
+        // For parameterized queries - handle params properly
+        result = await sql(text, params);
       } else {
-        // For non-parameterized queries
-        const query = sql`${sql.raw(text)}`;
-        result = await query;
+        // For non-parameterized queries - use direct query
+        result = await sql([text] as any);
       }
 
+      // Ensure result is always an array and properly formatted
+      const rows = Array.isArray(result) ? result : (result ? [result] : []);
+      
       // Convert Neon result format to pg-compatible format
       return {
-        rows: Array.isArray(result) ? result : [result],
-        rowCount: Array.isArray(result) ? result.length : (result ? 1 : 0),
+        rows: rows,
+        rowCount: rows.length,
         command: text.trim().split(' ')[0].toUpperCase(),
         fields: [],
         oid: 0
@@ -63,15 +64,16 @@ export const pool = {
     query: async (text: string, params?: any[]) => {
       let result;
       if (params && params.length > 0) {
-        const query = sql(text, ...params);
-        result = await query;
+        result = await sql(text, params);
       } else {
-        const query = sql`${sql.raw(text)}`;
-        result = await query;
+        result = await sql([text] as any);
       }
+      
+      const rows = Array.isArray(result) ? result : (result ? [result] : []);
+      
       return {
-        rows: Array.isArray(result) ? result : [result],
-        rowCount: Array.isArray(result) ? result.length : (result ? 1 : 0),
+        rows: rows,
+        rowCount: rows.length,
         command: text.trim().split(' ')[0].toUpperCase(),
         fields: [],
         oid: 0
