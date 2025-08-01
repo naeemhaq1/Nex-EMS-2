@@ -33,6 +33,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 // Service Manager removed - using distributed architecture
@@ -303,19 +304,3 @@ if (isProduction) {
     });
   });
 }
-
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🌟 Nexlinx EMS Server running on port ${PORT} in ${environment} mode`);
-  console.log(`🌐 Server accessible at http://localhost:${PORT}`);
-  if (isProduction) {
-    console.log('🏭 Production deployment ready');
-  } else {
-    console.log('🔧 Development mode active');
-  }
-  console.log('📱 Mobile interface ready');
-  console.log('💻 Desktop interface ready');
-  console.log('📊 Admin dashboard ready');
-  console.log('⚡ Three-tier architecture initialized');
-});
