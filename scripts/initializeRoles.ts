@@ -90,6 +90,35 @@ export async function initializeDefaultRoles() {
       accessLevel: 20,
       createdRoles: []
     }
+    // Example of how to add new roles in the future:
+    // {
+    //   roleName: "hr_manager",
+    //   displayName: "HR Manager", 
+    //   description: "Human Resources management access",
+    //   canCreateUsers: true,
+    //   canDeleteUsers: false,
+    //   canDeleteData: false,
+    //   canAccessFinancialData: false,
+    //   canManageSystem: false,
+    //   canManageTeams: true,
+    //   canChangeDesignations: true,
+    //   accessLevel: 70,
+    //   createdRoles: ["employee"]
+    // },
+    // {
+    //   roleName: "project_manager",
+    //   displayName: "Project Manager",
+    //   description: "Project-specific management access",
+    //   canCreateUsers: false,
+    //   canDeleteUsers: false,
+    //   canDeleteData: false,
+    //   canAccessFinancialData: false,
+    //   canManageSystem: false,
+    //   canManageTeams: true,
+    //   canChangeDesignations: false,
+    //   accessLevel: 55,
+    //   createdRoles: ["employee"]
+    // }
   ];
 
   for (const role of defaultRoles) {

@@ -1,13 +1,12 @@
-// Central export file for all shared modules
-// This prevents React Hook dispatcher errors and ensures proper module resolution
 
+// Central export file for shared modules
 export * from './schema';
-export * from './versioning';
-export * from './departmentFieldConfig';
-export * from './departmentGroups';
-export * from './geofenceSchema';
-export * from './jobSites';
-export * from './location-schema';
 export * from './version';
+export * from './versioning';
+export * from './departmentGroups';
+export * from './jobSites';
+export * from './geofenceSchema';
+export * from './location-schema';
 export * from './whatsappSchema';
+export * from './departmentFieldConfig';
 export * from './utils/phoneUtils';

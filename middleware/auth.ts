@@ -66,8 +66,14 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
   console.log('Auth middleware - usernum:', usernum);
   console.log('Auth middleware - stableUserId:', stableUserId);
   
-  // Check if either stable or legacy auth is available
-  if (!stableUserId && !userId && !usernum) {
+  // Prefer stable auth, fallback to legacy auth
+  if (stableUserId) {
+    console.log('Using stable authentication');
+    return next();
+  }
+  
+  // Legacy auth fallback
+  if (!userId && !usernum) {
     return res.status(401).json({ error: "Authentication required" });
   }
   
@@ -77,7 +83,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     return res.status(401).json({ error: "Invalid session" });
   }
   
-  // Check if session data is consistent
+  // Check if session data is consistent for legacy auth
   if (req.session.userId && req.session.usernum) {
     // Both should be present and valid
     if (!req.session.username || !req.session.role) {
@@ -86,6 +92,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     }
   }
   
+  console.log('Using legacy authentication');
   next();
 };
 

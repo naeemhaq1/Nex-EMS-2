@@ -1,241 +1,192 @@
-
-import { Router } from 'express';
-import { stableAuth } from '../services/stableAuth';
-import { requireStableAuth } from '../middleware/stableAuth';
-import { sessionMiddleware } from '../middleware/auth';
+import { Router, Request, Response } from 'express';
+import { stableAuthService } from '../services/stableAuth';
+import { requireStableAuth, requirePermission } from '../middleware/stableAuth';
 
 const router = Router();
-
-// Apply session middleware
-router.use(sessionMiddleware);
 
 /**
  * Login endpoint
  */
-router.post('/login', async (req, res) => {
+router.post('/login', async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Username and password are required" 
-      });
+      return res.status(400).json({ error: 'Username and password required' });
     }
 
-    // Authenticate user
-    const result = await stableAuth.authenticateUser(username, password);
-    
+    const result = await stableAuthService.authenticate(username, password);
+
     if (!result.success) {
-      return res.status(401).json(result);
+      return res.status(401).json({ error: result.error });
     }
 
-    const user = result.user!;
+    if (!result.user) {
+      return res.status(500).json({ error: 'Authentication error' });
+    }
 
-    // Clear any existing sessions for this user (single sign-on)
-    await stableAuth.clearUserSessions(user.id);
+    // Set stable session data
+    req.session.stableUserId = result.user.id;
+    req.session.stableUsername = result.user.username;
+    req.session.stableRole = result.user.role;
+    req.session.stableAuthTime = Date.now();
 
-    // Create new session
-    req.session.stableUserId = user.id;
-    req.session.stableUsername = user.username;
-    req.session.stableUserRole = user.role;
-    req.session.stableLoginTime = new Date().toISOString();
-    req.session.stableLastActivity = new Date().toISOString();
+    // Also set legacy session data for backward compatibility
+    req.session.userId = result.user.id.toString();
+    req.session.usernum = result.user.id;
+    req.session.username = result.user.username;
+    req.session.role = result.user.role;
+    req.session.employeeId = result.user.employeeId;
+    req.session.permissions = result.user.permissions;
 
-    // Also set legacy session data for compatibility
-    req.session.userId = user.id.toString();
-    req.session.usernum = user.id;
-    req.session.username = user.username;
-    req.session.role = user.role;
-
-    console.log(`[StableAuth] Login successful: ${user.username}, Role: ${user.role}`);
+    console.log(`[StableAuth] Login successful: ${result.user.username}`);
 
     res.json({
       success: true,
       user: {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        createdAt: user.createdAt
-      }
+        id: result.user.id,
+        username: result.user.username,
+        role: result.user.role,
+        fullName: result.user.fullName,
+        employeeCode: result.user.employeeCode,
+        permissions: result.user.permissions,
+      },
+      requiresPasswordChange: result.requiresPasswordChange
     });
+
   } catch (error) {
     console.error('[StableAuth] Login error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: "Login failed" 
-    });
+    res.status(500).json({ error: 'Authentication system error' });
   }
 });
 
 /**
  * Logout endpoint
  */
-router.post('/logout', (req, res) => {
+router.post('/logout', (req: Request, res: Response) => {
   try {
-    const username = req.session.stableUsername;
-    
+    const username = req.session.stableUsername || 'unknown';
+
+    // Clear all session data
     req.session.destroy((err) => {
       if (err) {
         console.error('[StableAuth] Logout error:', err);
-        return res.status(500).json({ 
-          success: false, 
-          error: "Logout failed" 
-        });
+        return res.status(500).json({ error: 'Logout failed' });
       }
 
       console.log(`[StableAuth] Logout successful: ${username}`);
-      res.json({ success: true });
+      res.json({ success: true, message: 'Logged out successfully' });
     });
   } catch (error) {
     console.error('[StableAuth] Logout error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: "Logout failed" 
-    });
+    res.status(500).json({ error: 'Logout failed' });
   }
 });
 
 /**
- * Get current user endpoint
+ * Get current user info
  */
-router.get('/user', requireStableAuth, async (req, res) => {
-  try {
-    const user = (req as any).stableUser;
-    
-    res.json({
-      id: user.id,
-      username: user.username,
-      role: user.role,
-      createdAt: user.createdAt,
-      lastPasswordChange: user.lastPasswordChange
-    });
-  } catch (error) {
-    console.error('[StableAuth] Get user error:', error);
-    res.status(500).json({ error: "Failed to get user" });
+router.get('/me', requireStableAuth, (req: Request, res: Response) => {
+  if (!req.stableUser) {
+    return res.status(401).json({ error: 'Not authenticated' });
   }
+
+  res.json({
+    user: {
+      id: req.stableUser.id,
+      username: req.stableUser.username,
+      role: req.stableUser.role,
+      fullName: req.stableUser.fullName,
+      employeeCode: req.stableUser.employeeCode,
+      permissions: req.stableUser.permissions,
+    }
+  });
 });
 
 /**
- * Change password endpoint
+ * Change password
  */
-router.post('/change-password', requireStableAuth, async (req, res) => {
+router.post('/change-password', requireStableAuth, async (req: Request, res: Response) => {
   try {
-    const { currentPassword, newPassword } = req.body;
-    const userId = (req as any).stableUser.id;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Current password and new password are required" 
-      });
+    if (!req.stableUser) {
+      return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "New password must be at least 8 characters long" 
-      });
+    const { newPassword, confirmPassword } = req.body;
+
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({ error: 'New password and confirmation required' });
     }
 
-    const result = await stableAuth.changePassword(userId, currentPassword, newPassword);
-    res.json(result);
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'Passwords do not match' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    const success = await stableAuthService.changePassword(req.stableUser.id, newPassword);
+
+    if (!success) {
+      return res.status(500).json({ error: 'Failed to change password' });
+    }
+
+    console.log(`[StableAuth] Password changed for: ${req.stableUser.username}`);
+    res.json({ success: true, message: 'Password changed successfully' });
+
   } catch (error) {
     console.error('[StableAuth] Change password error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: "Failed to change password" 
-    });
+    res.status(500).json({ error: 'Failed to change password' });
   }
 });
 
 /**
- * Set first-time password endpoint
+ * Create new user (admin only)
  */
-router.post('/set-first-password', async (req, res) => {
+router.post('/create-user', requireStableAuth, requirePermission('canCreateUsers'), async (req: Request, res: Response) => {
   try {
-    const { userId, newPassword } = req.body;
-
-    if (!userId || !newPassword) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "User ID and new password are required" 
-      });
+    if (!req.stableUser) {
+      return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Password must be at least 8 characters long" 
-      });
+    const { username, password, role, employeeId, managedDepartments } = req.body;
+
+    if (!username || !password || !role) {
+      return res.status(400).json({ error: 'Username, password, and role required' });
     }
 
-    const result = await stableAuth.setFirstTimePassword(userId, newPassword);
-    res.json(result);
-  } catch (error) {
-    console.error('[StableAuth] Set first password error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: "Failed to set password" 
+    const result = await stableAuthService.createUser(req.stableUser, {
+      username,
+      password,
+      role,
+      employeeId,
+      managedDepartments
     });
+
+    if (!result.success) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    console.log(`[StableAuth] User created: ${username} by ${req.stableUser.username}`);
+    res.json({ success: true, userId: result.userId, message: 'User created successfully' });
+
+  } catch (error) {
+    console.error('[StableAuth] Create user error:', error);
+    res.status(500).json({ error: 'Failed to create user' });
   }
 });
 
 /**
- * Dev auto-login endpoint (for development environment)
+ * Initialize default roles (system setup)
  */
-router.post('/dev/auto-login', async (req, res) => {
+router.post('/init-roles', async (req: Request, res: Response) => {
   try {
-    // Only allow in development
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(403).json({ 
-        success: false, 
-        error: "Auto-login not available in production" 
-      });
-    }
-
-    console.log('[StableAuth] Dev auto-login attempt');
-
-    // Try to find admin user
-    const adminUser = await stableAuth.getUserById(1); // Assuming admin has ID 1
-    
-    if (!adminUser) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "Admin user not found for auto-login" 
-      });
-    }
-
-    // Create session for admin user
-    req.session.stableUserId = adminUser.id;
-    req.session.stableUsername = adminUser.username;
-    req.session.stableUserRole = adminUser.role;
-    req.session.stableLoginTime = new Date().toISOString();
-    req.session.stableLastActivity = new Date().toISOString();
-
-    // Also set legacy session data for compatibility
-    req.session.userId = adminUser.id.toString();
-    req.session.usernum = adminUser.id;
-    req.session.username = adminUser.username;
-    req.session.role = adminUser.role;
-
-    console.log(`[StableAuth] Dev auto-login successful: ${adminUser.username}`);
-
-    res.json({
-      success: true,
-      user: {
-        id: adminUser.id,
-        username: adminUser.username,
-        role: adminUser.role,
-        createdAt: adminUser.createdAt
-      }
-    });
+    await stableAuthService.initializeDefaultRoles();
+    res.json({ success: true, message: 'Default roles initialized' });
   } catch (error) {
-    console.error('[StableAuth] Dev auto-login error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: "Auto-login failed" 
-    });
+    console.error('[StableAuth] Initialize roles error:', error);
+    res.status(500).json({ error: 'Failed to initialize roles' });
   }
 });
 
