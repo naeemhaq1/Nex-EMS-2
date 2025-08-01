@@ -132,13 +132,13 @@ app.post('/api/auth/logout', (req, res) => {
 // Import routes
 import authRoutes from './routes/auth.js';
 import sessionRoutes from './routes/sessionManagement.js';
-import dataInterfaceRoutes from './routes/dataInterface.ts';
-import dataQualityRoutes from './routes/dataQuality.ts';
-import employeesRoutes from './routes/employees.ts';
-import dashboardRoutes from './routes/dashboard.ts';
-import attendanceRoutes from './routes/attendance.ts';
-import reportsRoutes from './routes/reports.ts';
-import stableAuthRoutes from './routes/stableAuth.ts';
+import dataInterfaceRoutes from './routes/dataInterface.js';
+import dataQualityRoutes from './routes/dataQuality.js';
+import employeesRoutes from './routes/employees.js';
+import dashboardRoutes from './routes/dashboard.js';
+import attendanceRoutes from './routes/attendance.js';
+import reportsRoutes from './routes/reports.js';
+import stableAuthRoutes from './routes/stableAuth.js';
 
 // Mount routes
 app.use('/api/auth', authRoutes);
