@@ -94,9 +94,9 @@ if (process.env.NODE_ENV !== 'production') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Apply session middleware globally before any routes
-import { sessionMiddleware } from "./middleware/auth";
-app.use(sessionMiddleware);
+// Authentication routes
+import userRoutes from './routes/users';
+import authRoutes from './routes/auth';
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -249,10 +249,12 @@ app.use((req, res, next) => {
 })();
 
 // Auth routes
-import userRoutes from './routes/users';
+
+// Authentication routes
+app.use('/api/auth', authRoutes);
 // Routes - ensure auth routes are properly mapped
 app.use('/api/users', userRoutes);
-app.use('/api/auth', userRoutes); // Login routes are in userRoutes
+
 
 // Ensure session routes work properly
 app.get('/api/auth/check', (req, res) => {

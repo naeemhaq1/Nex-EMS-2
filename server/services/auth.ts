@@ -1,52 +1,36 @@
+
 import bcrypt from "bcrypt";
 import { storage } from "../storage";
 import { randomBytes } from "crypto";
-import { pool } from "../db";
+import { generateToken, getUserPermissions, ROLE_HIERARCHY } from "../middleware/auth";
+import type { UserRole } from "../middleware/auth";
 
 export class AuthService {
   /**
-   * Invalidate all existing sessions for a user (Single Sign-On enforcement)
-   * This is critical for security - prevents session mixing
+   * Authenticate user and return JWT token
    */
-  async invalidateAllUserSessions(userId: string | number) {
-    try {
-      console.log(`[SECURITY] Fast session cleanup for user: ${userId}`);
-      
-      // Optimized query using JSONB operators for better performance
-      const query = `
-        DELETE FROM session 
-        WHERE sess::jsonb @> '{"userId":"${userId}"}' 
-        OR sess::jsonb @> '{"usernum":${userId}}'
-      `;
-      
-      // Set aggressive statement timeout to prevent login delays
-      await pool.query('SET statement_timeout = 1000'); // 1 second limit for maximum speed
-      const result = await pool.query(query);
-      await pool.query('RESET statement_timeout');
-      
-      console.log(`[SECURITY] Fast cleanup completed: ${result.rowCount || 0} sessions removed`);
-      
-      return { success: true, invalidatedSessions: result.rowCount || 0 };
-    } catch (error: any) {
-      console.error("[SECURITY] Fast cleanup timeout/error (non-blocking):", error?.message || 'unknown error');
-      // Don't block login on session cleanup timeouts
-      return { success: false, error: "Session cleanup timeout" };
-    }
-  }
-
   async login(username: string, password: string) {
     try {
+      console.log(`[AuthService] Login attempt for username: ${username}`);
+      
       // Trim trailing spaces from username
       const trimmedUsername = username.trim();
       const user = await storage.getUserByUsername(trimmedUsername);
       
       if (!user) {
+        console.log(`[AuthService] User not found: ${trimmedUsername}`);
         return { success: false, error: "Invalid username or password" };
+      }
+
+      if (!user.isActive) {
+        console.log(`[AuthService] Inactive user attempted login: ${trimmedUsername}`);
+        return { success: false, error: "Account is inactive" };
       }
 
       const isValidPassword = await bcrypt.compare(password, user.password);
       
       if (!isValidPassword) {
+        console.log(`[AuthService] Invalid password for user: ${trimmedUsername}`);
         return { success: false, error: "Invalid username or password" };
       }
 
@@ -60,24 +44,40 @@ export class AuthService {
         };
       }
 
-      // OPTIMIZED SECURITY: Fast session cleanup for single sign-on (timeout: 1.5s max)
-      console.log(`[SECURITY] Fast SSO cleanup for user: ${user.username} (ID: ${user.id})`);
-      
-      // Use Promise.race to ensure login doesn't exceed 1.5 seconds for session cleanup
-      await Promise.race([
-        this.invalidateAllUserSessions(user.id),
-        new Promise(resolve => setTimeout(resolve, 1500)) // 1.5-second timeout for faster login
-      ]);
+      // Validate role
+      if (!(user.role in ROLE_HIERARCHY)) {
+        console.error(`[AuthService] Invalid role for user ${user.username}: ${user.role}`);
+        return { success: false, error: "Invalid user role configuration" };
+      }
 
-      // Return user without password
+      // Generate JWT token
+      const token = generateToken(user);
+      
+      // Return user data without password
       const { password: _, ...userWithoutPassword } = user;
-      return { success: true, user: userWithoutPassword };
+      const userWithPermissions = {
+        ...userWithoutPassword,
+        permissions: getUserPermissions(user.role as UserRole),
+        roleLevel: ROLE_HIERARCHY[user.role as UserRole]
+      };
+
+      console.log(`[AuthService] Login successful for user: ${user.username} (${user.role})`);
+      
+      return { 
+        success: true, 
+        user: userWithPermissions,
+        token
+      };
+      
     } catch (error) {
-      console.error("Login error:", error);
-      return { success: false, error: "Login failed" };
+      console.error("[AuthService] Login error:", error);
+      return { success: false, error: "Login failed due to system error" };
     }
   }
 
+  /**
+   * Get user by ID with permissions
+   */
   async getUserById(id: number) {
     try {
       const user = await storage.getUser(id);
@@ -85,11 +85,47 @@ export class AuthService {
         return { success: false, error: "User not found" };
       }
 
+      if (!user.isActive) {
+        return { success: false, error: "User account is inactive" };
+      }
+
+      // Validate role
+      if (!(user.role in ROLE_HIERARCHY)) {
+        console.error(`[AuthService] Invalid role for user ${user.username}: ${user.role}`);
+        return { success: false, error: "Invalid user role configuration" };
+      }
+
       const { password: _, ...userWithoutPassword } = user;
-      return { success: true, user: userWithoutPassword };
+      const userWithPermissions = {
+        ...userWithoutPassword,
+        permissions: getUserPermissions(user.role as UserRole),
+        roleLevel: ROLE_HIERARCHY[user.role as UserRole]
+      };
+
+      return { success: true, user: userWithPermissions };
     } catch (error) {
-      console.error("Get user error:", error);
+      console.error("[AuthService] Get user error:", error);
       return { success: false, error: "Failed to get user" };
+    }
+  }
+
+  /**
+   * Verify token and return user data
+   */
+  async verifyToken(token: string) {
+    try {
+      const jwt = require('jsonwebtoken');
+      const JWT_SECRET = process.env.JWT_SECRET || "nexlinx-ems-jwt-secret-2024-secure";
+      
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      
+      // Get fresh user data
+      const result = await this.getUserById(decoded.id);
+      
+      return result;
+    } catch (error) {
+      console.error("[AuthService] Token verification error:", error);
+      return { success: false, error: "Invalid or expired token" };
     }
   }
 
