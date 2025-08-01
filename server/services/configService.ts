@@ -1,5 +1,4 @@
-import { db } from '../db';
-import { eq, sql } from "drizzle-orm";
+import { db, sql } from '../db';
 
 export interface SystemConfig {
   mobileLocationPollingInterval: number; // in milliseconds
@@ -37,8 +36,8 @@ class ConfigService {
       // Check if settings table exists, create if not
       await this.ensureSettingsTableExists();
 
-      // Load all settings from database
-      const settings = await db.execute(`SELECT key, value FROM system_settings`);
+      // Load all settings from database using sql template
+      const settings = await sql`SELECT key, value FROM system_settings`;
 
       for (const setting of settings) {
         const { key, value } = setting as { key: string; value: string };
@@ -63,7 +62,7 @@ class ConfigService {
   private async ensureSettingsTableExists(): Promise<void> {
     try {
       // Create settings table if it doesn't exist
-      await db.execute(sql`
+      await sql`
         CREATE TABLE IF NOT EXISTS system_settings (
           id SERIAL PRIMARY KEY,
           key VARCHAR(255) UNIQUE NOT NULL,
@@ -71,7 +70,7 @@ class ConfigService {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-      `);
+      `;
     } catch (error) {
       console.error('[ConfigService] Error creating settings table:', error);
     }
@@ -166,16 +165,13 @@ class ConfigService {
    */
   async setSetting(key: string, value: any, description?: string, category: string = 'general'): Promise<void> {
     try {
-      const insertSql = `
-        INSERT INTO system_settings (key, value, description, category, updated_at) 
-        VALUES ('${key}', '${JSON.stringify(value).replace(/'/g, "''")}', '${(description || '').replace(/'/g, "''")}', '${category}', CURRENT_TIMESTAMP)
+      await sql`
+        INSERT INTO system_settings (key, value, updated_at) 
+        VALUES (${key}, ${JSON.stringify(value)}, CURRENT_TIMESTAMP)
         ON CONFLICT (key) DO UPDATE SET 
           value = EXCLUDED.value,
-          description = COALESCE(EXCLUDED.description, system_settings.description),
-          category = EXCLUDED.category,
           updated_at = CURRENT_TIMESTAMP
       `;
-      await db.execute(insertSql);
 
       // Update cache
       this.configCache.set(key, value);
@@ -207,11 +203,11 @@ class ConfigService {
    */
   async getAllSettings(): Promise<any[]> {
     try {
-      const settings = await db.execute(`
-        SELECT key, value, description, category, updated_at 
+      const settings = await sql`
+        SELECT key, value, updated_at 
         FROM system_settings 
-        ORDER BY category, key
-      `);
+        ORDER BY key
+      `;
 
       return settings.map((row: any) => ({
         key: row.key,
