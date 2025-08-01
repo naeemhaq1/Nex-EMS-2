@@ -1,5 +1,5 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { api } from '@/lib/api';
 
 interface User {
   id: string;
@@ -25,21 +25,96 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) {
+          setUser({
+            id: data.user.userId || data.user.id,
+            username: data.user.username,
+            role: data.user.role,
+            employeeId: data.user.employeeId,
+            department: data.user.department,
+            designation: data.user.designation
+          });
+          
+          // Store token if provided
+          if (data.token) {
+            localStorage.setItem('auth_token', data.token);
+          }
+          
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('auth_token');
+    
+    // Call logout endpoint
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include'
+    }).catch(console.error);
+    
+    // Redirect to login
+    window.location.href = '/login';
+  };
+
   const checkAuth = React.useCallback(async () => {
     try {
-      const response = await api.get('/auth/me');
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/auth/user', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+
       if (response.ok) {
         const userData = await response.json();
-        setUser(userData);
+        setUser({
+          id: userData.id,
+          username: userData.username,
+          role: userData.role,
+          employeeId: userData.employeeId,
+          department: userData.department,
+          designation: userData.designation
+        });
+      } else {
+        localStorage.removeItem('auth_token');
       }
     } catch (error) {
-      console.log('Auth check failed:', error);
+      console.error('Auth check failed:', error);
+      localStorage.removeItem('auth_token');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
