@@ -1,77 +1,57 @@
 
-import React, { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  Search, Users, Shield, Settings, Monitor, LogOut, RefreshCw, 
-  UserPlus, Edit, Trash2, Crown, Eye, AlertTriangle, Clock, 
-  MapPin, Smartphone, Laptop, Globe, CheckCircle, XCircle,
-  Filter, Download, MoreVertical, UserCheck, Award, Database
-} from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, Users, Monitor, Settings, Eye, EyeOff, Shield, Lock, UserX, UserCheck, Clock, MapPin, Smartphone, Globe, Bell, BellOff, LogOut, RefreshCw, User, Edit, Key, Ban, CheckCircle, ChevronRight, ChevronDown, ChevronUp, Filter, ArrowLeft, Home, BarChart3, UserCog, Laptop, TabletIcon, HelpCircle, Plus, Trash2, UserPlus, Save, X, AlertTriangle } from 'lucide-react';
+import { SiApple, SiAndroid, SiLinux } from 'react-icons/si';
+import { FaWindows } from 'react-icons/fa';
+import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { Textarea } from '@/components/ui/textarea';
 
-interface UserRecord {
+interface User {
   id: number;
   username: string;
   role: string;
   isActive: boolean;
-  createdAt: string;
-  employee: {
-    id: number;
+  employee?: {
     firstName: string;
     lastName: string;
     department: string;
     employeeCode: string;
-    designation: string;
-    poslevel: string;
-  } | null;
-  roleInfo: {
-    id: string;
-    name: string;
-    description: string;
-    level: number;
-    accessScope: string;
-    canManageRoles: boolean;
-    canDeleteData: boolean;
-  } | null;
+    email?: string;
+    phone?: string;
+    nonBio: boolean;
+    stopPay: boolean;
+    systemAccount: boolean;
+    lastSeen?: string;
+  };
+  lastLoginAt?: string;
+  createdAt: string;
 }
 
-interface SessionRecord {
+interface Role {
+  id: number;
+  name: string;
+  displayName: string;
+  description: string;
+  permissions: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface UserSession {
   id: string;
   userId: number;
   username: string;
@@ -84,697 +64,1060 @@ interface SessionRecord {
   userAgent: string;
   deviceType: string;
   browser: string;
+  browserVersion: string;
   os: string;
+  osVersion: string;
+  locationEnabled: boolean;
+  notificationEnabled: boolean;
+  screenResolution: string;
+  timezone: string;
   duration: string;
 }
 
-interface Role {
-  id: string;
-  name: string;
-  description: string;
-  level: number;
-  permissions: string[];
-  canManageRoles: boolean;
-  canDeleteData: boolean;
-  accessScope: string;
-  isActive: boolean;
-}
-
-interface RoleStatistics {
-  roleId: string;
-  roleName: string;
-  totalUsers: number;
-  activeUsers: number;
-  departments: number;
-  level: number;
-}
-
-export default function UnifiedUserManagement() {
+const UnifiedUserManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState('users');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRole, setSelectedRole] = useState('');
-  const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
-  const [showRoleDialog, setShowRoleDialog] = useState(false);
-  const [newRole, setNewRole] = useState('');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+  const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [sessionSearchTerm, setSessionSearchTerm] = useState('');
-  
+  const [sessionPage, setSessionPage] = useState(1);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
-  // Fetch users with roles
-  const { data: usersData = [], isLoading: usersLoading } = useQuery({
-    queryKey: ['/api/admin/role-management/user-roles', searchTerm, selectedRole],
-    queryFn: () => apiRequest({
-      url: '/api/admin/role-management/user-roles',
-      params: { search: searchTerm, role: selectedRole, limit: '100' }
-    }),
+  // New user form state
+  const [newUser, setNewUser] = useState({
+    username: '',
+    password: '',
+    role: '',
+    firstName: '',
+    lastName: '',
+    department: '',
+    employeeCode: '',
+    email: '',
+    phone: ''
+  });
+
+  // New role form state
+  const [newRole, setNewRole] = useState({
+    name: '',
+    displayName: '',
+    description: '',
+    permissions: [] as string[]
+  });
+
+  // Available permissions
+  const availablePermissions = [
+    'read:users', 'write:users', 'delete:users',
+    'read:roles', 'write:roles', 'delete:roles',
+    'read:sessions', 'write:sessions', 'delete:sessions',
+    'read:attendance', 'write:attendance', 'delete:attendance',
+    'read:reports', 'write:reports', 'delete:reports',
+    'read:settings', 'write:settings', 'delete:settings',
+    'admin:all', 'superadmin:all'
+  ];
+
+  // Debounced search
+  const debouncedSearchTerm = useMemo(() => {
+    if (searchTerm.length === 0 || searchTerm.length >= 3) {
+      return searchTerm;
+    }
+    return '';
+  }, [searchTerm]);
+
+  // Fetch users with search and pagination
+  const { data: usersResponse, isLoading: usersLoading, refetch: refetchUsers } = useQuery({
+    queryKey: ['/api/admin/users', debouncedSearchTerm, currentPage],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+      params.append('page', currentPage.toString());
+      params.append('limit', '10');
+      return await apiRequest(`/api/admin/users?${params}`);
+    },
+    enabled: activeTab === 'users'
   });
 
   // Fetch roles
-  const { data: rolesData } = useQuery({
-    queryKey: ['/api/admin/role-management/roles'],
-    queryFn: () => apiRequest({ url: '/api/admin/role-management/roles' }),
-  });
-
-  // Fetch role statistics
-  const { data: roleStats } = useQuery({
-    queryKey: ['/api/admin/role-management/statistics'],
-    queryFn: () => apiRequest({ url: '/api/admin/role-management/statistics' }),
+  const { data: rolesResponse, isLoading: rolesLoading, refetch: refetchRoles } = useQuery({
+    queryKey: ['/api/admin/roles'],
+    queryFn: async () => {
+      return await apiRequest('/api/admin/roles');
+    },
+    enabled: activeTab === 'roles'
   });
 
   // Fetch sessions
-  const { data: sessionsData = [], isLoading: sessionsLoading } = useQuery({
-    queryKey: ['/api/admin/sessions', sessionSearchTerm],
-    queryFn: () => apiRequest({
-      url: '/api/admin/sessions',
-      params: { search: sessionSearchTerm }
-    }),
-    staleTime: 30 * 1000,
+  const { data: sessionsResponse, isLoading: sessionsLoading, refetch: refetchSessions } = useQuery({
+    queryKey: ['/api/admin/sessions', sessionSearchTerm, sessionPage],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (sessionSearchTerm) params.append('search', sessionSearchTerm);
+      params.append('page', sessionPage.toString());
+      params.append('limit', '20');
+      return await apiRequest(`/api/admin/sessions?${params}`);
+    },
+    enabled: activeTab === 'sessions'
   });
 
-  // Fetch permissions
-  const { data: permissions } = useQuery({
-    queryKey: ['/api/admin/role-management/permissions'],
-    queryFn: () => apiRequest({ url: '/api/admin/role-management/permissions' }),
-  });
-
-  // Role assignment mutation
-  const assignRoleMutation = useMutation({
-    mutationFn: async ({ userId, roleId }: { userId: number; roleId: string }) => {
-      return apiRequest({
-        url: `/api/admin/role-management/users/${userId}/role`,
-        method: 'PUT',
-        data: { roleId }
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      return await apiRequest('/api/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(userData)
       });
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Role assigned successfully",
+      toast({ title: 'Success', description: 'User created successfully' });
+      setIsCreateUserOpen(false);
+      setNewUser({
+        username: '', password: '', role: '', firstName: '', lastName: '',
+        department: '', employeeCode: '', email: '', phone: ''
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/role-management/user-roles'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/role-management/statistics'] });
-      setShowRoleDialog(false);
-      setSelectedUser(null);
+      refetchUsers();
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to assign role",
-        variant: "destructive",
-      });
-    },
+      toast({ title: 'Error', description: error.message || 'Failed to create user', variant: 'destructive' });
+    }
   });
 
-  // Session termination mutation
-  const terminateSessionMutation = useMutation({
+  // Create role mutation
+  const createRoleMutation = useMutation({
+    mutationFn: async (roleData: any) => {
+      return await apiRequest('/api/admin/roles', {
+        method: 'POST',
+        body: JSON.stringify(roleData)
+      });
+    },
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Role created successfully' });
+      setIsCreateRoleOpen(false);
+      setNewRole({ name: '', displayName: '', description: '', permissions: [] });
+      refetchRoles();
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to create role', variant: 'destructive' });
+    }
+  });
+
+  // Update user mutation
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ userId, updates }: { userId: number, updates: any }) => {
+      return await apiRequest(`/api/admin/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+      });
+    },
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'User updated successfully' });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      setIsUserModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to update user', variant: 'destructive' });
+    }
+  });
+
+  // Update role mutation
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ roleId, updates }: { roleId: number, updates: any }) => {
+      return await apiRequest(`/api/admin/roles/${roleId}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+      });
+    },
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Role updated successfully' });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/roles'] });
+      setIsRoleModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to update role', variant: 'destructive' });
+    }
+  });
+
+  // Force logout mutation
+  const forceLogoutMutation = useMutation({
     mutationFn: async (sessionId: string) => {
-      return apiRequest({
-        url: `/api/admin/sessions/${sessionId}/logout`,
+      return await apiRequest(`/api/admin/sessions/${sessionId}/logout`, {
         method: 'POST'
       });
     },
     onSuccess: () => {
-      toast({
-        title: "Session terminated",
-        description: "User session has been terminated successfully",
+      toast({ title: 'Session terminated', description: 'User session has been terminated successfully' });
+      refetchSessions();
+    },
+    onError: (error) => {
+      toast({ title: 'Error', description: 'Failed to terminate session', variant: 'destructive' });
+    }
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      return await apiRequest(`/api/admin/users/${userId}`, {
+        method: 'DELETE'
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/sessions'] });
+    },
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'User deleted successfully' });
+      refetchUsers();
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to terminate session",
-        variant: "destructive",
-      });
+      toast({ title: 'Error', description: error.message || 'Failed to delete user', variant: 'destructive' });
     }
   });
 
-  const roles: Role[] = rolesData?.roles || [];
-  const assignableRoles: string[] = rolesData?.assignableRoles || [];
-  const currentUserRole: string = rolesData?.currentUserRole || 'staff';
-  const canManageRoles: boolean = rolesData?.canManageRoles || false;
-
-  const filteredUsers = usersData;
-  const filteredSessions = sessionsData.filter((session: SessionRecord) => {
-    if (!sessionSearchTerm || sessionSearchTerm.length < 3) return true;
-    return (
-      session.username.toLowerCase().includes(sessionSearchTerm.toLowerCase()) ||
-      session.realName.toLowerCase().includes(sessionSearchTerm.toLowerCase()) ||
-      session.ipAddress.includes(sessionSearchTerm) ||
-      session.role.toLowerCase().includes(sessionSearchTerm.toLowerCase())
-    );
+  // Delete role mutation
+  const deleteRoleMutation = useMutation({
+    mutationFn: async (roleId: number) => {
+      return await apiRequest(`/api/admin/roles/${roleId}`, {
+        method: 'DELETE'
+      });
+    },
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Role deleted successfully' });
+      refetchRoles();
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to delete role', variant: 'destructive' });
+    }
   });
 
-  const handleAssignRole = () => {
-    if (!selectedUser || !newRole) {
-      toast({
-        title: "Error",
-        description: "Please select a user and role",
-        variant: "destructive",
-      });
+  const users = usersResponse?.users || [];
+  const totalPages = usersResponse?.totalPages || 1;
+  const totalUsers = usersResponse?.total || 0;
+
+  const roles = rolesResponse?.roles || [];
+  const sessions = Array.isArray(sessionsResponse) ? sessionsResponse : (sessionsResponse?.sessions || []);
+  const totalSessionPages = sessionsResponse?.totalPages || 1;
+  const totalSessions = sessionsResponse?.total || sessions.length;
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role.toLowerCase()) {
+      case 'superadmin': return 'bg-red-600 hover:bg-red-700';
+      case 'admin': case 'general_admin': return 'bg-orange-600 hover:bg-orange-700';
+      case 'manager': return 'bg-blue-600 hover:bg-blue-700';
+      case 'staff': return 'bg-green-600 hover:bg-green-700';
+      default: return 'bg-gray-600 hover:bg-gray-700';
+    }
+  };
+
+  const getOSIcon = (os: string, deviceType: string) => {
+    const iconClass = "w-4 h-4";
+    
+    if (os?.toLowerCase().includes('android')) {
+      return <SiAndroid className={`${iconClass} text-green-500`} />;
+    } else if (os?.toLowerCase().includes('ios') || os?.toLowerCase().includes('iphone') || os?.toLowerCase().includes('ipad')) {
+      return <SiApple className={`${iconClass} text-blue-500`} />;
+    } else if (os?.toLowerCase().includes('windows')) {
+      return <FaWindows className={`${iconClass} text-blue-400`} />;
+    } else if (os?.toLowerCase().includes('linux')) {
+      return <SiLinux className={`${iconClass} text-yellow-500`} />;
+    } else if (os?.toLowerCase().includes('mac')) {
+      return <SiApple className={`${iconClass} text-gray-400`} />;
+    } else {
+      if (deviceType === 'mobile') return <Smartphone className={`${iconClass} text-gray-400`} />;
+      if (deviceType === 'tablet') return <TabletIcon className={`${iconClass} text-gray-400`} />;
+      if (deviceType === 'desktop') return <Laptop className={`${iconClass} text-gray-400`} />;
+      return <Globe className={`${iconClass} text-gray-400`} />;
+    }
+  };
+
+  const getSessionDuration = (loginTime: string) => {
+    const now = new Date();
+    const login = new Date(loginTime);
+    const diff = Math.floor((now.getTime() - login.getTime()) / 1000 / 60);
+    
+    if (diff < 60) return `${diff}m`;
+    if (diff < 1440) return `${Math.floor(diff / 60)}h ${diff % 60}m`;
+    return `${Math.floor(diff / 1440)}d ${Math.floor((diff % 1440) / 60)}h`;
+  };
+
+  const handleCreateUser = () => {
+    if (!newUser.username || !newUser.password || !newUser.role) {
+      toast({ title: 'Error', description: 'Username, password, and role are required', variant: 'destructive' });
       return;
     }
-
-    assignRoleMutation.mutate({
-      userId: selectedUser.id,
-      roleId: newRole
-    });
+    createUserMutation.mutate(newUser);
   };
 
-  const getRoleBadgeColor = (roleId: string): string => {
-    const role = roles.find(r => r.id === roleId);
-    if (!role) return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
-    
-    switch (role.level) {
-      case 10: return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 9: return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-      case 7: return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 6: return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 5: return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+  const handleCreateRole = () => {
+    if (!newRole.name || !newRole.displayName) {
+      toast({ title: 'Error', description: 'Role name and display name are required', variant: 'destructive' });
+      return;
     }
+    createRoleMutation.mutate(newRole);
   };
 
-  const getDeviceIcon = (deviceType: string) => {
-    switch (deviceType.toLowerCase()) {
-      case 'mobile':
-      case 'smartphone':
-        return <Smartphone className="w-4 h-4" />;
-      case 'laptop':
-        return <Laptop className="w-4 h-4" />;
-      default:
-        return <Globe className="w-4 h-4" />;
-    }
+  const handlePermissionToggle = (permission: string) => {
+    setNewRole(prev => ({
+      ...prev,
+      permissions: prev.permissions.includes(permission)
+        ? prev.permissions.filter(p => p !== permission)
+        : [...prev.permissions, permission]
+    }));
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1A1B3E] via-[#2A2B5E] to-[#1A1B3E] p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2 bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
-              User Management System
-            </h1>
-            <p className="text-gray-300">Manage users, roles, and sessions from one unified interface</p>
-          </div>
-          <Button
-            onClick={() => {
-              queryClient.invalidateQueries({ queryKey: ['/api/admin/role-management/user-roles'] });
-              queryClient.invalidateQueries({ queryKey: ['/api/admin/sessions'] });
-              queryClient.invalidateQueries({ queryKey: ['/api/admin/role-management/statistics'] });
-            }}
-            variant="outline"
-            className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 bg-[#2A2B5E]/50 backdrop-blur-sm"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh All
-          </Button>
+    <div className="min-h-screen bg-[#1A1B3E] text-white">
+      {/* Header */}
+      <div className="flex items-center gap-3 p-6 bg-[#2A2B5E] border-b border-gray-600">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLocation('/admin')}
+          className="text-gray-300 hover:text-white hover:bg-gray-700/20 p-2"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold text-white">Unified User Management</h1>
+          <p className="text-gray-400">Complete user, role, and session management</p>
         </div>
+      </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="bg-purple-900/30 border-purple-500/30 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-300 text-sm">Total Users</p>
-                  <p className="text-2xl font-bold text-white">
-                    {roleStats?.totalUsers || 0}
-                  </p>
-                </div>
-                <Users className="w-8 h-8 text-purple-400" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-blue-900/30 border-blue-500/30 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-300 text-sm">Active Users</p>
-                  <p className="text-2xl font-bold text-white">
-                    {roleStats?.activeUsers || 0}
-                  </p>
-                </div>
-                <UserCheck className="w-8 h-8 text-blue-400" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-cyan-900/30 border-cyan-500/30 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-cyan-300 text-sm">Available Roles</p>
-                  <p className="text-2xl font-bold text-white">
-                    {roles.length}
-                  </p>
-                </div>
-                <Award className="w-8 h-8 text-cyan-400" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-indigo-900/30 border-indigo-500/30 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-indigo-300 text-sm">Active Sessions</p>
-                  <p className="text-2xl font-bold text-white">
-                    {sessionsData.length}
-                  </p>
-                </div>
-                <Monitor className="w-8 h-8 text-indigo-400" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-[#2A2B5E]/80 border-purple-500/30">
+      <div className="p-6">
+        {/* Main Navigation Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 bg-[#2A2B5E] border border-gray-600">
             <TabsTrigger 
               value="users" 
-              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-300"
+              className="data-[state=active]:bg-[#3A3B6E] data-[state=active]:text-white text-gray-300"
             >
               <Users className="w-4 h-4 mr-2" />
-              User Management
+              Users ({totalUsers})
             </TabsTrigger>
             <TabsTrigger 
               value="roles" 
-              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-gray-300"
+              className="data-[state=active]:bg-[#3A3B6E] data-[state=active]:text-white text-gray-300"
             >
               <Shield className="w-4 h-4 mr-2" />
-              Role Management
+              Roles ({roles.length})
             </TabsTrigger>
             <TabsTrigger 
               value="sessions" 
-              className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
+              className="data-[state=active]:bg-[#3A3B6E] data-[state=active]:text-white text-gray-300"
             >
               <Monitor className="w-4 h-4 mr-2" />
-              Session Management
+              Sessions ({totalSessions})
             </TabsTrigger>
           </TabsList>
 
-          {/* User Management Tab */}
+          {/* Users Tab */}
           <TabsContent value="users" className="space-y-6">
-            <Card className="bg-[#2A2B5E]/50 border-purple-500/30 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  User Management
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {/* Search and Filters */}
-                <div className="flex flex-col md:flex-row gap-4 mb-6">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      placeholder="Search users (username, name, employee code)..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 bg-[#1A1B3E]/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20"
-                    />
-                  </div>
-                  <Select value={selectedRole} onValueChange={setSelectedRole}>
-                    <SelectTrigger className="w-48 bg-[#1A1B3E]/50 border-cyan-500/30 text-white">
-                      <SelectValue placeholder="Filter by role" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#2A2B5E] border-cyan-500/30">
-                      <SelectItem value="">All Roles</SelectItem>
-                      {roles.map((role) => (
-                        <SelectItem key={role.id} value={role.id} className="text-white">
-                          {role.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Users Table */}
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-purple-500/30">
-                        <TableHead className="text-gray-300">User</TableHead>
-                        <TableHead className="text-gray-300">Role</TableHead>
-                        <TableHead className="text-gray-300">Department</TableHead>
-                        <TableHead className="text-gray-300">Status</TableHead>
-                        <TableHead className="text-gray-300">Created</TableHead>
-                        <TableHead className="text-gray-300">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {usersLoading ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-gray-400">
-                            Loading users...
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredUsers.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-gray-400">
-                            No users found
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredUsers.map((user: UserRecord) => (
-                          <TableRow key={user.id} className="border-purple-500/30">
-                            <TableCell>
-                              <div>
-                                <div className="font-medium text-white">
-                                  {user.employee ? `${user.employee.firstName} ${user.employee.lastName}` : user.username}
-                                </div>
-                                <div className="text-sm text-gray-400">
-                                  @{user.username} {user.employee && `• ${user.employee.employeeCode}`}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={getRoleBadgeColor(user.role)}>
-                                {user.roleInfo?.name || user.role}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-gray-300">
-                              {user.employee?.department || 'N/A'}
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={user.isActive ? 
-                                'bg-green-500/20 text-green-400 border-green-500/30' : 
-                                'bg-red-500/20 text-red-400 border-red-500/30'
-                              }>
-                                {user.isActive ? 'Active' : 'Inactive'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-gray-300">
-                              {new Date(user.createdAt).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-[#1A1B3E]/50">
-                                    <MoreVertical className="w-4 h-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="bg-[#2A2B5E] border-cyan-500/30">
-                                  {canManageRoles && (
-                                    <DropdownMenuItem 
-                                      onClick={() => {
-                                        setSelectedUser(user);
-                                        setNewRole(user.role);
-                                        setShowRoleDialog(true);
-                                      }}
-                                      className="text-white hover:bg-[#1A1B3E]/50"
-                                    >
-                                      <Edit className="w-4 h-4 mr-2" />
-                                      Change Role
-                                    </DropdownMenuItem>
-                                  )}
-                                  <DropdownMenuItem className="text-white hover:bg-[#1A1B3E]/50">
-                                    <Eye className="w-4 h-4 mr-2" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Role Management Tab */}
-          <TabsContent value="roles" className="space-y-6">
-            {/* Role Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {roleStats?.statistics?.map((stat: RoleStatistics) => (
-                <Card key={stat.roleId} className="bg-[#2A2B5E]/50 border-blue-500/30 backdrop-blur-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge className={getRoleBadgeColor(stat.roleId)}>
-                        {stat.roleName}
-                      </Badge>
-                      <div className="text-sm text-gray-400">Level {stat.level}</div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Total Users:</span>
-                        <span className="text-white">{stat.totalUsers}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Active:</span>
-                        <span className="text-green-400">{stat.activeUsers}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Departments:</span>
-                        <span className="text-blue-400">{stat.departments}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="flex justify-between items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search users (min 3 characters)..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-[#2A2B5E] border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+              <Button 
+                onClick={() => setIsCreateUserOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Create User
+              </Button>
             </div>
 
-            {/* Role Details */}
-            <Card className="bg-[#2A2B5E]/50 border-blue-500/30 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  Role Hierarchy & Permissions
-                </CardTitle>
+            {/* Users Table */}
+            <Card className="bg-[#2A2B5E] border-gray-600">
+              <CardHeader className="bg-[#3A3B6E] border-b border-gray-600">
+                <CardTitle className="text-white">Users Management</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {roles.map((role) => (
-                    <div key={role.id} className="p-4 bg-[#1A1B3E]/50 rounded-lg border border-purple-500/30">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge className={getRoleBadgeColor(role.id)}>
-                              {role.name}
-                            </Badge>
-                            <span className="text-sm text-gray-400">Level {role.level}</span>
-                          </div>
-                          <p className="text-sm text-gray-300">{role.description}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          {role.canManageRoles && (
-                            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
-                              Role Manager
-                            </Badge>
-                          )}
-                          {role.canDeleteData && (
-                            <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
-                              Can Delete
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-400">Access Scope:</span>
-                          <span className="text-white ml-2">{role.accessScope}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">Permissions:</span>
-                          <span className="text-white ml-2">
-                            {role.permissions.includes('*') ? 'All Permissions' : `${role.permissions.length} permissions`}
-                          </span>
-                        </div>
+              <CardContent className="p-0">
+                {usersLoading ? (
+                  <div className="p-6 text-center">
+                    <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-400">Loading users...</p>
+                  </div>
+                ) : users && users.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-[#3A3B6E] border-b border-gray-600">
+                        <tr>
+                          <th className="text-left p-4 font-medium text-gray-300">User</th>
+                          <th className="text-left p-4 font-medium text-gray-300">Role</th>
+                          <th className="text-left p-4 font-medium text-gray-300">Department</th>
+                          <th className="text-left p-4 font-medium text-gray-300">Status</th>
+                          <th className="text-left p-4 font-medium text-gray-300">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {users.map((user: User, index: number) => (
+                          <tr 
+                            key={user.id}
+                            className={`hover:bg-gray-700/20 transition-colors ${
+                              index !== users.length - 1 ? 'border-b border-gray-600/20' : ''
+                            }`}
+                          >
+                            <td className="p-4">
+                              <div>
+                                <div className="font-medium text-white">
+                                  {user.employee?.firstName} {user.employee?.lastName}
+                                </div>
+                                <div className="text-sm text-gray-400">@{user.username}</div>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <Badge className={`${getRoleBadgeColor(user.role)} text-white text-xs`}>
+                                {user.role}
+                              </Badge>
+                            </td>
+                            <td className="p-4 text-gray-300">{user.employee?.department || 'N/A'}</td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${user.isActive ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                                <span className={`text-xs ${user.isActive ? 'text-green-300' : 'text-red-300'}`}>
+                                  {user.isActive ? 'Active' : 'Inactive'}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setIsUserModalOpen(true);
+                                  }}
+                                  className="border-gray-600 text-gray-300 hover:bg-gray-700/20"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => deleteUserMutation.mutate(user.id)}
+                                  className="border-red-600 text-red-300 hover:bg-red-700/20"
+                                  disabled={deleteUserMutation.isPending}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-300 text-lg font-medium mb-2">No users found</p>
+                    <p className="text-gray-400">
+                      {searchTerm ? 'Try adjusting your search terms' : 'Get started by creating your first user'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="p-4 border-t border-gray-600 bg-[#3A3B6E]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-300">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          disabled={currentPage === 1}
+                          className="border-gray-600 text-gray-300 hover:bg-gray-700/20"
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                          disabled={currentPage === totalPages}
+                          className="border-gray-600 text-gray-300 hover:bg-gray-700/20"
+                        >
+                          Next
+                        </Button>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Session Management Tab */}
-          <TabsContent value="sessions" className="space-y-6">
-            <Card className="bg-[#2A2B5E]/50 border-cyan-500/30 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Monitor className="w-5 h-5" />
-                  Active Sessions ({filteredSessions.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {/* Session Search */}
-                <div className="relative mb-6">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    placeholder="Search sessions (username, name, IP, role)..."
-                    value={sessionSearchTerm}
-                    onChange={(e) => setSessionSearchTerm(e.target.value)}
-                    className="pl-10 bg-[#1A1B3E]/50 border-cyan-500/30 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20"
-                  />
-                </div>
+          {/* Roles Tab */}
+          <TabsContent value="roles" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white">Role Management</h2>
+              <Button 
+                onClick={() => setIsCreateRoleOpen(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Role
+              </Button>
+            </div>
 
-                {/* Sessions Table */}
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-cyan-500/30">
-                        <TableHead className="text-gray-300">User</TableHead>
-                        <TableHead className="text-gray-300">Role</TableHead>
-                        <TableHead className="text-gray-300">Device</TableHead>
-                        <TableHead className="text-gray-300">Location</TableHead>
-                        <TableHead className="text-gray-300">Duration</TableHead>
-                        <TableHead className="text-gray-300">Last Activity</TableHead>
-                        <TableHead className="text-gray-300">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sessionsLoading ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-gray-400">
-                            Loading sessions...
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredSessions.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-gray-400">
-                            No active sessions found
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredSessions.map((session: SessionRecord) => (
-                          <TableRow key={session.id} className="border-cyan-500/30">
-                            <TableCell>
-                              <div>
-                                <div className="font-medium text-white">
-                                  {session.realName || session.username}
-                                </div>
-                                <div className="text-sm text-gray-400">
-                                  @{session.username}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={getRoleBadgeColor(session.role)}>
-                                {session.role}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                {getDeviceIcon(session.deviceType)}
-                                <div className="text-sm">
-                                  <div className="text-white">{session.os}</div>
-                                  <div className="text-gray-400">{session.browser}</div>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-1 text-sm text-gray-400">
-                                <MapPin className="w-3 h-3" />
-                                <span className="font-mono">{session.ipAddress}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-1 text-sm text-gray-400">
-                                <Clock className="w-3 h-3" />
-                                <span>{session.duration}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-400">
-                              {new Date(session.lastActivity).toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => terminateSessionMutation.mutate(session.id)}
-                                disabled={terminateSessionMutation.isPending}
-                                className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                              >
-                                <LogOut className="w-4 h-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+            {/* Roles Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {rolesLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i} className="bg-[#2A2B5E] border-gray-600">
+                    <CardContent className="p-6">
+                      <div className="animate-pulse space-y-4">
+                        <div className="h-4 bg-gray-600 rounded w-3/4"></div>
+                        <div className="h-3 bg-gray-600 rounded w-full"></div>
+                        <div className="h-3 bg-gray-600 rounded w-2/3"></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : roles && roles.length > 0 ? (
+                roles.map((role: Role) => (
+                  <Card key={role.id} className="bg-[#2A2B5E] border-gray-600 hover:border-gray-500 transition-colors">
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-white">{role.displayName}</h3>
+                          <p className="text-sm text-gray-400">@{role.name}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedRole(role);
+                              setIsRoleModalOpen(true);
+                            }}
+                            className="border-gray-600 text-gray-300 hover:bg-gray-700/20"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteRoleMutation.mutate(role.id)}
+                            className="border-red-600 text-red-300 hover:bg-red-700/20"
+                            disabled={deleteRoleMutation.isPending}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <p className="text-gray-300 text-sm mb-4">{role.description}</p>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${role.isActive ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                          <span className={`text-xs ${role.isActive ? 'text-green-300' : 'text-red-300'}`}>
+                            {role.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {role.permissions.length} permission{role.permissions.length !== 1 ? 's' : ''}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Created: {new Date(role.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-300 text-lg font-medium mb-2">No roles found</p>
+                  <p className="text-gray-400">Create your first role to get started</p>
                 </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Sessions Tab */}
+          <TabsContent value="sessions" className="space-y-6">
+            <div className="flex justify-between items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search sessions..."
+                  value={sessionSearchTerm}
+                  onChange={(e) => setSessionSearchTerm(e.target.value)}
+                  className="pl-10 bg-[#2A2B5E] border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+              <Button 
+                onClick={() => refetchSessions()}
+                variant="outline"
+                className="border-gray-600 text-gray-300 hover:bg-gray-700/20"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${sessionsLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+
+            {/* Sessions Table */}
+            <Card className="bg-[#2A2B5E] border-gray-600">
+              <CardHeader className="bg-[#3A3B6E] border-b border-gray-600">
+                <CardTitle className="text-white">Active Sessions</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {sessionsLoading ? (
+                  <div className="p-6 text-center">
+                    <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-400">Loading sessions...</p>
+                  </div>
+                ) : sessions && sessions.length > 0 ? (
+                  <div className="space-y-0">
+                    {sessions.map((session: UserSession) => (
+                      <div 
+                        key={session.id}
+                        className="p-4 border-b border-gray-600/20 last:border-b-0 hover:bg-gray-700/20 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                              {getOSIcon(session.os, session.deviceType)}
+                            </div>
+                            <div>
+                              <div className="font-medium text-white">@{session.username}</div>
+                              <div className="text-sm text-gray-300">{session.realName}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right text-sm">
+                              <div className="text-gray-300">{session.ipAddress}</div>
+                              <div className="text-gray-400">{getSessionDuration(session.loginTime)}</div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => forceLogoutMutation.mutate(session.id)}
+                              className="border-red-600 text-red-300 hover:bg-red-700/20"
+                              disabled={forceLogoutMutation.isPending}
+                            >
+                              <LogOut className="w-3 h-3 mr-2" />
+                              Terminate
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <Monitor className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-300 text-lg font-medium mb-2">No active sessions</p>
+                    <p className="text-gray-400">User sessions will appear here when active</p>
+                  </div>
+                )}
+
+                {/* Session Pagination */}
+                {totalSessionPages > 1 && (
+                  <div className="p-4 border-t border-gray-600 bg-[#3A3B6E]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-300">
+                        Page {sessionPage} of {totalSessionPages}
+                      </span>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSessionPage(Math.max(1, sessionPage - 1))}
+                          disabled={sessionPage === 1}
+                          className="border-gray-600 text-gray-300 hover:bg-gray-700/20"
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSessionPage(Math.min(totalSessionPages, sessionPage + 1))}
+                          disabled={sessionPage === totalSessionPages}
+                          className="border-gray-600 text-gray-300 hover:bg-gray-700/20"
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+      </div>
 
-        {/* Role Assignment Dialog */}
-        <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
-          <DialogContent className="bg-[#2A2B5E] border-purple-500/30 text-white max-w-md">
+      {/* User Detail/Edit Modal */}
+      {selectedUser && (
+        <Dialog open={isUserModalOpen} onOpenChange={setIsUserModalOpen}>
+          <DialogContent className="max-w-2xl bg-[#2A2B5E] border-gray-600 text-white max-h-[85vh] overflow-hidden flex flex-col">
             <DialogHeader>
-              <DialogTitle>Change User Role</DialogTitle>
+              <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Edit User: {selectedUser.employee?.firstName} {selectedUser.employee?.lastName}
+              </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              {selectedUser && (
-                <div className="p-3 bg-[#1A1B3E]/50 rounded-lg">
-                  <div className="font-medium">
-                    {selectedUser.employee ? 
-                      `${selectedUser.employee.firstName} ${selectedUser.employee.lastName}` : 
-                      selectedUser.username
-                    }
+            
+            <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+              {/* User Info Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white border-b border-gray-600 pb-2">User Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-300">Username</Label>
+                    <Input
+                      value={selectedUser.username}
+                      disabled
+                      className="bg-[#1A1B3E] border-gray-600 text-gray-400"
+                    />
                   </div>
-                  <div className="text-sm text-gray-400">
-                    Current role: {selectedUser.roleInfo?.name || selectedUser.role}
+                  <div>
+                    <Label className="text-gray-300">Role</Label>
+                    <Select
+                      defaultValue={selectedUser.role}
+                      onValueChange={(value) => {
+                        updateUserMutation.mutate({ userId: selectedUser.id, updates: { role: value } });
+                      }}
+                    >
+                      <SelectTrigger className="bg-[#1A1B3E] border-gray-600 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#2A2B5E] border-gray-600">
+                        <SelectItem value="staff">Staff</SelectItem>
+                        <SelectItem value="supervisor">Supervisor</SelectItem>
+                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="superadmin">Super Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              )}
-              
-              <div>
-                <Label htmlFor="role">New Role</Label>
-                <Select value={newRole} onValueChange={setNewRole}>
-                  <SelectTrigger className="bg-[#1A1B3E] border-cyan-500/30">
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#2A2B5E] border-cyan-500/30">
-                    {roles
-                      .filter(role => assignableRoles.includes(role.id))
-                      .map((role) => (
-                        <SelectItem key={role.id} value={role.id} className="text-white">
-                          <div className="flex items-center gap-2">
-                            <Badge className={getRoleBadgeColor(role.id)}>
-                              {role.name}
-                            </Badge>
-                            <span className="text-sm text-gray-400">Level {role.level}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
               </div>
 
-              <div className="flex gap-2 pt-4">
-                <Button 
-                  onClick={handleAssignRole}
-                  disabled={assignRoleMutation.isPending || !newRole}
-                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
-                >
-                  {assignRoleMutation.isPending ? "Assigning..." : "Assign Role"}
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    setShowRoleDialog(false);
-                    setSelectedUser(null);
-                  }}
-                  className="flex-1 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-                >
-                  Cancel
-                </Button>
+              {/* Account Status Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white border-b border-gray-600 pb-2">Account Status</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-[#1A1B3E] rounded-md">
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="w-4 h-4 text-green-400" />
+                      <span>Account Active</span>
+                    </div>
+                    <Switch
+                      checked={selectedUser.isActive}
+                      onCheckedChange={(checked) => {
+                        updateUserMutation.mutate({ userId: selectedUser.id, updates: { isActive: checked } });
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-[#1A1B3E] rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-blue-400" />
+                      <span>Non-Bio Allowed</span>
+                    </div>
+                    <Switch
+                      checked={selectedUser.employee?.nonBio || false}
+                      onCheckedChange={(checked) => {
+                        updateUserMutation.mutate({ 
+                          userId: selectedUser.id, 
+                          updates: { employee: { ...selectedUser.employee, nonBio: checked } }
+                        });
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-[#1A1B3E] rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Ban className="w-4 h-4 text-red-400" />
+                      <span>Stop Pay</span>
+                    </div>
+                    <Switch
+                      checked={selectedUser.employee?.stopPay || false}
+                      onCheckedChange={(checked) => {
+                        updateUserMutation.mutate({ 
+                          userId: selectedUser.id, 
+                          updates: { employee: { ...selectedUser.employee, stopPay: checked } }
+                        });
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* Password Reset Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white border-b border-gray-600 pb-2">Security</h3>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      type="password"
+                      placeholder="New password (min 6 characters)"
+                      className="flex-1 bg-[#1A1B3E] border-gray-600 text-white placeholder-gray-400"
+                    />
+                    <Button className="bg-blue-600 hover:bg-blue-700">
+                      <Key className="w-4 h-4 mr-2" />
+                      Reset
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 pt-4 border-t border-gray-600">
+              <Button
+                variant="outline"
+                onClick={() => setIsUserModalOpen(false)}
+                className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700/20"
+              >
+                Close
+              </Button>
+              <Button
+                onClick={() => setIsUserModalOpen(false)}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                Save Changes
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+      )}
+
+      {/* Create User Modal */}
+      <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
+        <DialogContent className="max-w-2xl bg-[#2A2B5E] border-gray-600 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+              <UserPlus className="w-5 h-5" />
+              Create New User
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-gray-300">Username*</Label>
+                <Input
+                  value={newUser.username}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
+                  placeholder="Enter username"
+                  className="bg-[#1A1B3E] border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300">Password*</Label>
+                <Input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="Enter password"
+                  className="bg-[#1A1B3E] border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-gray-300">First Name</Label>
+                <Input
+                  value={newUser.firstName}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, firstName: e.target.value }))}
+                  placeholder="Enter first name"
+                  className="bg-[#1A1B3E] border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300">Last Name</Label>
+                <Input
+                  value={newUser.lastName}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, lastName: e.target.value }))}
+                  placeholder="Enter last name"
+                  className="bg-[#1A1B3E] border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-gray-300">Role*</Label>
+                <Select value={newUser.role} onValueChange={(value) => setNewUser(prev => ({ ...prev, role: value }))}>
+                  <SelectTrigger className="bg-[#1A1B3E] border-gray-600 text-white">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#2A2B5E] border-gray-600">
+                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="supervisor">Supervisor</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="superadmin">Super Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-gray-300">Department</Label>
+                <Input
+                  value={newUser.department}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, department: e.target.value }))}
+                  placeholder="Enter department"
+                  className="bg-[#1A1B3E] border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-gray-300">Employee Code</Label>
+                <Input
+                  value={newUser.employeeCode}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, employeeCode: e.target.value }))}
+                  placeholder="Enter employee code"
+                  className="bg-[#1A1B3E] border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300">Email</Label>
+                <Input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="Enter email"
+                  className="bg-[#1A1B3E] border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateUserOpen(false)}
+              className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700/20"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateUser}
+              disabled={createUserMutation.isPending}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {createUserMutation.isPending ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <UserPlus className="w-4 h-4 mr-2" />
+              )}
+              Create User
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Role Modal */}
+      <Dialog open={isCreateRoleOpen} onOpenChange={setIsCreateRoleOpen}>
+        <DialogContent className="max-w-2xl bg-[#2A2B5E] border-gray-600 text-white max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Create New Role
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+            <div className="space-y-4">
+              <div>
+                <Label className="text-gray-300">Role Name*</Label>
+                <Input
+                  value={newRole.name}
+                  onChange={(e) => setNewRole(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., manager, staff"
+                  className="bg-[#1A1B3E] border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-gray-300">Display Name*</Label>
+                <Input
+                  value={newRole.displayName}
+                  onChange={(e) => setNewRole(prev => ({ ...prev, displayName: e.target.value }))}
+                  placeholder="e.g., Manager, Staff Member"
+                  className="bg-[#1A1B3E] border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-gray-300">Description</Label>
+                <Textarea
+                  value={newRole.description}
+                  onChange={(e) => setNewRole(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Describe this role's responsibilities"
+                  className="bg-[#1A1B3E] border-gray-600 text-white placeholder-gray-400"
+                  rows={3}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <Label className="text-gray-300 text-lg font-semibold">Permissions</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {availablePermissions.map((permission) => (
+                  <div
+                    key={permission}
+                    className="flex items-center space-x-3 p-3 bg-[#1A1B3E] rounded-md border border-gray-600"
+                  >
+                    <input
+                      type="checkbox"
+                      id={permission}
+                      checked={newRole.permissions.includes(permission)}
+                      onChange={() => handlePermissionToggle(permission)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <Label htmlFor={permission} className="text-gray-300 text-sm">
+                      {permission.replace(':', ' ').replace('_', ' ')}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex gap-3 pt-4 border-t border-gray-600">
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateRoleOpen(false)}
+              className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700/20"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateRole}
+              disabled={createRoleMutation.isPending}
+              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {createRoleMutation.isPending ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4 mr-2" />
+              )}
+              Create Role
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-}
+};
+
+export default UnifiedUserManagement;
