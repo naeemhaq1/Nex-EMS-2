@@ -1,10 +1,10 @@
-import { pgTable, text, timestamp, decimal, boolean, integer, varchar, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, decimal, boolean, integer, varchar, jsonb, index, serial } from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
 // Employee location tracking table
 export const employeeLocations = pgTable('employee_locations', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
+  id: serial('id').primaryKey(),
   employeeId: text('employee_id').notNull(),
   latitude: decimal('latitude', { precision: 10, scale: 8 }).notNull(),
   longitude: decimal('longitude', { precision: 11, scale: 8 }).notNull(),
@@ -32,7 +32,7 @@ export const employeeLocations = pgTable('employee_locations', {
 
 // Location polling queue for managing batch operations
 export const locationPollingQueue = pgTable('location_polling_queue', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
+  id: serial('id').primaryKey(),
   batchId: text('batch_id').notNull(),
   employeeIds: jsonb('employee_ids').notNull(), // Array of employee IDs to poll
   status: varchar('status', { length: 20 }).notNull().default('pending'), // 'pending', 'processing', 'completed', 'failed'
@@ -56,7 +56,7 @@ export const locationPollingQueue = pgTable('location_polling_queue', {
 
 // Location backup archive for hourly snapshots
 export const locationBackups = pgTable('location_backups', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
+  id: serial('id').primaryKey(),
   backupId: text('backup_id').notNull().unique(),
   backupType: varchar('backup_type', { length: 20 }).notNull(), // 'hourly', 'daily', 'manual'
   totalRecords: integer('total_records').notNull(),
@@ -81,7 +81,7 @@ export const locationBackups = pgTable('location_backups', {
 
 // Geofence clusters for employee location analysis
 export const geofenceClusters = pgTable('geofence_clusters', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
+  id: serial('id').primaryKey(),
   employeeId: text('employee_id').notNull(),
   clusterName: varchar('cluster_name', { length: 100 }).notNull(),
   centerLatitude: decimal('center_latitude', { precision: 10, scale: 8 }).notNull(),
@@ -106,7 +106,7 @@ export const geofenceClusters = pgTable('geofence_clusters', {
 
 // Location validation log
 export const locationValidationLog = pgTable('location_validation_log', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
+  id: serial('id').primaryKey(),
   locationId: integer('location_id').notNull(),
   validationType: varchar('validation_type', { length: 30 }).notNull(), // 'geofence', 'accuracy', 'duplicate', 'manual'
   validationResult: varchar('validation_result', { length: 20 }).notNull(), // 'pass', 'fail', 'warning'
