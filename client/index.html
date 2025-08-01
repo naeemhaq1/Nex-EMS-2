@@ -1,51 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <!-- ULTRA-CRITICAL: BigInt polyfill MUST be first thing loaded -->
+    <!-- CRITICAL: Universal BigInt polyfill -->
     <script>
-      // Emergency BigInt polyfill - BEFORE ANYTHING ELSE
+      // Universal BigInt polyfill for compatibility
       (function() {
         'use strict';
         
-        function safeBigIntPolyfill(value) {
-          try {
-            if (value === null || value === undefined || value === '') return 0;
-            if (typeof value === 'boolean') return value ? 1 : 0;
-            if (typeof value === 'number') return Math.floor(value);
-            
-            const str = String(value).trim();
-            if (str === '' || str === 'undefined' || str === 'null') return 0;
-            
-            const cleaned = str.replace(/[^-0-9]/g, '');
-            if (cleaned === '' || cleaned === '-') return 0;
-            
-            const parsed = parseInt(cleaned, 10);
-            return isNaN(parsed) ? 0 : parsed;
-          } catch (e) {
-            console.log('BigInt polyfill error caught:', e);
-            return 0;
-          }
+        // Simple safe number conversion
+        function safeNumber(value) {
+          if (value == null || value === '') return 0;
+          if (typeof value === 'number') return Math.floor(value);
+          const num = parseInt(String(value).replace(/[^-0-9]/g, ''), 10);
+          return isNaN(num) ? 0 : num;
         }
         
-        // Apply to all possible scopes immediately
+        // Set up BigInt polyfill everywhere
+        const polyfill = safeNumber;
+        
         if (typeof BigInt === 'undefined') {
-          window.BigInt = safeBigIntPolyfill;
-          globalThis.BigInt = safeBigIntPolyfill;
+          window.BigInt = polyfill;
+          globalThis.BigInt = polyfill;
         }
         
-        // Always define bigint alias
-        window.bigint = window.BigInt || safeBigIntPolyfill;
-        globalThis.bigint = window.BigInt || safeBigIntPolyfill;
+        window.bigint = polyfill;
+        globalThis.bigint = polyfill;
         
-        // Ensure global object exists
+        // Ensure global exists
         window.global = window.global || window;
-        window.global.BigInt = window.BigInt;
-        window.global.bigint = window.bigint;
+        window.global.BigInt = polyfill;
+        window.global.bigint = polyfill;
         
-        console.log('Ultra-early BigInt setup complete:', {
-          BigInt: typeof window.BigInt,
-          bigint: typeof window.bigint
-        });
+        console.log('BigInt polyfill ready:', typeof window.BigInt);
       })();
     </script>
     

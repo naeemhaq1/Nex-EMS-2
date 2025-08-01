@@ -5,6 +5,12 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  esbuild: {
+    target: 'es2017', // Target older JS version without BigInt
+    supported: {
+      'bigint': false // Disable BigInt support to force polyfill
+    }
+  },
   plugins: [
     react(),
     runtimeErrorOverlay(),
