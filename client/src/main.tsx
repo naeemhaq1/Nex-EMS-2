@@ -4,6 +4,13 @@ import App from "./App";
 import "./index.css";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
+// Polyfill for BigInt if not available
+if (typeof BigInt === 'undefined') {
+  (window as any).BigInt = function(value: any) {
+    return parseInt(value);
+  };
+}
+
 // Debug React instances
 console.log('React version in main.tsx:', React.version);
 
