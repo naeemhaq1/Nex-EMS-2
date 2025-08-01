@@ -48,16 +48,11 @@ export class OptimizedLocationService extends EventEmitter {
   async storeRawLocation(locationData: LocationData): Promise<void> {
     try {
       // Store in raw locations table immediately
-      await db.execute(`
+      const insertSql = `
         INSERT INTO locations_raw (employee_id, timestamp, latitude, longitude, accuracy, processed)
-        VALUES ($1, $2, $3, $4, $5, false)
-      `, [
-        locationData.employeeId,
-        locationData.timestamp,
-        locationData.latitude,
-        locationData.longitude,
-        locationData.accuracy
-      ]);
+        VALUES ('${locationData.employeeId}', '${locationData.timestamp.toISOString()}', ${locationData.latitude}, ${locationData.longitude}, ${locationData.accuracy}, false)
+      `;
+      await db.execute(insertSql);
 
       // Check if this needs immediate processing (geofence entry/exit)
       const requiresProcessing = await this.checkGeofenceEvents(locationData);
@@ -248,20 +243,14 @@ export class OptimizedLocationService extends EventEmitter {
    * Store processed location data
    */
   private async storeProcessedLocation(location: LocationData, locationName: string, locationType: string): Promise<void> {
-    await db.execute(`
+    const upsertSql = `
       INSERT INTO locations_processed (employee_id, timestamp, latitude, longitude, location_name, location_type)
-      VALUES (?, ?, ?, ?, ?, ?)
+      VALUES ('${location.employeeId}', '${location.timestamp.toISOString()}', ${location.latitude}, ${location.longitude}, '${locationName.replace(/'/g, "''")}', '${locationType}')
       ON CONFLICT (employee_id, timestamp) DO UPDATE SET
         location_name = EXCLUDED.location_name,
         location_type = EXCLUDED.location_type
-    `, [
-      location.employeeId,
-      location.timestamp,
-      location.latitude,
-      location.longitude,
-      locationName,
-      locationType
-    ]);
+    `;
+    await db.execute(upsertSql);
   }
 
   /**
@@ -269,6 +258,7 @@ export class OptimizedLocationService extends EventEmitter {
    * Returns cached processed data instead of making new API calls
    */
   async getLocationsForMap(employeeIds: string[], date: string): Promise<any[]> {
+    const employeeIdList = employeeIds.map(id => `'${id}'`).join(',');
     const locations = await db.execute(`
       SELECT 
         employee_id,
@@ -278,12 +268,12 @@ export class OptimizedLocationService extends EventEmitter {
         location_type,
         timestamp
       FROM locations_processed 
-      WHERE employee_id = ANY(?) 
-        AND DATE(timestamp) = ?
+      WHERE employee_id IN (${employeeIdList})
+        AND DATE(timestamp) = '${date}'
       ORDER BY timestamp DESC
-    `, [employeeIds, date]);
+    `);
 
-    return (locations as any).rows || [];
+    return locations || [];
   }
 
   /**
@@ -315,7 +305,7 @@ export class OptimizedLocationService extends EventEmitter {
         WHERE active = true
       `);
 
-      for (const zone of zones.rows || []) {
+      for (const zone of zones || []) {
         this.geofenceZones.set(zone.id, {
           id: zone.id,
           name: zone.name,

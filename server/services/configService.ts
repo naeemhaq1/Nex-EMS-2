@@ -40,7 +40,7 @@ class ConfigService {
       // Load all settings from database
       const settings = await db.execute(`SELECT key, value FROM system_settings`);
 
-      for (const setting of settings.rows) {
+      for (const setting of settings) {
         const { key, value } = setting as { key: string; value: string };
         this.configCache.set(key, JSON.parse(value));
       }
@@ -62,7 +62,7 @@ class ConfigService {
    */
   private async ensureSettingsTableExists(): Promise<void> {
     try {
-      await db.execute(`
+      const sql = `
         CREATE TABLE IF NOT EXISTS system_settings (
           key VARCHAR(255) PRIMARY KEY,
           value TEXT NOT NULL,
@@ -70,7 +70,8 @@ class ConfigService {
           category VARCHAR(100) DEFAULT 'general',
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-      `);
+      `;
+      await db.execute(sql);
     } catch (error) {
       console.error('[ConfigService] Error creating settings table:', error);
     }
@@ -165,15 +166,16 @@ class ConfigService {
    */
   async setSetting(key: string, value: any, description?: string, category: string = 'general'): Promise<void> {
     try {
-      await db.execute(`
+      const insertSql = `
         INSERT INTO system_settings (key, value, description, category, updated_at) 
-        VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+        VALUES ('${key}', '${JSON.stringify(value).replace(/'/g, "''")}', '${(description || '').replace(/'/g, "''")}', '${category}', CURRENT_TIMESTAMP)
         ON CONFLICT (key) DO UPDATE SET 
           value = EXCLUDED.value,
           description = COALESCE(EXCLUDED.description, system_settings.description),
           category = EXCLUDED.category,
           updated_at = CURRENT_TIMESTAMP
-      `, [key, JSON.stringify(value), description || '', category]);
+      `;
+      await db.execute(insertSql);
 
       // Update cache
       this.configCache.set(key, value);
@@ -211,7 +213,7 @@ class ConfigService {
         ORDER BY category, key
       `);
 
-      return settings.rows.map((row: any) => ({
+      return settings.map((row: any) => ({
         key: row.key,
         value: JSON.parse(row.value),
         description: row.description,
