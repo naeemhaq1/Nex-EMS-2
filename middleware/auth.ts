@@ -54,129 +54,163 @@ export const sessionMiddleware = session({
   rolling: true,
 });
 
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   // Check if session exists
   if (!req.session) {
-    console.error('Session not available - middleware not properly configured');
+    console.error('[AUTH] Session not available - middleware not properly configured');
     return res.status(401).json({ error: "Session not configured" });
   }
 
+  // Enhanced session validation with security checks
+  const sessionId = req.sessionID;
   const userId = req.session.userId;
   const usernum = req.session.usernum;
+  const role = req.session.role;
 
-  console.log('Auth middleware check - userId:', userId, 'usernum:', usernum);
+  console.log('[AUTH] Multi-role auth check:', {
+    sessionId: !!sessionId,
+    userId: userId,
+    usernum: usernum,
+    role: role,
+    hasPermissions: !!req.session.permissions
+  });
 
-  // Check if user is authenticated
+  // Check if either userId OR usernum is available (not both required)
   if (!userId && !usernum) {
-    console.log('Auth middleware - no user ID found in session');
+    console.error('[AUTH] No user identifier in session');
     return res.status(401).json({ error: "Authentication required" });
   }
 
-  // Verify session has required data
+  // Additional security: verify session integrity
+  if (!sessionId) {
+    console.error('[AUTH] Session ID missing - potential security issue');
+    return res.status(401).json({ error: "Invalid session" });
+  }
+
+  // Check if session data is consistent for multi-role system
   if (!req.session.username || !req.session.role) {
-    console.log('Auth middleware - incomplete session data');
-    return res.status(401).json({ error: "Invalid session data" });
+    console.error('[AUTH] Multi-role session data incomplete');
+    return res.status(401).json({ error: "Session integrity check failed" });
   }
 
-  console.log('Auth middleware - authentication verified for:', req.session.username);
-  next();
-};
+  // Validate role exists in the role management system
+  try {
+    const { roleManagementService } = await import('../services/roleManagementService.ts');
+    const roleInfo = roleManagementService.getRoleById(req.session.role);
 
-export const requirePermission = (permission: string) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const userNum = req.session.usernum;
-    const userId = req.session.userId;
-
-    if (!userNum && !userId) {
-      return res.status(401).json({ error: "Authentication required" });
+    if (!roleInfo) {
+      console.error(`[AUTH] Invalid role in session: ${req.session.role}`);
+      return res.status(401).json({ error: "Invalid user role" });
     }
 
-    try {
-      // Use usernum (number) if available, otherwise convert userId to number
-      const userIdNumber = userNum || (userId ? parseInt(userId, 10) : null);
-      if (!userIdNumber) {
-        return res.status(401).json({ error: "Invalid user ID" });
-      }
+    // Enhance request with role information for downstream middleware
+    (req as any).user = {
+      id: usernum || parseInt(userId),
+      username: req.session.username,
+      role: req.session.role,
+      roleInfo: roleInfo,
+      permissions: req.session.permissions,
+      employeeId: req.session.employeeId
+    };
 
-      const user = await storage.getUser(userIdNumber);
-      if (!user || !user.isActive) {
-        return res.status(401).json({ error: "User not found or inactive" });
-      }
+    console.log('[AUTH] Multi-role authentication successful:', {
+      username: req.session.username,
+      role: req.session.role,
+      accessLevel: roleInfo.level
+    });
 
-      const rolePermissions = await storage.getRolePermissionByName(user.role);
-      if (!rolePermissions) {
-        return res.status(403).json({ error: "Role permissions not found" });
-      }
-
-      // Check specific permission
-      console.log('Permission check:', permission, 'rolePermissions:', rolePermissions);
-      const hasPermission = (rolePermissions as any)[permission];
-      console.log('hasPermission result:', hasPermission);
-      if (!hasPermission) {
-        return res.status(403).json({ error: `Permission denied: ${permission}` });
-      }
-
-      next();
-    } catch (error) {
-      console.error("Permission check error:", error);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  };
-};
-
-export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-  console.log('Admin middleware - session:', req.session);
-  console.log('Admin middleware - role:', req.session.role);
-  if ((!req.session.userId && !req.session.usernum) || !['admin', 'superadmin', 'general_admin', 'executive_director', 'general_manager'].includes(req.session.role || '')) {
-    return res.status(403).json({ error: "Admin access required" });
+  } catch (error) {
+    console.error('[AUTH] Error validating role:', error);
+    return res.status(500).json({ error: "Authentication system error" });
   }
-  next();
-};
 
-export const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if ((!req.session.userId && !req.session.usernum) || req.session.role !== 'superadmin') {
-    return res.status(403).json({ error: "SuperAdmin access required" });
-  }
-  next();
-};
-
-export const requireManager = (req: Request, res: Response, next: NextFunction) => {
-  if ((!req.session.userId && !req.session.usernum) || !['manager', 'assistant_manager', 'supervisor', 'general_manager', 'executive_director', 'superadmin', 'general_admin'].includes(req.session.role || '')) {
-    return res.status(403).json({ error: "Manager access required" });
-  }
   next();
 };
 
 export const requireAccessLevel = (minLevel: number) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const userNum = req.session.usernum;
-    const userId = req.session.userId;
+    const userNum = req.session?.usernum;
+    const userId = req.session?.userId;
+    const userRole = req.session?.role;
 
     if (!userNum && !userId) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
     try {
-      // Use usernum (number) if available, otherwise convert userId to number
-      const userIdNumber = userNum || (userId ? parseInt(userId, 10) : null);
-      if (!userIdNumber) {
-        return res.status(401).json({ error: "Invalid user ID" });
+      const { roleManagementService } = await import('../services/roleManagementService.ts');
+      const roleInfo = roleManagementService.getRoleById(userRole || '');
+
+      if (!roleInfo) {
+        return res.status(403).json({ error: "Invalid role" });
       }
 
-      const user = await storage.getUser(userIdNumber);
-      if (!user || !user.isActive) {
-        return res.status(401).json({ error: "User not found or inactive" });
+      if (roleInfo.level < minLevel) {
+        console.log(`[ACCESS_LEVEL] Access denied - Required: ${minLevel}, User has: ${roleInfo.level}`);
+        return res.status(403).json({ 
+          error: `Access level ${minLevel} required. Your level: ${roleInfo.level}` 
+        });
       }
 
-      const rolePermissions = await storage.getRolePermissionByName(user.role);
-      if (!rolePermissions || rolePermissions.accessLevel < minLevel) {
-        return res.status(403).json({ error: `Access level ${minLevel} required` });
-      }
-
+      console.log(`[ACCESS_LEVEL] Access granted - Required: ${minLevel}, User has: ${roleInfo.level}`);
       next();
     } catch (error) {
-      console.error("Access level check error:", error);
-      return res.status(500).json({ error: "Internal server error" });
+      console.error("[ACCESS_LEVEL] Access level check error:", error);
+      return res.status(500).json({ error: "Permission system error" });
+    }
+  };
+};
+
+export const requireRole = (allowedRoles: string[]) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const userRole = req.session?.role;
+
+    if (!userRole) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    if (!allowedRoles.includes(userRole)) {
+      console.log(`[ROLE_CHECK] Access denied - Role: ${userRole}, Allowed: ${allowedRoles.join(', ')}`);
+      return res.status(403).json({ 
+        error: `Role access denied. Required roles: ${allowedRoles.join(', ')}` 
+      });
+    }
+
+    console.log(`[ROLE_CHECK] Role access granted - Role: ${userRole}`);
+    next();
+  };
+};
+
+export const requirePermission = (permission: string) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const userRole = req.session?.role;
+
+    if (!userRole) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    try {
+      const { roleManagementService } = await import('../services/roleManagementService.ts');
+      const roleInfo = roleManagementService.getRoleById(userRole);
+
+      if (!roleInfo) {
+        return res.status(403).json({ error: "Invalid role" });
+      }
+
+      const hasPermission = roleManagementService.hasPermission(roleInfo, permission);
+
+      if (!hasPermission) {
+        console.log(`[PERMISSION] Access denied - Permission: ${permission}, Role: ${userRole}`);
+        return res.status(403).json({ 
+          error: `Permission denied: ${permission}` 
+        });
+      }
+
+      console.log(`[PERMISSION] Permission granted - Permission: ${permission}, Role: ${userRole}`);
+      next();
+    } catch (error) {
+      console.error("[PERMISSION] Permission check error:", error);
+      return res.status(500).json({ error: "Permission system error" });
     }
   };
 };
