@@ -161,7 +161,7 @@ router.post('/logout', (req, res) => {
         });
       }
 
-      res.clearCookie('connect.sid');
+      res.clearCookie('nexlinx-session');
       console.log('✅ [LOGOUT] Session destroyed successfully');
       res.json({ success: true });
     });
