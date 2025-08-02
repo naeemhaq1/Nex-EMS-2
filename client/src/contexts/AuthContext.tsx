@@ -59,61 +59,55 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const login = async (username: string, password: string): Promise<boolean> => {
+    console.log('🔐 [AUTH_CONTEXT] Login attempt for:', username);
+    setIsLoading(true);
+    
+
     try {
-      console.log('🚀 [LOGIN DEBUG] Starting login attempt');
-      console.log('🚀 [LOGIN DEBUG] Username:', username);
-      console.log('🚀 [LOGIN DEBUG] Password length:', password.length);
-      console.log('🚀 [LOGIN DEBUG] Request URL:', '/api/auth/login');
+      console.log('🔐 [AUTH_CONTEXT] Making login request to /api/auth/login');
 
-      const requestBody = { username, password };
-      console.log('🚀 [LOGIN DEBUG] Request body:', requestBody);
-
-      const apiUrl = '/api/auth/login';
-      console.log('🚀 [LOGIN DEBUG] Making request to:', apiUrl);
-      
-      const response = await fetch(apiUrl, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ username, password }),
         credentials: 'include',
-        body: JSON.stringify(requestBody),
       });
 
-      console.log('🚀 [LOGIN DEBUG] Response status:', response.status);
-      console.log('🚀 [LOGIN DEBUG] Response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('🔐 [AUTH_CONTEXT] Login response status:', response.status);
+      console.log('🔐 [AUTH_CONTEXT] Login response headers:', Object.fromEntries(response.headers.entries()));
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ [LOGIN DEBUG] Login successful, full response:', data);
-        console.log('✅ [LOGIN DEBUG] User data received:', data.user);
-        console.log('✅ [LOGIN DEBUG] Cookies after login:', document.cookie);
+      let data;
+      try {
+        const responseText = await response.text();
+        console.log('🔐 [AUTH_CONTEXT] Raw response:', responseText);
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        console.error('🔐 [AUTH_CONTEXT] Failed to parse response:', parseError);
+        throw new Error('Invalid response format');
+      }
+
+      console.log('🔐 [AUTH_CONTEXT] Parsed login response:', data);
+
+      if (response.ok && data.success) {
         setUser(data.user);
+        
+        console.log('✅ [AUTH_CONTEXT] Login successful, user set:', data.user);
         return true;
       } else {
-        let errorData;
-        const contentType = response.headers.get('content-type');
-
-        if (contentType && contentType.includes('application/json')) {
-          errorData = await response.json();
-        } else {
-          errorData = { error: await response.text() };
-        }
-
-        console.error('❌ [LOGIN DEBUG] Login failed');
-        console.error('❌ [LOGIN DEBUG] Status:', response.status);
-        console.error('❌ [LOGIN DEBUG] Status text:', response.statusText);
-        console.error('❌ [LOGIN DEBUG] Error data:', errorData);
+        const errorMsg = data.error || `Login failed (Status: ${response.status})`;
+        console.log('❌ [AUTH_CONTEXT] Login failed:', errorMsg);
+        
         return false;
       }
-    } catch (error) {
-      console.error('💥 [LOGIN DEBUG] Login error:', error);
-      console.error('💥 [LOGIN DEBUG] Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
+    } catch (err) {
+      console.error('💥 [AUTH_CONTEXT] Login error:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Network error during login';
+      
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
