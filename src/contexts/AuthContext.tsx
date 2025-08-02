@@ -43,49 +43,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Checking authentication status...');
       
-      // Fast session check with reduced timeout for quick dashboard loading
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000); // Increased timeout for stability
+      // Try multiple auth endpoints for better compatibility
+      const authEndpoints = ['/api/auth/me', '/api/stable-auth/me'];
+      let authSuccess = false;
 
-      const response = await fetch('/api/stable-auth/me', {
-        credentials: 'include',
-        signal: controller.signal,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+      for (const endpoint of authEndpoints) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+          const response = await fetch(endpoint, {
+            credentials: 'include',
+            signal: controller.signal,
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Auth check successful:', data);
+            
+            if (data && (data.id || data.user?.id)) {
+              const userData = data.user || data;
+              setUser(userData);
+              localStorage.setItem('auth-state', JSON.stringify({
+                authenticated: true,
+                userId: userData.id,
+                timestamp: Date.now()
+              }));
+              authSuccess = true;
+              break;
+            }
+          }
+        } catch (error) {
+          console.log(`Auth endpoint ${endpoint} failed:`, error);
+          continue;
         }
-      });
+      }
 
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Auth check successful:', data);
-        
-        if (data && data.id) {
-          setUser(data);
-          localStorage.setItem('auth-state', JSON.stringify({
-            authenticated: true,
-            userId: data.id,
-            timestamp: Date.now()
-          }));
-        } else {
-          console.log('Empty user data received');
-          setUser(null);
-        }
-      } else {
-        console.log('Auth check failed with status:', response.status);
+      if (!authSuccess) {
+        console.log('All auth endpoints failed');
         setUser(null);
-        
-        // Clear any stale auth state
         localStorage.removeItem('auth-state');
       }
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.log('Auth check timeout - continuing gracefully');
-      } else {
-        console.error('Auth check failed:', error);
-      }
+      console.error('Auth check failed:', error);
       setUser(null);
     } finally {
       setLoading(false);
@@ -129,32 +135,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Attempting login for user:', username);
       
-      const response = await fetch('/api/stable-auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-        credentials: 'include',
-      });
+      // Try multiple login endpoints for better compatibility
+      const loginEndpoints = ['/api/auth/login', '/api/stable-auth/login'];
+      
+      for (const endpoint of loginEndpoints) {
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+            credentials: 'include',
+          });
 
-      const data = await response.json();
-      console.log('Login response:', data);
+          const data = await response.json();
+          console.log(`Login response from ${endpoint}:`, data);
 
-      if (response.ok && data.success) {
-        console.log('Login successful, setting user:', data.user);
-        setUser(data.user);
-        setLoading(false);
-        return { success: true };
-      } else {
-        console.log('Login failed:', data.error);
-        return { 
-          success: false, 
-          error: data.error || 'Login failed',
-          requiresPasswordChange: data.requiresPasswordChange,
-          userId: data.userId
-        };
+          if (response.ok && (data.success || data.user)) {
+            const userData = data.user || data;
+            console.log('Login successful, setting user:', userData);
+            setUser(userData);
+            setLoading(false);
+            
+            // Store auth state
+            localStorage.setItem('auth-state', JSON.stringify({
+              authenticated: true,
+              userId: userData.id,
+              timestamp: Date.now()
+            }));
+            
+            return { success: true };
+          } else if (data.error) {
+            return { 
+              success: false, 
+              error: data.error || 'Login failed',
+              requiresPasswordChange: data.requiresPasswordChange,
+              userId: data.userId
+            };
+          }
+        } catch (error) {
+          console.log(`Login endpoint ${endpoint} failed:`, error);
+          continue;
+        }
       }
+      
+      return { success: false, error: 'All login endpoints failed. Please try again.' };
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Network error occurred. Please try again.' };

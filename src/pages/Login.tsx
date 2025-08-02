@@ -31,13 +31,13 @@ export default function Login() {
 
     try {
       console.log('Login form submitted for user:', username);
-      
+
       // Clear any previous auth state
       localStorage.removeItem('auth-state');
-      
+
       const result = await login(username, password);
       console.log('Login result:', result);
-      
+
       if (!result.success) {
         // Check if this is a first-time password change requirement
         if (result.error === "Password change required" && result.requiresPasswordChange && result.userId) {
@@ -83,7 +83,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1A1B3E] via-[#2A2B5E] to-[#1A1B3E] flex items-center justify-center p-4">
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        
+
         {/* Left Side - Branding & Features */}
         <div className="hidden lg:block text-white space-y-8">
           <div className="text-center">
@@ -99,7 +99,7 @@ export default function Login() {
               Employee Management System
             </p>
           </div>
-          
+
           <div className="space-y-6">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center">
@@ -110,7 +110,7 @@ export default function Login() {
                 <p className="text-gray-400">Comprehensive workforce tracking and analytics</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center">
                 <Clock className="w-6 h-6 text-white" />
@@ -120,7 +120,7 @@ export default function Login() {
                 <p className="text-gray-400">Real-time biometric and mobile punch tracking</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center">
                 <Shield className="w-6 h-6 text-white" />
@@ -152,7 +152,7 @@ export default function Login() {
                   Sign in to access your dashboard
                 </CardDescription>
               </CardHeader>
-              
+
               <CardContent className="space-y-6">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {error && (
@@ -160,7 +160,7 @@ export default function Login() {
                       <AlertDescription className="text-red-200">{error}</AlertDescription>
                     </Alert>
                   )}
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="username" className="text-gray-200 font-medium">
                       Username
@@ -175,7 +175,7 @@ export default function Login() {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="password" className="text-gray-200 font-medium">
                       Password
@@ -205,7 +205,7 @@ export default function Login() {
                       </Button>
                     </div>
                   </div>
-                  
+
                   <Button 
                     type="submit" 
                     className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-md transition-all duration-300 transform hover:scale-105"
@@ -224,7 +224,7 @@ export default function Login() {
                     )}
                   </Button>
                 </form>
-                
+
                 <div className="flex justify-center">
                   <Button 
                     type="button"
@@ -236,7 +236,7 @@ export default function Login() {
                     Forgot Password?
                   </Button>
                 </div>
-                
+
                 <div className="text-center">
                   <p className="text-sm text-gray-400">
                     Powered by Nexlinx Networks

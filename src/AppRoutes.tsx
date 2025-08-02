@@ -34,27 +34,42 @@ export default function AppRoutes() {
   if (!user) {
     return (
       <Switch>
+        <Route path="/login" component={Login} />
         <Route path="/" component={Login} />
         <Route>
-          <Redirect to="/" />
+          <Redirect to="/login" />
         </Route>
       </Switch>
     );
   }
 
+  // Check if we're on mobile
+  const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <Switch>
         {/* Mobile Routes */}
-        <Route path="/mobile" component={MobileRedirectHandler} />
-        <Route path="/mobile/admin/dashboard" component={MobileAdminDashboard} />
-        <Route path="/mobile/employee/dashboard" component={MobileEmployeeDashboard} />
-        
-        {/* Fallback mobile admin route */}
-        <Route path="/mobile/admin" component={MobileAdminDashboard} />
+        <Route path="/mobile/admin/dashboard">
+          {() => <MobileAdminDashboard />}
+        </Route>
+        <Route path="/mobile/employee/dashboard">
+          {() => <MobileEmployeeDashboard />}
+        </Route>
+        <Route path="/mobile/admin">
+          {() => <MobileAdminDashboard />}
+        </Route>
+        <Route path="/mobile">
+          {() => {
+            if (user.role === 'admin' || user.role === 'super_admin') {
+              return <Redirect to="/mobile/admin/dashboard" />;
+            } else {
+              return <Redirect to="/mobile/employee/dashboard" />;
+            }
+          }}
+        </Route>
         
         {/* Desktop Routes */}
-        <Route path="/" component={Dashboard} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/employees" component={EmployeeDirectory} />
         <Route path="/attendance" component={AttendanceRecords} />
@@ -63,9 +78,30 @@ export default function AppRoutes() {
         <Route path="/role-management" component={RoleManagement} />
         <Route path="/settings" component={Settings} />
         
+        {/* Root route - redirect based on device and role */}
+        <Route path="/">
+          {() => {
+            if (isMobile) {
+              if (user.role === 'admin' || user.role === 'super_admin') {
+                return <Redirect to="/mobile/admin/dashboard" />;
+              } else {
+                return <Redirect to="/mobile/employee/dashboard" />;
+              }
+            } else {
+              return <Redirect to="/dashboard" />;
+            }
+          }}
+        </Route>
+        
         {/* Fallback */}
         <Route>
-          <Redirect to="/dashboard" />
+          {() => {
+            if (isMobile) {
+              return <Redirect to="/mobile" />;
+            } else {
+              return <Redirect to="/dashboard" />;
+            }
+          }}
         </Route>
       </Switch>
     </Suspense>
