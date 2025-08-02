@@ -14,7 +14,7 @@ deploymentTarget = "gce"
 ignorePorts = false
 
 [workflows]
-runButton = "Start NEXLINX Simple"
+runButton = "Start NEXLINX EMS"
 
 [[workflows.workflow]]
 name = "Start Nexlinx EMS"
@@ -33,10 +33,6 @@ args = "npm run dev"
 name = "Start NEXLINX EMS"
 author = 42660592
 mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm install"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -96,6 +92,15 @@ args = "node index.js"
 
 [[workflows.workflow]]
 name = "Start NEXLINX Simple"
+author = 42660592
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node index.js"
+
+[[workflows.workflow]]
+name = "Start NEXLINX EMS Restored"
 author = 42660592
 mode = "sequential"
 
