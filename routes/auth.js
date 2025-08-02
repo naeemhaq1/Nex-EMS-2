@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { storage } from '../storage.js';
-import { authService } from '../services/auth.ts';
 import bcrypt from 'bcrypt';
 
 const router = Router();
