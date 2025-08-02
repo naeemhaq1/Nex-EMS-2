@@ -31,9 +31,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const checkAuth = async (): Promise<boolean> => {
     try {
-      console.log('Checking authentication with stable auth...');
+      console.log('Checking authentication...');
 
-      const response = await fetch('/api/stable-auth/me', {
+      const response = await fetch('/api/auth/me', {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -42,9 +42,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
 
       if (response.ok) {
-        const userData = await response.json();
-        console.log('Auth check successful:', userData);
-        setUser(userData);
+        const data = await response.json();
+        console.log('Auth check successful:', data);
+        setUser(data.user);
         return true;
       } else {
         console.log('Auth check failed, no valid session');
@@ -60,9 +60,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      console.log('Attempting login with stable auth:', { username });
+      console.log('Attempting login:', { username });
 
-      const response = await fetch('/api/stable-auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     try {
-      await fetch('/api/stable-auth/logout', {
+      await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
       });
