@@ -326,7 +326,6 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/stable-auth', stableAuthRoutes);
-app.use('/api/stable-auth', stableAuthTSRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Serve the React app for all other routes

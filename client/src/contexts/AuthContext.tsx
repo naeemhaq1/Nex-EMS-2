@@ -4,17 +4,14 @@ import { useLocation } from 'wouter';
 interface User {
   id: string;
   username: string;
-  name: string;
   role: string;
-  isAdmin?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
-  isLoading: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
-  checkAuth: () => Promise<boolean>;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,54 +24,35 @@ export const useAuth = () => {
   return context;
 };
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [, setLocation] = useLocation();
 
   const checkAuth = async (): Promise<boolean> => {
     try {
-      console.log('Checking authentication status...');
-      
-      // Use the same stable auth endpoint as desktop
+      console.log('Checking authentication with stable auth...');
+
       const response = await fetch('/api/stable-auth/me', {
         method: 'GET',
         credentials: 'include',
         headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
+          'Content-Type': 'application/json',
+        },
       });
 
       if (response.ok) {
         const userData = await response.json();
         console.log('Auth check successful:', userData);
-        
-        if (userData && userData.id) {
-          setUser({
-            id: userData.id.toString(),
-            username: userData.username,
-            name: userData.username || `User ${userData.id}`,
-            role: userData.role || 'employee',
-            isAdmin: ['admin', 'super_admin', 'superadmin'].includes(userData.role)
-          });
-          return true;
-        } else {
-          console.log('Empty user data received');
-          setUser(null);
-          return false;
-        }
+        setUser(userData);
+        return true;
       } else {
-        console.log('Auth check failed with status:', response.status);
+        console.log('Auth check failed, no valid session');
         setUser(null);
         return false;
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('Auth check error:', error);
       setUser(null);
       return false;
     }
@@ -82,10 +60,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      setIsLoading(true);
-      console.log('Attempting login for user:', username);
-      
-      // Use the same stable auth endpoint as desktop
+      console.log('Attempting login with stable auth:', { username });
+
       const response = await fetch('/api/stable-auth/login', {
         method: 'POST',
         headers: {
@@ -99,41 +75,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('Login response:', data);
 
       if (response.ok && data.success) {
-        console.log('Login successful, setting user:', data.user);
-        setUser({
-          id: data.user.id.toString(),
-          username: data.user.username,
-          name: data.user.username || `User ${data.user.id}`,
-          role: data.user.role || 'employee',
-          isAdmin: ['admin', 'super_admin', 'superadmin'].includes(data.user.role)
-        });
+        setUser(data.user);
+        console.log('Login successful, user set:', data.user);
         return true;
       } else {
-        console.log('Login failed:', data.error);
+        console.log('Login failed:', data.error || 'Unknown error');
         return false;
       }
     } catch (error) {
       console.error('Login error:', error);
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    // Use the same stable auth endpoint as desktop
-    fetch('/api/stable-auth/logout', {
-      method: 'POST',
-      credentials: 'include',
-    }).catch(console.error);
+  const logout = async () => {
+    try {
+      await fetch('/api/stable-auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
 
     setUser(null);
     setLocation('/');
   };
 
   useEffect(() => {
-    // Check auth on mount using the same flow as desktop
     const initAuth = async () => {
+      console.log('Initializing auth context...');
       setIsLoading(true);
       await checkAuth();
       setIsLoading(false);
@@ -147,7 +118,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     logout,
-    checkAuth,
   };
 
   return (
