@@ -274,7 +274,8 @@ export function Sidebar() {
   }
 
   if (user?.role === "employee") {
-    // Employee portal handles its own layout and sidebar
+    // Redirect employees to their dedicated portal
+    window.location.href = '/employee-portal';
     return null;
   }
 
