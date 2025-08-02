@@ -36,70 +36,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [, setLocation] = useLocation();
 
-  // Auto-login function disabled to prevent conflicts
-  // const checkAuth = async () => {
-  //   try {
-  //     console.log('Checking authentication status...');
-  //
-  //     // Create abort controller for timeout handling
-  //     const controller = new AbortController();
-  //     const timeoutId = setTimeout(() => controller.abort(), 2000); // 2-second timeout
-
-  //     const response = await fetch('/api/auth/user', {
-  //       method: 'GET',
-  //       credentials: 'include',
-  //       signal: controller.signal
-  //     });
-
-  //     clearTimeout(timeoutId);
-
-  //     if (response.ok) {
-  //       const data = await response.json();
-  //       console.log('Auto-login successful:', data);
-  //       if (data.success && data.user) {
-  //         setUser(data.user);
-  //         console.log('User set in context:', data.user);
-  //       }
-  //       setLoading(false);
-  //     } else {
-  //       console.log('Auto-login failed with status:', response.status);
-  //       setUser(null);
-  //       setLoading(false);
-  //     }
-  //   } catch (error: any) {
-  //     if (error.name === 'AbortError') {
-  //       console.log('Auto-login timeout - gracefully handled');
-  //       // Suppress AbortError to prevent runtime error plugin notifications
-  //       console.log('Unhandled AbortError promise rejection caught and suppressed');
-  //       setUser(null);
-  //       setLoading(false);
-  //       return;
-  //     } else {
-  //       console.error('Auto-login error:', error);
-  //     }
-  //     setUser(null);
-  //     setLoading(false);
-  //   }
-  // };
-
   const checkAuth = async (): Promise<boolean> => {
     try {
-      const response = await fetch('/api/auth/check', {
+      console.log('Checking authentication status...');
+      
+      // Use the same stable auth endpoint as desktop
+      const response = await fetch('/api/stable-auth/me', {
         method: 'GET',
         credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
       });
 
       if (response.ok) {
         const userData = await response.json();
-        setUser({
-          id: userData.id,
-          username: userData.username,
-          name: userData.name || userData.username,
-          role: userData.role || 'employee',
-          isAdmin: userData.role === 'admin' || userData.role === 'super_admin'
-        });
-        return true;
+        console.log('Auth check successful:', userData);
+        
+        if (userData && userData.id) {
+          setUser({
+            id: userData.id.toString(),
+            username: userData.username,
+            name: userData.username || `User ${userData.id}`,
+            role: userData.role || 'employee',
+            isAdmin: ['admin', 'super_admin', 'superadmin'].includes(userData.role)
+          });
+          return true;
+        } else {
+          console.log('Empty user data received');
+          setUser(null);
+          return false;
+        }
       } else {
+        console.log('Auth check failed with status:', response.status);
         setUser(null);
         return false;
       }
@@ -113,7 +83,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/auth/login', {
+      console.log('Attempting login for user:', username);
+      
+      // Use the same stable auth endpoint as desktop
+      const response = await fetch('/api/stable-auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -122,18 +95,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         body: JSON.stringify({ username, password }),
       });
 
-      if (response.ok) {
-        const userData = await response.json();
+      const data = await response.json();
+      console.log('Login response:', data);
+
+      if (response.ok && data.success) {
+        console.log('Login successful, setting user:', data.user);
         setUser({
-          id: userData.id,
-          username: userData.username,
-          name: userData.name || userData.username,
-          role: userData.role || 'employee',
-          isAdmin: userData.role === 'admin' || userData.role === 'super_admin'
+          id: data.user.id.toString(),
+          username: data.user.username,
+          name: data.user.username || `User ${data.user.id}`,
+          role: data.user.role || 'employee',
+          isAdmin: ['admin', 'super_admin', 'superadmin'].includes(data.user.role)
         });
         return true;
       } else {
-        console.error('Login error:', await response.text());
+        console.log('Login failed:', data.error);
         return false;
       }
     } catch (error) {
@@ -145,7 +121,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    fetch('/api/auth/logout', {
+    // Use the same stable auth endpoint as desktop
+    fetch('/api/stable-auth/logout', {
       method: 'POST',
       credentials: 'include',
     }).catch(console.error);
@@ -155,9 +132,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    // Disabled auto-login to prevent conflicts
-    console.log('Auto-login disabled - manual login required');
-    setIsLoading(false);
+    // Check auth on mount using the same flow as desktop
+    const initAuth = async () => {
+      setIsLoading(true);
+      await checkAuth();
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const value: AuthContextType = {
