@@ -7,7 +7,7 @@ async function createTestUser() {
     console.log('🔧 Creating multi-role test user...');
     
     // Check if test user already exists
-    const existingUser = await storage.getUserByUsername('test');
+    const existingUser = storage.getUserByUsername('test');
     if (existingUser) {
       console.log('✅ Test user already exists:', {
         id: existingUser.id,
@@ -15,6 +15,18 @@ async function createTestUser() {
         role: existingUser.role,
         isActive: existingUser.isActive
       });
+      
+      // Test password verification
+      const passwordTest = await bcrypt.compare('test', existingUser.password);
+      console.log('✅ Password verification test:', passwordTest ? 'PASSED' : 'FAILED');
+      
+      if (!passwordTest) {
+        console.log('🔄 Updating password for existing user...');
+        const hashedPassword = await bcrypt.hash('test', 10);
+        await storage.updateUser(existingUser.id, { password: hashedPassword });
+        console.log('✅ Password updated successfully');
+      }
+      
       return;
     }
     
@@ -33,32 +45,25 @@ async function createTestUser() {
       lastName: 'User',
       realName: 'Test User',
       isTemporaryPassword: false,
-      createdAt: new Date(),
       lastPasswordChange: new Date()
     };
     
     // Create user
-    const userId = await storage.createUser(testUser);
+    const createdUser = await storage.createUser(testUser);
     console.log('✅ Multi-role test user created successfully:', {
-      id: userId,
-      username: testUser.username,
-      role: testUser.role,
-      employeeId: testUser.employeeId
+      id: createdUser.id,
+      username: createdUser.username,
+      role: createdUser.role,
+      employeeId: createdUser.employeeId
     });
     
     // Verify user creation
-    const createdUser = await storage.getUserByUsername('test');
-    if (createdUser) {
-      console.log('✅ User verification successful:', {
-        id: createdUser.id,
-        username: createdUser.username,
-        role: createdUser.role,
-        hasPassword: !!createdUser.password,
-        passwordLength: createdUser.password?.length
-      });
+    const verifyUser = storage.getUserByUsername('test');
+    if (verifyUser) {
+      console.log('✅ User verification successful');
       
       // Test password verification
-      const passwordTest = await bcrypt.compare('test', createdUser.password);
+      const passwordTest = await bcrypt.compare('test', verifyUser.password);
       console.log('✅ Password verification test:', passwordTest ? 'PASSED' : 'FAILED');
     }
     

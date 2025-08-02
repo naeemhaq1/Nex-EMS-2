@@ -1,6 +1,4 @@
-
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -28,31 +26,21 @@ class Storage {
       if (existsSync(this.dataFile)) {
         const data = readFileSync(this.dataFile, 'utf8');
         this.users = JSON.parse(data);
-        console.log(`📁 Loaded ${this.users.length} users from storage`);
+        console.log(`📂 Loaded ${this.users.length} users from storage`);
       } else {
         this.users = [];
         this.saveData();
-        console.log('📁 Created new empty user storage');
+        console.log('📂 Created new user storage file');
       }
     } catch (error) {
       console.error('❌ Error loading user data:', error);
       this.users = [];
-      this.saveData();
     }
   }
 
   saveData() {
     try {
       writeFileSync(this.dataFile, JSON.stringify(this.users, null, 2));
-      console.log(`💾 Saved ${this.users.length} users to storage`);
-    } catch (error) {
-      console.error('❌ Error saving user data:', error);
-    }
-  }
-
-  async saveDataAsync() {
-    try {
-      await writeFile(this.dataFile, JSON.stringify(this.users, null, 2));
       console.log(`💾 Saved ${this.users.length} users to storage`);
     } catch (error) {
       console.error('❌ Error saving user data:', error);
@@ -75,12 +63,12 @@ class Storage {
     const newUser = {
       id: this.users.length > 0 ? Math.max(...this.users.map(u => u.id)) + 1 : 1,
       ...userData,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
       isActive: true
     };
-    
+
     this.users.push(newUser);
-    await this.saveDataAsync();
+    this.saveData();
     console.log(`✅ Created user: ${newUser.username} (ID: ${newUser.id})`);
     return newUser;
   }
@@ -89,11 +77,10 @@ class Storage {
     const index = this.users.findIndex(user => user.id === parseInt(id));
     if (index !== -1) {
       this.users[index] = { ...this.users[index], ...updates };
-      await this.saveDataAsync();
+      this.saveData();
       console.log(`✅ Updated user ID ${id}`);
       return this.users[index];
     }
-    console.log(`❌ User ID ${id} not found for update`);
     return null;
   }
 
