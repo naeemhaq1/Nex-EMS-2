@@ -1,5 +1,70 @@
-import { apiRequest } from "./queryClient";
+import { useQuery as useReactQuery, UseQueryOptions } from '@tanstack/react-query';
 import type { Employee, AttendanceRecord, User } from "@shared/schema";
+
+// API base configuration
+const API_BASE = '';
+
+// Generic fetch function with error handling
+async function apiRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const url = `${API_BASE}${endpoint}`;
+
+  const response = await fetch(url, {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    const error = new Error(`HTTP error! status: ${response.status}`);
+    (error as any).status = response.status;
+    throw error;
+  }
+
+  return response.json();
+}
+
+// Custom useQuery hook with error handling
+export function useQuery<TData = unknown>(
+  endpoint: string,
+  options?: Partial<UseQueryOptions<TData, Error>>
+) {
+  return useReactQuery<TData, Error>({
+    queryKey: [endpoint],
+    queryFn: () => apiRequest<TData>(endpoint),
+    retry: (failureCount, error: any) => {
+      // Don't retry on auth errors
+      if (error?.status === 401 || error?.status === 403) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    staleTime: 30000, // 30 seconds
+    ...options,
+  });
+}
+
+// Specific API functions
+export const api = {
+  // Dashboard metrics
+  getDashboardMetrics: () => apiRequest('/api/admin/dashboard-metrics'),
+  getSystemMetrics: () => apiRequest('/api/admin/system-metrics'),
+
+  // Analytics
+  getAnalytics: () => apiRequest('/api/analytics/dashboard'),
+  getDepartmentData: () => apiRequest('/api/analytics/departments'),
+
+  // Daily metrics  
+  getTodayMetrics: () => apiRequest('/api/daily-metrics/today'),
+
+  // Recent activity
+  getRecentActivity: () => apiRequest('/api/admin/recent-activity'),
+
+  // Polling status
+  getPollingStatus: () => apiRequest('/api/admin/polling/status'),
+};
 
 export interface PaginatedResponse<T> {
   data: T[];
