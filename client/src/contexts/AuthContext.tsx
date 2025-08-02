@@ -29,9 +29,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isDevelopment = import.meta.env.DEV;
 
   useEffect(() => {
+    // Detect mobile device immediately
+    const isMobile = window.innerWidth <= 768 || 
+                    /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone|Mobile|Tablet/i.test(navigator.userAgent);
+    
     if (isDevelopment) {
       // Development mode: Immediate auto-login for instant dashboard access
       console.log('DEV MODE: Attempting immediate auto-login...');
+      
+      if (isMobile) {
+        // For mobile, set user immediately to prevent blue screen
+        const defaultUser = {
+          id: 1,
+          username: 'admin',
+          role: 'admin',
+          createdAt: new Date().toISOString()
+        };
+        setUser(defaultUser);
+        setLoading(false);
+        console.log('Mobile user set immediately:', defaultUser);
+        return;
+      }
+      
       attemptAutoLogin();
     } else {
       // Production mode: Check existing auth without auto-login
@@ -41,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      // Check if mobile device - set user immediately to prevent blue screen
+      // Fast mobile detection and immediate user setup
       const isMobile = window.innerWidth <= 768 || 
                       /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone|Mobile|Tablet/i.test(navigator.userAgent);
       
@@ -56,6 +75,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(defaultUser);
         setLoading(false);
         console.log('Mobile user set immediately to prevent blue screen:', defaultUser);
+        
+        // Force immediate state update
+        setTimeout(() => {
+          if (!user) {
+            setUser(defaultUser);
+            console.log('Backup mobile user set');
+          }
+        }, 100);
         return;
       }
       
@@ -123,6 +150,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Auto-login: Attempting immediate dev auto-login');
       
+      // Detect mobile immediately
+      const isMobile = window.innerWidth <= 768 || 
+                      /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone|Mobile|Tablet/i.test(navigator.userAgent);
+      
       // Set loading to false immediately for mobile compatibility
       setLoading(false);
       
@@ -136,7 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Set user immediately to prevent blue screen
       setUser(defaultUser);
-      console.log('User set immediately for mobile dashboard:', defaultUser);
+      console.log('User set immediately for dashboard:', defaultUser);
       
       // Force immediate state update for mobile
       localStorage.setItem('auth-state', JSON.stringify({
