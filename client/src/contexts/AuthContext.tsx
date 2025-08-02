@@ -60,7 +60,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      console.log('Attempting login:', { username });
+      console.log('🚀 [LOGIN DEBUG] Starting login attempt');
+      console.log('🚀 [LOGIN DEBUG] Username:', username);
+      console.log('🚀 [LOGIN DEBUG] Password length:', password.length);
+      console.log('🚀 [LOGIN DEBUG] Request URL:', '/api/auth/login');
+
+      const requestBody = { username, password };
+      console.log('🚀 [LOGIN DEBUG] Request body:', requestBody);
 
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -68,22 +74,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(requestBody),
       });
 
-      const data = await response.json();
-      console.log('Login response:', data);
+      console.log('🚀 [LOGIN DEBUG] Response status:', response.status);
+      console.log('🚀 [LOGIN DEBUG] Response headers:', Object.fromEntries(response.headers.entries()));
 
-      if (response.ok && data.success) {
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ [LOGIN DEBUG] Login successful, full response:', data);
+        console.log('✅ [LOGIN DEBUG] User data received:', data.user);
+        console.log('✅ [LOGIN DEBUG] Cookies after login:', document.cookie);
         setUser(data.user);
-        console.log('Login successful, user set:', data.user);
         return true;
       } else {
-        console.log('Login failed:', data.error || 'Unknown error');
+        let errorData;
+        const contentType = response.headers.get('content-type');
+
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await response.json();
+        } else {
+          errorData = { error: await response.text() };
+        }
+
+        console.error('❌ [LOGIN DEBUG] Login failed');
+        console.error('❌ [LOGIN DEBUG] Status:', response.status);
+        console.error('❌ [LOGIN DEBUG] Status text:', response.statusText);
+        console.error('❌ [LOGIN DEBUG] Error data:', errorData);
         return false;
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('💥 [LOGIN DEBUG] Login error:', error);
+      console.error('💥 [LOGIN DEBUG] Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       return false;
     }
   };
