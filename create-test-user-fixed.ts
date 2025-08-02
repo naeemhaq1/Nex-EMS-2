@@ -7,21 +7,25 @@ async function createTestUser() {
     console.log('🔧 Creating test user...');
     
     // Check if test user already exists
-    const existingUser = await storage.getUserByUsername('test');
+    const existingUser = storage.getUserByUsername('test');
     
     if (existingUser) {
       console.log('✅ Test user already exists');
       console.log('Username: test');
       console.log('Password: test');
       console.log('Role:', existingUser.role);
+      console.log('ID:', existingUser.id);
+      console.log('Active:', existingUser.isActive);
       return;
     }
 
+    console.log('🔐 Hashing password...');
     // Hash the password
     const hashedPassword = await bcrypt.hash('test', 10);
+    console.log('✅ Password hashed successfully');
     
     // Create test user
-    const testUser = await storage.createUser({
+    const testUser = storage.createUser({
       username: 'test',
       password: hashedPassword,
       role: 'admin',
@@ -36,13 +40,24 @@ async function createTestUser() {
     console.log('Password: test');
     console.log('Role:', testUser.role);
     console.log('ID:', testUser.id);
+    console.log('Employee ID:', testUser.employeeId);
+
+    // Test password verification
+    console.log('🧪 Testing password verification...');
+    const isValid = await bcrypt.compare('test', testUser.password);
+    console.log('Password verification test:', isValid ? '✅ PASS' : '❌ FAIL');
 
   } catch (error) {
     console.error('❌ Error creating test user:', error);
+    console.error('Error details:', error.message);
+    console.error('Stack trace:', error.stack);
   }
 }
 
 createTestUser().then(() => {
   console.log('Test user setup completed');
   process.exit(0);
-}).catch(console.error);
+}).catch((error) => {
+  console.error('Script failed:', error);
+  process.exit(1);
+});

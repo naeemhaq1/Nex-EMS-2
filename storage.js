@@ -1,5 +1,5 @@
 
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -8,15 +8,15 @@ const __dirname = dirname(__filename);
 
 class Storage {
   constructor() {
-    this.dataFile = join(__dirname, 'data', 'users.json');
+    this.dataDir = join(__dirname, 'data');
+    this.dataFile = join(this.dataDir, 'users.json');
     this.ensureDataDirectory();
     this.loadData();
   }
 
   ensureDataDirectory() {
-    const dataDir = join(__dirname, 'data');
-    if (!existsSync(dataDir)) {
-      import('fs').then(fs => fs.mkdirSync(dataDir, { recursive: true }));
+    if (!existsSync(this.dataDir)) {
+      mkdirSync(this.dataDir, { recursive: true });
     }
   }
 
@@ -25,33 +25,41 @@ class Storage {
       if (existsSync(this.dataFile)) {
         const data = readFileSync(this.dataFile, 'utf8');
         this.users = JSON.parse(data);
+        console.log(`📁 Loaded ${this.users.length} users from storage`);
       } else {
         this.users = [];
         this.saveData();
+        console.log('📁 Created new empty user storage');
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('❌ Error loading user data:', error);
       this.users = [];
+      this.saveData();
     }
   }
 
   saveData() {
     try {
       writeFileSync(this.dataFile, JSON.stringify(this.users, null, 2));
+      console.log(`💾 Saved ${this.users.length} users to storage`);
     } catch (error) {
-      console.error('Error saving data:', error);
+      console.error('❌ Error saving user data:', error);
     }
   }
 
-  async getUserByUsername(username) {
-    return this.users.find(user => user.username === username);
+  getUserByUsername(username) {
+    const user = this.users.find(user => user.username === username);
+    console.log(`🔍 Looking for user "${username}": ${user ? 'FOUND' : 'NOT FOUND'}`);
+    return user;
   }
 
-  async getUserById(id) {
-    return this.users.find(user => user.id === id);
+  getUserById(id) {
+    const user = this.users.find(user => user.id === parseInt(id));
+    console.log(`🔍 Looking for user ID ${id}: ${user ? 'FOUND' : 'NOT FOUND'}`);
+    return user;
   }
 
-  async createUser(userData) {
+  createUser(userData) {
     const newUser = {
       id: this.users.length > 0 ? Math.max(...this.users.map(u => u.id)) + 1 : 1,
       ...userData,
@@ -61,20 +69,23 @@ class Storage {
     
     this.users.push(newUser);
     this.saveData();
+    console.log(`✅ Created user: ${newUser.username} (ID: ${newUser.id})`);
     return newUser;
   }
 
-  async updateUser(id, updates) {
-    const index = this.users.findIndex(user => user.id === id);
+  updateUser(id, updates) {
+    const index = this.users.findIndex(user => user.id === parseInt(id));
     if (index !== -1) {
       this.users[index] = { ...this.users[index], ...updates };
       this.saveData();
+      console.log(`✅ Updated user ID ${id}`);
       return this.users[index];
     }
+    console.log(`❌ User ID ${id} not found for update`);
     return null;
   }
 
-  async getAllUsers() {
+  getAllUsers() {
     return this.users;
   }
 }
