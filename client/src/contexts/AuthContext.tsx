@@ -68,7 +68,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const requestBody = { username, password };
       console.log('🚀 [LOGIN DEBUG] Request body:', requestBody);
 
-      const response = await fetch('/api/auth/login', {
+      const apiUrl = '/api/auth/login';
+      console.log('🚀 [LOGIN DEBUG] Making request to:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

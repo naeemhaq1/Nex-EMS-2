@@ -5,6 +5,16 @@ import bcrypt from 'bcrypt';
 
 const router = Router();
 
+// Test endpoint
+router.get('/test', (req, res) => {
+  console.log('🧪 [AUTH TEST] Test endpoint hit');
+  res.json({ 
+    success: true, 
+    message: 'Auth routes are working',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Login endpoint
 router.post('/login', async (req, res) => {
   try {

@@ -345,16 +345,47 @@ app.get('/api/reports/summary', (req, res) => {
   });
 });
 
-// Mount existing routes with error handling
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`🌐 [REQUEST] ${req.method} ${req.url}`);
+  console.log(`🌐 [HEADERS] ${JSON.stringify(req.headers)}`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log(`🌐 [BODY] ${JSON.stringify(req.body)}`);
+  }
+  next();
+});
+
+// Routes - Auth routes first
+console.log('📍 Registering auth routes at /api/auth');
 if (authRoutes) app.use('/api/auth', authRoutes);
-if (stableAuthRoutes) app.use('/api/stable-auth', stableAuthRoutes);
-if (sessionRoutes) app.use('/api/sessions', sessionRoutes);
-if (dataInterfaceRoutes) app.use('/api/data', dataInterfaceRoutes);
-if (employeesRoutes) app.use('/api/employees', employeesRoutes);
-if (dashboardRoutes) app.use('/api/dashboard', dashboardRoutes);
-if (attendanceRoutes) app.use('/api/attendance', attendanceRoutes);
-if (reportsRoutes) app.use('/api/reports', reportsRoutes);
 if (adminRoutes) app.use('/api/admin', adminRoutes);
+if (employeesRoutes) app.use('/api/employees', employeesRoutes);
+if (attendanceRoutes) app.use('/api/attendance', attendanceRoutes);
+if (dashboardRoutes) app.use('/api/dashboard', dashboardRoutes);
+if (dataQualityRoutes) app.use('/api/data-quality', dataQualityRoutes);
+if (dataInterfaceRoutes) app.use('/api/data-interface', dataInterfaceRoutes);
+if (reportsRoutes) app.use('/api/reports', reportsRoutes);
+if (sessionRoutes) app.use('/api/session', sessionRoutes);
+if (stableAuthRoutes) app.use('/api/stable-auth', stableAuthRoutes);
+
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  console.log(`❌ [404] API route not found: ${req.method} ${req.url}`);
+  res.status(404).json({ 
+    success: false, 
+    error: `API route not found: ${req.method} ${req.url}` 
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('💥 [ERROR] Unhandled error:', err);
+  res.status(500).json({ 
+    success: false, 
+    error: 'Internal server error',
+    details: err.message 
+  });
+});
 
 // Serve the React app for all other routes
 app.get('*', (req, res) => {
