@@ -36,17 +36,26 @@ export class AuthService {
 
   async login(username: string, password: string) {
     try {
+      console.log('🔐 [AUTH_SERVICE] Login attempt for:', username);
+      
       // Trim trailing spaces from username
       const trimmedUsername = username.trim();
+      console.log('🔐 [AUTH_SERVICE] Trimmed username:', trimmedUsername);
+      
       const user = await storage.getUserByUsername(trimmedUsername);
+      console.log('🔐 [AUTH_SERVICE] User found:', user ? 'Yes' : 'No');
       
       if (!user) {
+        console.log('🔐 [AUTH_SERVICE] User not found in database');
         return { success: false, error: "Invalid username or password" };
       }
 
+      console.log('🔐 [AUTH_SERVICE] Checking password...');
       const isValidPassword = await bcrypt.compare(password, user.password);
+      console.log('🔐 [AUTH_SERVICE] Password valid:', isValidPassword);
       
       if (!isValidPassword) {
+        console.log('🔐 [AUTH_SERVICE] Password verification failed');
         return { success: false, error: "Invalid username or password" };
       }
 
