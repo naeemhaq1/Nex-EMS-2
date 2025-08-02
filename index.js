@@ -140,6 +140,7 @@ import attendanceRoutes from './routes/attendance.js';
 import reportsRoutes from './routes/reports.js';
 import stableAuthRoutes from './routes/stableAuth.js';
 import adminRoutes from './routes/admin.js';
+import stableAuthTSRoutes from './routes/stableAuth.ts';
 
 // Dev auto-login endpoint for mobile - Optimized for instant response
 app.post('/api/dev/auto-login', (req, res) => {
@@ -325,6 +326,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/stable-auth', stableAuthRoutes);
+app.use('/api/stable-auth', stableAuthTSRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Serve the React app for all other routes

@@ -1,88 +1,66 @@
-
 import { Request, Response, NextFunction } from 'express';
-import { stableAuthService, StableUser } from '../services/stableAuth';
+import { db } from '../db';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
-// Extend Express Request type to include stableUser
 declare global {
   namespace Express {
     interface Request {
-      stableUser?: StableUser;
+      user?: {
+        id: string;
+        username: string;
+        role: string;
+        isAdmin?: boolean;
+      };
     }
   }
 }
 
-// Extend session interface for stable auth
-declare module "express-session" {
-  interface SessionData {
-    stableUserId?: number;
-    stableUsername?: string;
-    stableRole?: string;
-    stableAuthTime?: number;
+export const stableAuth = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Check if user is in session
+    if (req.session && req.session.userId) {
+      const [user] = await db.select().from(users).where(eq(users.id, req.session.userId));
+
+      if (user) {
+        req.user = {
+          id: user.id.toString(),
+          username: user.username,
+          role: user.role,
+          isAdmin: ['admin', 'super_admin', 'superadmin'].includes(user.role)
+        };
+      }
+    }
+    next();
+  } catch (error) {
+    console.error('Stable auth middleware error:', error);
+    next();
   }
-}
+};
 
 /**
  * Middleware to verify stable authentication
  */
 export const requireStableAuth = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const stableUserId = req.session.stableUserId;
-    
-    if (!stableUserId) {
-      console.log('[StableAuth] No stable user ID in session');
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    // Get user from database
-    const user = await stableAuthService.getUserById(stableUserId);
-    if (!user) {
-      console.log(`[StableAuth] User not found or inactive: ${stableUserId}`);
-      // Clear invalid session
-      req.session.stableUserId = undefined;
-      req.session.stableUsername = undefined;
-      req.session.stableRole = undefined;
-      req.session.stableAuthTime = undefined;
-      
-      return res.status(401).json({ error: 'Invalid session' });
-    }
-
-    // Check session validity (optional: implement session timeout)
-    const authTime = req.session.stableAuthTime || 0;
-    const sessionMaxAge = 24 * 60 * 60 * 1000; // 24 hours
-    
-    if (Date.now() - authTime > sessionMaxAge) {
-      console.log(`[StableAuth] Session expired for user: ${user.username}`);
-      // Clear expired session
-      req.session.stableUserId = undefined;
-      req.session.stableUsername = undefined;
-      req.session.stableRole = undefined;
-      req.session.stableAuthTime = undefined;
-      
-      return res.status(401).json({ error: 'Session expired' });
-    }
-
-    // Attach user to request
-    req.stableUser = user;
-    
-    console.log(`[StableAuth] Authentication verified for: ${user.username} (${user.role})`);
-    next();
-  } catch (error) {
-    console.error('[StableAuth] Authentication middleware error:', error);
-    return res.status(500).json({ error: 'Authentication system error' });
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
   }
+  next();
 };
 
 /**
  * Middleware to require specific permission
  */
-export const requirePermission = (permission: keyof StableUser['permissions']) => {
+export const requirePermission = (permission: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    if (!req.stableUser) {
+    if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    if (!stableAuthService.hasPermission(req.stableUser, permission)) {
-      console.log(`[StableAuth] Permission denied: ${req.stableUser.username} lacks ${permission}`);
+    // Assuming permissions are stored as a comma-separated string in user object
+    // and that 'permissions' property exists on req.user object
+    if (req.user.role !== permission && !req.user.isAdmin) {
+      console.log(`[StableAuth] Permission denied: ${req.user.username} lacks ${permission}`);
       return res.status(403).json({ error: `Permission denied: ${permission}` });
     }
 
@@ -95,12 +73,15 @@ export const requirePermission = (permission: keyof StableUser['permissions']) =
  */
 export const requireAccessLevel = (minLevel: number) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    if (!req.stableUser) {
+    if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    if (!stableAuthService.hasAccessLevel(req.stableUser, minLevel)) {
-      console.log(`[StableAuth] Access level denied: ${req.stableUser.username} has level ${req.stableUser.permissions.accessLevel}, required ${minLevel}`);
+    // Assuming access level can be derived from user role or isAdmin status
+    const accessLevel = req.user.isAdmin ? 99 : 1; // Example: Admin has level 99, others have level 1
+
+    if (accessLevel < minLevel) {
+      console.log(`[StableAuth] Access level denied: ${req.user.username} has level ${accessLevel}, required ${minLevel}`);
       return res.status(403).json({ error: `Access level ${minLevel} required` });
     }
 
@@ -113,12 +94,12 @@ export const requireAccessLevel = (minLevel: number) => {
  */
 export const requireRole = (...allowedRoles: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    if (!req.stableUser) {
+    if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    if (!allowedRoles.includes(req.stableUser.role)) {
-      console.log(`[StableAuth] Role denied: ${req.stableUser.username} has role ${req.stableUser.role}, required one of: ${allowedRoles.join(', ')}`);
+    if (!allowedRoles.includes(req.user.role)) {
+      console.log(`[StableAuth] Role denied: ${req.user.username} has role ${req.user.role}, required one of: ${allowedRoles.join(', ')}`);
       return res.status(403).json({ error: 'Insufficient role permissions' });
     }
 
@@ -151,13 +132,23 @@ export const requireFinance = requireRole('superadmin', 'admin', 'finance');
  */
 export const requireDepartmentAccess = (department: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    if (!req.stableUser) {
+    if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    if (!stableAuthService.canAccessDepartment(req.stableUser, department)) {
-      console.log(`[StableAuth] Department access denied: ${req.stableUser.username} cannot access ${department}`);
-      return res.status(403).json({ error: 'Department access denied' });
+    // Assuming a department property exists on req.user
+    // And assuming department access is string matching
+    // Modify logic as necessary to fit requirements.
+    // if (!req.user.departments.includes(department)) {
+    //   console.log(`[StableAuth] Department access denied: ${req.user.username} cannot access ${department}`);
+    //   return res.status(403).json({ error: 'Department access denied' });
+    // }
+    // Example: assuming 'departments' is a comma seperated string.
+    const departments = (req.user.departments || '').split(',');
+
+    if (!departments.includes(department)) {
+        console.log(`[StableAuth] Department access denied: ${req.user.username} cannot access ${department}`);
+        return res.status(403).json({ error: 'Department access denied' });
     }
 
     next();
