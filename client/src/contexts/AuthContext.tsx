@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (username: string, password: string): Promise<boolean> => {
     console.log('🔐 [AUTH_CONTEXT] Login attempt for:', username);
     setIsLoading(true);
-    
+
 
     try {
       console.log('🔐 [AUTH_CONTEXT] Making login request to /api/auth/login');
@@ -92,19 +92,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (response.ok && data.success) {
         setUser(data.user);
-        
+
         console.log('✅ [AUTH_CONTEXT] Login successful, user set:', data.user);
         return true;
       } else {
         const errorMsg = data.error || `Login failed (Status: ${response.status})`;
         console.log('❌ [AUTH_CONTEXT] Login failed:', errorMsg);
-        
+
         return false;
       }
     } catch (err) {
       console.error('💥 [AUTH_CONTEXT] Login error:', err);
       const errorMsg = err instanceof Error ? err.message : 'Network error during login';
-      
+
       return false;
     } finally {
       setIsLoading(false);
