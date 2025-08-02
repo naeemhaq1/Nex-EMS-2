@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+async function startServer() {
 const app = express();
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -129,18 +130,46 @@ app.post('/api/auth/logout', (req, res) => {
   res.json({ success: true });
 });
 
-// Import routes (using .js for compiled JavaScript files)
-import authRoutes from './routes/auth.js';
-import sessionRoutes from './routes/sessionManagement.js';
-import dataInterfaceRoutes from './routes/dataInterface.js';
-import dataQualityRoutes from './routes/dataQuality.js';
-import employeesRoutes from './routes/employees.js';
-import dashboardRoutes from './routes/dashboard.js';
-import attendanceRoutes from './routes/attendance.js';
-import reportsRoutes from './routes/reports.js';
-import stableAuthRoutes from './routes/stableAuth.js';
-import adminRoutes from './routes/admin.js';
-import stableAuthTSRoutes from './routes/stableAuth.ts';
+// Import routes that exist
+let authRoutes, sessionRoutes, dataInterfaceRoutes, dataQualityRoutes;
+let employeesRoutes, dashboardRoutes, attendanceRoutes, reportsRoutes;
+let stableAuthRoutes, adminRoutes;
+
+try {
+  authRoutes = (await import('./routes/auth.js')).default;
+} catch { authRoutes = null; }
+
+try {
+  stableAuthRoutes = (await import('./routes/stableAuth.js')).default;
+} catch { stableAuthRoutes = null; }
+
+try {
+  sessionRoutes = (await import('./routes/sessionManagement.js')).default;
+} catch { sessionRoutes = null; }
+
+try {
+  dataInterfaceRoutes = (await import('./routes/dataInterface.js')).default;
+} catch { dataInterfaceRoutes = null; }
+
+try {
+  employeesRoutes = (await import('./routes/employees.js')).default;
+} catch { employeesRoutes = null; }
+
+try {
+  dashboardRoutes = (await import('./routes/dashboard.js')).default;
+} catch { dashboardRoutes = null; }
+
+try {
+  attendanceRoutes = (await import('./routes/attendance.js')).default;
+} catch { attendanceRoutes = null; }
+
+try {
+  reportsRoutes = (await import('./routes/reports.js')).default;
+} catch { reportsRoutes = null; }
+
+try {
+  adminRoutes = (await import('./routes/admin.js')).default;
+} catch { adminRoutes = null; }
 
 // Dev auto-login endpoint for mobile - Optimized for instant response
 app.post('/api/dev/auto-login', (req, res) => {
@@ -316,17 +345,16 @@ app.get('/api/reports/summary', (req, res) => {
   });
 });
 
-// Mount existing routes
-app.use('/api/auth', authRoutes);
-app.use('/api/sessions', sessionRoutes);
-app.use('/api/data', dataInterfaceRoutes);
-app.use('/api/data', dataQualityRoutes);
-app.use('/api/employees', employeesRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/attendance', attendanceRoutes);
-app.use('/api/reports', reportsRoutes);
-app.use('/api/stable-auth', stableAuthRoutes);
-app.use('/api/admin', adminRoutes);
+// Mount existing routes with error handling
+if (authRoutes) app.use('/api/auth', authRoutes);
+if (stableAuthRoutes) app.use('/api/stable-auth', stableAuthRoutes);
+if (sessionRoutes) app.use('/api/sessions', sessionRoutes);
+if (dataInterfaceRoutes) app.use('/api/data', dataInterfaceRoutes);
+if (employeesRoutes) app.use('/api/employees', employeesRoutes);
+if (dashboardRoutes) app.use('/api/dashboard', dashboardRoutes);
+if (attendanceRoutes) app.use('/api/attendance', attendanceRoutes);
+if (reportsRoutes) app.use('/api/reports', reportsRoutes);
+if (adminRoutes) app.use('/api/admin', adminRoutes);
 
 // Serve the React app for all other routes
 app.get('*', (req, res) => {
@@ -337,3 +365,8 @@ app.listen(PORT, HOST, () => {
   console.log(`🚀 NEXLINX EMS Server running on http://${HOST}:${PORT}`);
   console.log(`📊 Health check: http://${HOST}:${PORT}/health`);
 });
+
+}
+
+// Start the server
+startServer().catch(console.error);

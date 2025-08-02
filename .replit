@@ -14,7 +14,7 @@ deploymentTarget = "gce"
 ignorePorts = false
 
 [workflows]
-runButton = "Start NEXLINX EMS"
+runButton = "Start NEXLINX EMS Simple"
 
 [[workflows.workflow]]
 name = "Start Nexlinx EMS"
@@ -67,6 +67,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npx tsx index.js"
+
+[[workflows.workflow]]
+name = "Start NEXLINX EMS Simple"
+author = 42660592
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node index.js"
 
 [[ports]]
 localPort = 5000
