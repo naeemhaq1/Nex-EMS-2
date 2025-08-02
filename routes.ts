@@ -268,35 +268,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin API Routes
   apiRouter.use("/admin", adminRouter);
 
-  // Authentication routes
+  // Authentication routes using stable auth service
   apiRouter.post("/auth/login", async (req, res) => {
     try {
-      const { username, password } = loginSchema.parse(req.body);
-      const result = await authService.login(username, password);
+      console.log('Login attempt for:', req.body.username);
+      const { username, password } = req.body;
       
-      if (result.success) {
-        req.session.userId = result.user!.id.toString(); // Store user ID as string for session consistency
-        req.session.usernum = result.user!.id; // Store ID as number for database queries
-        req.session.username = result.user!.username;
-        req.session.role = result.user!.role;
+      if (!username || !password) {
+        console.log('Missing username or password');
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Username and password are required' 
+        });
+      }
+
+      // Use stable auth service
+      const { stableAuthService } = await import('./services/stableAuth');
+      const result = await stableAuthService.authenticate(username, password);
+      
+      if (result.success && result.user) {
+        // Store session data
+        req.session.userId = result.user.id.toString();
+        req.session.usernum = result.user.id;
+        req.session.username = result.user.username;
+        req.session.role = result.user.role;
+        req.session.employeeId = result.user.employeeId;
+        req.session.permissions = result.user.permissions;
         
-        // Store device information for session tracking with real client IP
+        // Store device information
         req.session.userAgent = req.get('user-agent') || 'Unknown';
+        req.session.ipAddress = req.get('x-forwarded-for') || req.connection.remoteAddress || 'Unknown';
+        req.session.loginTime = new Date().toISOString();
         
-        // Get real client IP address (with development environment handling)
-        const realClientIP = req.get('x-replit-user-ip') ||
-                           req.get('x-forwarded-for') || 
-                           req.get('x-real-ip') || 
-                           req.get('cf-connecting-ip') || 
-                           req.get('x-client-ip') ||
-                           req.connection.remoteAddress || 
-                           req.socket.remoteAddress ||
-                           req.ip || 
-                           'Unknown';
-        
-        // Handle development environment localhost
-        let finalIP = realClientIP.toString().split(',')[0].trim();
-        if (finalIP === '127.0.0.1' || finalIP === '::1' || finalIP.startsWith('172.')) {
+        console.log('Login successful for:', username);
+        return res.json({
+          success: true,
+          user: {
+            id: result.user.id,
+            username: result.user.username,
+            role: result.user.role,
+            employeeId: result.user.employeeId,
+            permissions: result.user.permissions,
+            requiresPasswordChange: result.requiresPasswordChange
+          }
+        });
+      } else {
+        console.log('Login failed for:', username, 'Error:', result.error);
+        return res.status(401).json({
+          success: false,
+          error: result.error || 'Invalid credentials'
+        });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Login failed'
+      });
+    }
+  });
+
+  // Get current user
+  apiRouter.get("/auth/me", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Not authenticated' 
+        });
+      }
+
+      const { stableAuthService } = await import('./services/stableAuth');
+      const user = await stableAuthService.getUserById(parseInt(req.session.userId));
+      
+      if (!user) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'User not found' 
+        });
+      }
+
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          employeeId: user.employeeId,
+          permissions: user.permissions
+        }
+      });
+    } catch (error) {
+      console.error('Auth check error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Authentication check failed' 
+      });
+    }
+  });
+
+  // Logout
+  apiRouter.post("/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Logout error:', err);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Logout failed' 
+        });
+      }
+      res.json({ success: true });
+    });
+  });
           finalIP = 'Development Environment (Local)';
         }
         

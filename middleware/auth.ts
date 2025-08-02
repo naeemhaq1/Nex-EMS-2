@@ -55,44 +55,30 @@ export const sessionMiddleware = session({
 });
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  // Enhanced session validation with security checks
-  const sessionId = req.sessionID;
+  // Check if session exists
+  if (!req.session) {
+    console.error('Session not available - middleware not properly configured');
+    return res.status(401).json({ error: "Session not configured" });
+  }
+
   const userId = req.session.userId;
   const usernum = req.session.usernum;
-  const stableUserId = req.session.stableUserId;
-  
-  console.log('Auth middleware - sessionID:', sessionId);
-  console.log('Auth middleware - userId:', userId);
-  console.log('Auth middleware - usernum:', usernum);
-  console.log('Auth middleware - stableUserId:', stableUserId);
-  
-  // Prefer stable auth, fallback to legacy auth
-  if (stableUserId) {
-    console.log('Using stable authentication');
-    return next();
-  }
-  
-  // Legacy auth fallback
+
+  console.log('Auth middleware check - userId:', userId, 'usernum:', usernum);
+
+  // Check if user is authenticated
   if (!userId && !usernum) {
+    console.log('Auth middleware - no user ID found in session');
     return res.status(401).json({ error: "Authentication required" });
   }
-  
-  // Additional security: verify session integrity
-  if (!sessionId) {
-    console.error('Session ID missing - potential security issue');
-    return res.status(401).json({ error: "Invalid session" });
+
+  // Verify session has required data
+  if (!req.session.username || !req.session.role) {
+    console.log('Auth middleware - incomplete session data');
+    return res.status(401).json({ error: "Invalid session data" });
   }
-  
-  // Check if session data is consistent for legacy auth
-  if (req.session.userId && req.session.usernum) {
-    // Both should be present and valid
-    if (!req.session.username || !req.session.role) {
-      console.error('Session data incomplete - potential tampering');
-      return res.status(401).json({ error: "Session integrity check failed" });
-    }
-  }
-  
-  console.log('Using legacy authentication');
+
+  console.log('Auth middleware - authentication verified for:', req.session.username);
   next();
 };
 
@@ -100,7 +86,7 @@ export const requirePermission = (permission: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     const userNum = req.session.usernum;
     const userId = req.session.userId;
-    
+
     if (!userNum && !userId) {
       return res.status(401).json({ error: "Authentication required" });
     }
@@ -111,7 +97,7 @@ export const requirePermission = (permission: string) => {
       if (!userIdNumber) {
         return res.status(401).json({ error: "Invalid user ID" });
       }
-      
+
       const user = await storage.getUser(userIdNumber);
       if (!user || !user.isActive) {
         return res.status(401).json({ error: "User not found or inactive" });
@@ -165,7 +151,7 @@ export const requireAccessLevel = (minLevel: number) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     const userNum = req.session.usernum;
     const userId = req.session.userId;
-    
+
     if (!userNum && !userId) {
       return res.status(401).json({ error: "Authentication required" });
     }
@@ -176,7 +162,7 @@ export const requireAccessLevel = (minLevel: number) => {
       if (!userIdNumber) {
         return res.status(401).json({ error: "Invalid user ID" });
       }
-      
+
       const user = await storage.getUser(userIdNumber);
       if (!user || !user.isActive) {
         return res.status(401).json({ error: "User not found or inactive" });
